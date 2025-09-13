@@ -178,12 +178,23 @@ export default function BusinessDetail() {
 
       {/* Summary */}
       <View style={styles.summaryContainer}>
-        <Text style={styles.summaryText}>Crop: {cropDetails?.cropNumber}</Text>
         <Text style={styles.summaryText}>
-          Total Investment: {formatAmount(totalInvestment)}
+          <Text style={styles.summaryLabel}>Crop: </Text>
+          <Text style={styles.summaryValue}>{cropDetails?.cropNumber}</Text>
         </Text>
+
         <Text style={styles.summaryText}>
-          Total Sold: {formatAmount(totalSoldAmount)}
+          <Text style={styles.summaryLabel}>Total Investment: </Text>
+          <Text style={styles.summaryValue}>
+            {formatAmount(totalInvestment)}
+          </Text>
+        </Text>
+
+        <Text style={styles.summaryText}>
+          <Text style={styles.summaryLabel}>Total Sold: </Text>
+          <Text style={styles.summaryValue}>
+            {formatAmount(totalSoldAmount)}
+          </Text>
         </Text>
       </View>
 
@@ -196,19 +207,21 @@ export default function BusinessDetail() {
           style={[styles.button, styles.soldBtn]}
           onPress={() => setSoldPopup(true)}
         >
-          <Text style={styles.buttonText}>SOLD</Text>
+          <Text style={styles.buttonText}>Sold</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.button, styles.addBtn]}
           onPress={() => setShowPopup(true)}
         >
           <Text style={styles.buttonText}>+ Add Expense</Text>
         </TouchableOpacity>
+        
         <TouchableOpacity
           style={[styles.button, styles.withdrawBtn]}
           onPress={() => setWithdrawPopup(true)}
         >
-          <Text style={styles.buttonText}>WITHDRAW</Text>
+          <Text style={styles.buttonText}>Withdraw</Text>
         </TouchableOpacity>
       </View>
 
@@ -222,7 +235,7 @@ export default function BusinessDetail() {
           onSave={handlePopupSave}
         />
       )}
-      {/*   {withdrawPopup && (
+      {/* {withdrawPopup && (
         <WithdrawAmountPopup
           partners={partners}
           cropDetails={cropDetails}
@@ -231,15 +244,16 @@ export default function BusinessDetail() {
           onClose={() => setWithdrawPopup(false)}
           onSave={handlePopupSave}
         />
-      )}
+      )} */}
       {soldPopup && (
         <SoldAmountPopup
           partners={partners}
           cropDetails={cropDetails}
           onClose={() => setSoldPopup(false)}
           onSave={handlePopupSave}
+          visible={soldPopup} // pass visible prop
         />
-      )} */}
+      )}
     </ScrollView>
   );
 }
@@ -264,6 +278,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 16,
   },
+  summaryLabel: {
+    color: "#666", // lighter grey for labels
+    fontWeight: "500",
+  },
+  summaryValue: {
+    color: "#111", // darker black for values
+    fontWeight: "700", // make values stand out
+  },
   button: {
     flex: 1,
     padding: 12,
@@ -274,5 +296,5 @@ const styles = StyleSheet.create({
   addBtn: { backgroundColor: "#4f93ff" },
   withdrawBtn: { backgroundColor: "#f44336" },
   soldBtn: { backgroundColor: "#ff9900" },
-  buttonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
+  buttonText: { color: "#fff", fontWeight: "400", fontSize: 11 },
 });

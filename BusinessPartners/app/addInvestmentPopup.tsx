@@ -11,7 +11,7 @@ import {
   Image,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-
+import { numberToWords } from "./utils/numberToWords";
 type Partner = {
   id: string;
   username: string;
@@ -26,13 +26,13 @@ type AddInvestmentPopupProps = {
   cropDetails?: any;
 };
 
-const numberToWords = (num: number): string => {
+/* const numberToWords = (num: number): string => {
   const IntlNF = new Intl.NumberFormat("en-IN", {
     maximumFractionDigits: 2,
   });
   if (!num) return "";
-  return IntlNF.format(num) + " rupees"; // simple fallback
-};
+  return IntlNF.format(num) + " rupees";
+}; */
 
 const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   visible,
@@ -48,6 +48,8 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   const [description, setDescription] = useState<string>("");
   const [rows, setRows] = useState<any[]>([]);
   const [images, setImages] = useState<string[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
 
   const createdBy = "CurrentUser"; // Replace with AsyncStorage/context
 
@@ -70,11 +72,10 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
     setRows((prev) =>
       partners.map((p, idx) => {
         const prevRow = prev[idx] || {};
-        if (!totalAmount)
-          return { ...prevRow, actual: "", investing: "" };
+        if (!totalAmount) return { ...prevRow, actual: "", investing: "" };
 
         if (splitMode === "share") {
-          const actual = ((p.share ?? 0) / 100 * expected).toFixed(2);
+          const actual = (((p.share ?? 0) / 100) * expected).toFixed(2);
           return { ...prevRow, actual, investing: actual };
         }
 
@@ -106,9 +107,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
       (sum, r) => sum + (parseFloat(r.investing) || 0),
       0
     );
-    if (
-      Math.round((totalEntered - expected) * 100) / 100 !== 0
-    ) {
+    if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
       Alert.alert("Error", "Total entered does not match expected amount");
       return;
     }
@@ -151,12 +150,14 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             <TextInput
               style={styles.input}
               placeholder="Description"
+              placeholderTextColor="#999"
               value={description}
               onChangeText={setDescription}
             />
             <TextInput
               style={styles.input}
               placeholder="Total Amount"
+              placeholderTextColor="#999"
               keyboardType="numeric"
               value={totalAmount}
               onChangeText={setTotalAmount}
@@ -191,11 +192,13 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
             {/* Table Headers */}
             <View style={[styles.row, styles.headerRow]}>
-              <Text style={styles.cell}>User</Text>
-              {splitMode === "share" && <Text style={styles.cell}>Share %</Text>}
-              <Text style={styles.cell}>Actual</Text>
-              <Text style={styles.cell}>Investing</Text>
-              <Text style={styles.cell}>Diff</Text>
+              <Text style={styles.headerCell}>User</Text>
+              {splitMode === "share" && (
+                <Text style={styles.headerCell}>Share %</Text>
+              )}
+              <Text style={styles.headerCell}>Actual</Text>
+              <Text style={styles.headerCell}>Investing</Text>
+              <Text style={styles.headerCell}>Diff</Text>
             </View>
 
             {/* Table Rows */}
@@ -206,7 +209,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
                 const diff = investNum - actualNum;
 
                 return (
-                <View key={row.id} style={styles.row}>
+                  <View key={row.id} style={styles.row}>
                     <Text
                       style={[
                         styles.cell,
@@ -227,16 +230,19 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
                     >
                       {row.actual}
                     </Text>
-                  <TextInput
-                    style={[styles.cell, styles.inputCell]}
-                    value={row.investing}
-                    keyboardType="numeric"
-                    onChangeText={(val) => handleInvestingChange(idx, val)}
-                  />
+                    <TextInput
+                      style={[styles.cell, styles.inputCell]}
+                      value={row.investing}
+                      keyboardType="numeric"
+                      onChangeText={(val) => handleInvestingChange(idx, val)}
+                    />
                     <Text
                       style={[
                         styles.cell,
-                        { color: diff > 0 ? "green" : diff < 0 ? "red" : "black" },
+                        {
+                          color:
+                            diff > 0 ? "green" : diff < 0 ? "red" : "black",
+                        },
                       ]}
                     >
                       {diff !== 0 ? diff.toFixed(2) : ""}
@@ -254,16 +260,61 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             <ScrollView horizontal style={{ marginTop: 8 }}>
               {images.map((uri, idx) => (
                 <View key={idx} style={styles.imagePreview}>
-                  <Image source={{ uri }} style={styles.previewThumb} />
+                  {/* Thumbnail click → preview */}
                   <TouchableOpacity
-                    style={styles.removeBtn}
-                    onPress={() => removeImage(uri)}
+                    style={{ flex: 1 }}
+                    onPress={() => {
+                      setPreviewImage(uri);
+                      setPreviewVisible(true);
+                    }}
                   >
-                    <Text style={{ color: "white", fontSize: 10 }}>X</Text>
+                    <Image source={{ uri }} style={styles.previewThumb} />
+                  </TouchableOpacity>
+
+                  {/* X delete button */}
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    onPress={() => {
+                      const updated = images.filter((_, i) => i !== idx);
+                      setImages(updated);
+                    }}
+                  >
+                    <Text style={styles.deleteText}>X</Text>
                   </TouchableOpacity>
                 </View>
               ))}
             </ScrollView>
+
+            {/* Fullscreen Image Preview Modal */}
+            <Modal
+              visible={previewVisible}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setPreviewVisible(false)}
+            >
+              <View style={styles.previewOverlay}>
+                <View style={styles.previewContainer}>
+                  <Image
+                    source={{ uri: previewImage || "" }}
+                    style={styles.fullImage}
+                  />
+                  <TouchableOpacity
+                    style={styles.closePreviewBtn}
+                    onPress={() => setPreviewVisible(false)}
+                  >
+                    <Text
+                      style={{
+                        color: "white",
+                        fontWeight: "bold",
+                        fontSize: 16,
+                      }}
+                    >
+                      X
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
           </ScrollView>
 
           <View style={styles.buttons}>
@@ -295,7 +346,7 @@ const styles = StyleSheet.create({
     padding: 16,
     maxHeight: "90%",
   },
-  title: { fontSize: 20, fontWeight: "bold", marginBottom: 12 },
+  title: { fontSize: 20, fontWeight: "bold", marginBottom: 12, textAlign: "center" },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -324,7 +375,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 6,
   },
-  headerRow: { borderBottomWidth: 1, borderColor: "#ccc", paddingBottom: 4 },
+  headerRow: { borderBottomWidth: 1, borderColor: "#dc3131ff", paddingBottom: 4 },
   cell: { flex: 1, textAlign: "center", fontSize: 13 },
   inputCell: {
     borderWidth: 1,
@@ -332,6 +383,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 4,
   },
+  headerCell: {
+  flex: 1,
+  textAlign: "center",
+  fontSize: 13,
+  fontWeight: "600", // bold for header
+  color: "#111",     // darker text
+},
   buttons: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -362,16 +420,58 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   previewThumb: {
-    width: 70,
-    height: 70,
-    borderRadius: 6,
+    width: 80,
+    height: 80,
+    borderRadius: 8,
   },
   removeBtn: {
     position: "absolute",
     top: -6,
     right: -6,
     backgroundColor: "red",
-    borderRadius: 10,
+    borderRadius: 0,
     padding: 2,
+  },
+  deleteBtn: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "red",
+    borderRadius: 0,
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  previewContainer: {
+    position: "relative",
+    width: "90%",
+    height: "70%",
+  },
+  fullImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "contain",
+    borderRadius: 8,
+  },
+  closePreviewBtn: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: "red",
+    borderRadius: 15,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
 });

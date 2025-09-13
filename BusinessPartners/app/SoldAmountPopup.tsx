@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ type SoldAmountPopupProps = {
   onClose: () => void;
   onSave: (data: any) => void;
   partners: Partner[];
+  cropDetails?: any;
 };
 
 const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
@@ -27,6 +28,7 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
   onClose,
   onSave,
   partners,
+  cropDetails
 }) => {
   const [totalSold, setTotalSold] = useState<string>("");
   const [description, setDescription] = useState<string>("");

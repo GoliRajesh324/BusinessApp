@@ -107,8 +107,8 @@ export default function Dashboard() {
       router.push({
         pathname: "/businessDetail",
         params: {
-          id: business.id.toString(), // convert number to string
-          name: business.name,
+          businessId: business.id.toString(), // convert number to string
+          businessName: business.name,
         },
       });
     } catch (err: any) {
@@ -161,7 +161,7 @@ export default function Dashboard() {
                   onPress={() =>
                     router.push({
                       pathname: "/businessDetail",
-                      params: { id:  item.id.toString(), name: item.name },
+                      params: { businessId:  item.id.toString(), businessName: item.name },
                     })
                   }
                 >

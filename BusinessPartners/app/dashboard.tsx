@@ -17,7 +17,6 @@ import axios from "axios";
 import BASE_URL from "../src/config/config";
 import AddBusinessPopup from "./components/AddBusinessPopup";
 
-
 export default function Dashboard() {
   const [showPopup, setShowPopup] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState(null);
@@ -80,14 +79,14 @@ export default function Dashboard() {
     }
   }, [token, userId]);
 
-  // ✅ Save (add/edit)
+  // Save (add/edit)
   const handleSaveBusiness = async () => {
     await fetchBusinesses();
     setShowPopup(false);
     setEditingBusiness(null);
   };
 
-  // ✅ Start crop
+  // Start crop & navigate
   const handleStartCrop = async (business: any) => {
     try {
       if (!business.cropInProgress) {
@@ -104,7 +103,14 @@ export default function Dashboard() {
         );
         await fetchBusinesses();
       }
-      router.push(`/business/${business.id}/${business.name}`);
+      // In handleStartCrop
+      router.push({
+        pathname: "/businessDetail",
+        params: {
+          id: business.id.toString(), // convert number to string
+          name: business.name,
+        },
+      });
     } catch (err: any) {
       console.error("❌ Start crop error:", err.response?.data || err.message);
       Alert.alert("Error", "Error while starting crop");
@@ -139,7 +145,6 @@ export default function Dashboard() {
 
   return (
     <View style={styles.container}>
-
       <FlatList
         data={businesses}
         keyExtractor={(item) => item.id.toString()}
@@ -154,7 +159,10 @@ export default function Dashboard() {
                 <TouchableOpacity
                   style={styles.inprogressBtn}
                   onPress={() =>
-                    router.push(`/business/${item.id}/${item.name}`)
+                    router.push({
+                      pathname: "/businessDetail",
+                      params: { id:  item.id.toString(), name: item.name },
+                    })
                   }
                 >
                   <Text style={styles.btnText}>In Progress</Text>
@@ -252,11 +260,7 @@ export default function Dashboard() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f9fafb", padding: 16 },
-  loader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   emptyMessage: { textAlign: "center", marginTop: 20, color: "#777" },
   businessCard: {
     flexDirection: "row",
@@ -305,10 +309,7 @@ const styles = StyleSheet.create({
   },
   popupTitle: { fontSize: 16, textAlign: "center", marginBottom: 20 },
   bold: { fontWeight: "700" },
-  popupButtons: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
+  popupButtons: { flexDirection: "row", justifyContent: "space-around" },
   confirmBtn: {
     backgroundColor: "#22c55e",
     padding: 10,

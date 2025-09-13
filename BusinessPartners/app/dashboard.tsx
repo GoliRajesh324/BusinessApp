@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
-  Alert,
   Modal,
   StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -14,119 +17,230 @@ import axios from "axios";
 import BASE_URL from "../src/config/config";
 import AddBusinessPopup from "./components/AddBusinessPopup";
 
+
 export default function Dashboard() {
-  const router = useRouter();
-  const [businesses, setBusinesses] = useState<any[]>([]);
   const [showPopup, setShowPopup] = useState(false);
-  const [editingBusiness, setEditingBusiness] = useState<any>(null);
+  const [editingBusiness, setEditingBusiness] = useState(null);
+  const [businesses, setBusinesses] = useState<any[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState<any>(null);
   const [confirmStart, setConfirmStart] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const token = AsyncStorage.getItem("token");
-  const userId = AsyncStorage.getItem("userId");
+  const router = useRouter();
+  const [token, setToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
+  // ✅ Load token & userId before fetching
+  useEffect(() => {
+    const loadData = async () => {
+      const t = await AsyncStorage.getItem("token");
+      const u = await AsyncStorage.getItem("userId");
+      console.log("📌 Loaded token:", t);
+      console.log("📌 Loaded userId:", u);
+      setToken(t);
+      setUserId(u);
+    };
+    loadData();
+  }, []);
+
+  // ✅ Fetch businesses
   const fetchBusinesses = async () => {
+    if (!token || !userId) return;
     try {
-      const storedToken = await token;
-      const storedUserId = await userId;
-      const res = await axios.get(`${BASE_URL}/api/business/user/${storedUserId}`, {
-        headers: { Authorization: `Bearer ${storedToken}` },
+      console.log("📡 Fetching businesses...");
+      setLoading(true);
+      const response = await fetch(`${BASE_URL}/api/business/user/${userId}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
       });
+      if (!response.ok) throw new Error("Failed to fetch businesses");
+      const data = await response.json();
+      console.log("✅ Businesses:", data);
 
-      const updated = res.data.map((b: any) => ({
-        ...b,
-        cropInProgress: b.crops?.some((c: any) => c.cropInProgress) || false,
-      }));
+      const updated = data.map((b: any) => {
+        let inProgress = false;
+        if (b.crops && b.crops.length > 0) {
+          inProgress = b.crops.some((c: any) => c.cropInProgress === true);
+        }
+        return { ...b, cropInProgress: inProgress };
+      });
 
       setBusinesses(updated);
     } catch (err) {
-      console.log(err);
-      Alert.alert("Error", "Failed to fetch businesses");
+      console.error("❌ Fetch error:", err);
+      Alert.alert("Error", "Error loading businesses");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBusinesses();
-  }, []);
+    if (token && userId) {
+      fetchBusinesses();
+    }
+  }, [token, userId]);
 
+  // ✅ Save (add/edit)
+  const handleSaveBusiness = async () => {
+    await fetchBusinesses();
+    setShowPopup(false);
+    setEditingBusiness(null);
+  };
+
+  // ✅ Start crop
   const handleStartCrop = async (business: any) => {
     try {
-      const storedToken = await token;
-      const storedUserId = await userId;
-
       if (!business.cropInProgress) {
+        const url = `${BASE_URL}/api/crop/create/${business.id}/${userId}`;
         await axios.post(
-          `${BASE_URL}/api/crop/create/${business.id}/${storedUserId}`,
+          url,
           {},
-          { headers: { Authorization: `Bearer ${storedToken}` } }
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
         );
-        fetchBusinesses();
+        await fetchBusinesses();
       }
       router.push(`/business/${business.id}/${business.name}`);
     } catch (err: any) {
-      console.log(err.response?.data || err.message);
+      console.error("❌ Start crop error:", err.response?.data || err.message);
       Alert.alert("Error", "Error while starting crop");
     } finally {
       setConfirmStart(null);
     }
   };
 
+  // ✅ Delete
+  const handleDeleteBusiness = async () => {
+    if (!confirmDelete) return;
+    try {
+      await axios.delete(`${BASE_URL}/api/business/${confirmDelete.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setConfirmDelete(null);
+      await fetchBusinesses();
+    } catch (err) {
+      console.error("❌ Delete error:", err);
+      Alert.alert("Error", "Error deleting business");
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#2563eb" />
+        <Text>Loading Dashboard...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        {businesses.length === 0 ? (
-          <Text style={styles.empty}>No Businesses Added yet.</Text>
-        ) : (
-          businesses.map((b: any) => (
-            <View key={b.id} style={styles.card}>
-              <Text style={styles.cardText}>{b.name}</Text>
-              <TouchableOpacity
-                style={[styles.btn, b.cropInProgress ? styles.inProgress : styles.start]}
-                onPress={() =>
-                  b.cropInProgress ? router.push(`/business/${b.id}/${b.name}`) : setConfirmStart(b)
-                }
-              >
-                <Text style={styles.btnText}>
-                  {b.cropInProgress ? "In Progress" : "Start"}
-                </Text>
-              </TouchableOpacity>
+
+      <FlatList
+        data={businesses}
+        keyExtractor={(item) => item.id.toString()}
+        ListEmptyComponent={
+          <Text style={styles.emptyMessage}>No Businesses Added yet.</Text>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.businessCard}>
+            <Text style={styles.bizName}>{item.name}</Text>
+            <View style={styles.bizActions}>
+              {item.cropInProgress ? (
+                <TouchableOpacity
+                  style={styles.inprogressBtn}
+                  onPress={() =>
+                    router.push(`/business/${item.id}/${item.name}`)
+                  }
+                >
+                  <Text style={styles.btnText}>In Progress</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.startBtn}
+                  onPress={() => setConfirmStart(item)}
+                >
+                  <Text style={styles.btnText}>Start</Text>
+                </TouchableOpacity>
+              )}
             </View>
-          ))
+          </View>
         )}
+      />
 
-        <TouchableOpacity style={styles.addBtn} onPress={() => setShowPopup(true)}>
-          <Text style={styles.addBtnText}>+ Add Business</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      <TouchableOpacity
+        style={styles.addBtn}
+        onPress={() => setShowPopup(true)}
+      >
+        <Text style={styles.addBtnText}>+ Add Business</Text>
+      </TouchableOpacity>
 
-      {/* Add Business Popup */}
-      <Modal visible={showPopup} transparent animationType="slide">
-        <AddBusinessPopup
-          visible={showPopup}
-          editingBusiness={editingBusiness}
-          onClose={() => {
-            setShowPopup(false);
-            setEditingBusiness(null);
-          }}
-          onSave={fetchBusinesses}
-        />
+      {/* Add/Edit Popup */}
+      <Modal visible={showPopup} transparent animationType="fade">
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <AddBusinessPopup
+            onClose={() => {
+              setShowPopup(false);
+              setEditingBusiness(null);
+            }}
+            onSave={handleSaveBusiness}
+            editingBusiness={editingBusiness}
+          />
+        </KeyboardAvoidingView>
       </Modal>
 
-      {/* Start Crop Confirmation */}
+      {/* Confirm Start */}
       <Modal visible={!!confirmStart} transparent animationType="fade">
-        <View style={styles.popupOverlay}>
-          <View style={styles.popup}>
-            <Text style={{ marginBottom: 16 }}>
-              Start a new crop for <Text style={{ fontWeight: "bold" }}>{confirmStart?.name}</Text>?
+        <View style={styles.modalOverlay}>
+          <View style={styles.popupBox}>
+            <Text style={styles.popupTitle}>
+              Start a new crop for{" "}
+              <Text style={styles.bold}>{confirmStart?.name}</Text>?
             </Text>
             <View style={styles.popupButtons}>
-              <TouchableOpacity style={styles.popupBtn} onPress={() => handleStartCrop(confirmStart)}>
-                <Text style={styles.popupBtnText}>Yes, Start</Text>
+              <TouchableOpacity
+                style={styles.confirmBtn}
+                onPress={() => handleStartCrop(confirmStart)}
+              >
+                <Text style={styles.btnText}>Yes, Start</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.popupBtn, { backgroundColor: "#e5e7eb" }]}
+                style={styles.cancelBtn}
                 onPress={() => setConfirmStart(null)}
               >
-                <Text>Cancel</Text>
+                <Text style={styles.btnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Confirm Delete */}
+      <Modal visible={!!confirmDelete} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.popupBox}>
+            <Text style={styles.popupTitle}>
+              Delete <Text style={styles.bold}>{confirmDelete?.name}</Text>?
+            </Text>
+            <View style={styles.popupButtons}>
+              <TouchableOpacity
+                style={styles.confirmBtn}
+                onPress={handleDeleteBusiness}
+              >
+                <Text style={styles.btnText}>Yes, Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setConfirmDelete(null)}
+              >
+                <Text style={styles.btnText}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -137,45 +251,76 @@ export default function Dashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb", paddingTop: 60 },
-  content: { padding: 16 },
-  card: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  cardText: { fontSize: 16, fontWeight: "600", flex: 1 },
-  btn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8 },
-  start: { backgroundColor: "#2563eb" },
-  inProgress: { backgroundColor: "#f59e0b" },
-  btnText: { color: "#fff", fontWeight: "bold" },
-  addBtn: {
-    backgroundColor: "#10b981",
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  addBtnText: { color: "white", fontWeight: "bold", fontSize: 16 },
-  empty: { textAlign: "center", color: "#6b7280", marginTop: 40 },
-  popupOverlay: {
+  container: { flex: 1, backgroundColor: "#f9fafb", padding: 16 },
+  loader: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "center",
     alignItems: "center",
   },
-  popup: {
+  emptyMessage: { textAlign: "center", marginTop: 20, color: "#777" },
+  businessCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 12,
+    marginVertical: 6,
     backgroundColor: "#fff",
-    padding: 24,
-    borderRadius: 12,
-    width: "80%",
+    borderRadius: 8,
+    elevation: 2,
+  },
+  bizName: { fontSize: 16, fontWeight: "600" },
+  bizActions: { flexDirection: "row" },
+  startBtn: {
+    backgroundColor: "#22c55e",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  inprogressBtn: {
+    backgroundColor: "#f97316",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  btnText: { color: "#fff", fontWeight: "600" },
+  addBtn: {
+    backgroundColor: "#2563eb",
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  addBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  popupBox: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    width: "90%",
+  },
+  popupTitle: { fontSize: 16, textAlign: "center", marginBottom: 20 },
+  bold: { fontWeight: "700" },
+  popupButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  confirmBtn: {
+    backgroundColor: "#22c55e",
+    padding: 10,
+    borderRadius: 8,
+    minWidth: 100,
     alignItems: "center",
   },
-  popupButtons: { flexDirection: "row", justifyContent: "space-around", width: "100%", marginTop: 16 },
-  popupBtn: { flex: 1, padding: 8, backgroundColor: "#2563eb", borderRadius: 8, marginHorizontal: 6, alignItems: "center" },
-  popupBtnText: { color: "#fff", fontWeight: "bold" },
+  cancelBtn: {
+    backgroundColor: "#ef4444",
+    padding: 10,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: "center",
+  },
 });

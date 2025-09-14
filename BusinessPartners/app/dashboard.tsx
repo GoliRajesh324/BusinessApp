@@ -16,6 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import BASE_URL from "../src/config/config";
 import AddBusinessPopup from "./components/AddBusinessPopup";
+import Header from "./components/Header";
 
 export default function Dashboard() {
   const [showPopup, setShowPopup] = useState(false);
@@ -34,8 +35,8 @@ export default function Dashboard() {
     const loadData = async () => {
       const t = await AsyncStorage.getItem("token");
       const u = await AsyncStorage.getItem("userId");
-      console.log("📌 Loaded token:", t);
-      console.log("📌 Loaded userId:", u);
+      //console.log("📌 Loaded token:", t);
+      //console.log("📌 Loaded userId:", u);
       setToken(t);
       setUserId(u);
     };
@@ -46,7 +47,7 @@ export default function Dashboard() {
   const fetchBusinesses = async () => {
     if (!token || !userId) return;
     try {
-      console.log("📡 Fetching businesses...");
+      //console.log("📡 Fetching businesses...");
       setLoading(true);
       const response = await fetch(`${BASE_URL}/api/business/user/${userId}`, {
         method: "GET",
@@ -54,7 +55,7 @@ export default function Dashboard() {
       });
       if (!response.ok) throw new Error("Failed to fetch businesses");
       const data = await response.json();
-      console.log("✅ Businesses:", data);
+      //console.log("✅ Businesses:", data);
 
       const updated = data.map((b: any) => {
         let inProgress = false;
@@ -145,6 +146,7 @@ export default function Dashboard() {
 
   return (
     <View style={styles.container}>
+      <Header/>
       <FlatList
         data={businesses}
         keyExtractor={(item) => item.id.toString()}

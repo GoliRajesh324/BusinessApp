@@ -13,6 +13,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImageManipulator from "expo-image-manipulator";
 
 type Partner = {
   id: string | number;
@@ -59,7 +60,7 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
       const n = await AsyncStorage.getItem("userName");
       const u = await AsyncStorage.getItem("userId");
 
-      console.log("📌 Loaded userId:", u);
+      //console.log("📌 Loaded userId:", u);
       setUserName(n);
       setUserId(u);
     };
@@ -86,22 +87,32 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
     }
   }, [selectedPartner, investmentDetails]);
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-    });
+const pickImage = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    quality: 1, // pick full quality initially
+  });
 
-    if (!result.canceled) {
-      const asset = result.assets[0];
-      const file = {
-        uri: asset.uri,
-        name: asset.uri.split("/").pop() || "image.jpg",
-        type: asset.mimeType || "image/jpeg",
-      };
-      setImages([...images, file]);
-    }
-  };
+  if (!result.canceled) {
+    const asset = result.assets[0];
+
+    // Compress and resize before saving
+    const manipulated = await ImageManipulator.manipulateAsync(
+      asset.uri,
+      [{ resize: { width: 800 } }], // scale down width, keep aspect ratio
+      { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG } // 60% quality
+    );
+
+    const file = {
+      uri: manipulated.uri,
+      name: asset.uri.split("/").pop() || "image.jpg",
+      type: "image/jpeg",
+    };
+
+    setImages([...images, file]);
+  }
+};
+
   
 
   // Remove image
@@ -144,7 +155,7 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
       investmentGroupId: null, // new group id will be generated for withdraw
     };
 
-    console.log("➡️ Withdraw data to save:", images);
+    //console.log("➡️ Withdraw data to save:", images);
     onSave({
       investmentData: [withdrawData],
       images: images,

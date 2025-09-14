@@ -11,8 +11,10 @@ import {
   Image,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { Picker } from "@react-native-picker/picker";
 import { numberToWords } from "./utils/numberToWords";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImageManipulator from "expo-image-manipulator";
 
 type Partner = {
   id: string;
@@ -49,7 +51,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   const [totalAmount, setTotalAmount] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [rows, setRows] = useState<any[]>([]);
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<any[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
 
@@ -62,7 +64,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
       const n = await AsyncStorage.getItem("userName");
       const u = await AsyncStorage.getItem("userId");
 
-      console.log("📌 Loaded userId:", u);
+     // //console.log("📌 Loaded userId:", u);
       setUserName(n);
       setUserId(u);
     };
@@ -120,6 +122,43 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
     });
   };
 
+  
+const pickImage = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    quality: 1, // pick full quality initially
+  });
+
+  if (!result.canceled) {
+    const asset = result.assets[0];
+
+    // Compress and resize before saving
+    const manipulated = await ImageManipulator.manipulateAsync(
+      asset.uri,
+      [{ resize: { width: 800 } }], // scale down width, keep aspect ratio
+      { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG } // 60% quality
+    );
+
+    const file = {
+      uri: manipulated.uri,
+      name: asset.uri.split("/").pop() || "image.jpg",
+      type: "image/jpeg",
+    };
+
+    setImages([...images, file]);
+  }
+};
+
+  
+
+  // Remove image
+  const removeImage = (index: number) => {
+    const updated = [...images];
+    updated.splice(index, 1);
+    setImages(updated);
+  };
+
+
   const handleSave = () => {
     const totalEntered = rows.reduce(
       (sum, r) => sum + (parseFloat(r.investing) || 0),
@@ -145,24 +184,9 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
       splitType: splitMode.toUpperCase(),
       createdBy: createdBy,
     }));
-    console.log("➡️ Saving investment data:", investmentData, images);
+   // //console.log("➡️ Saving investment data:", investmentData, images);
     onSave({ investmentData, images });
     onClose();
-  };
-
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: false,
-      quality: 0.7,
-    });
-    if (!result.canceled) {
-      setImages((prev) => [...prev, result.assets[0].uri]);
-    }
-  };
-
-  const removeImage = (uri: string) => {
-    setImages((prev) => prev.filter((i) => i !== uri));
   };
 
   return (
@@ -282,63 +306,20 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
               <Text style={{ color: "white" }}>Pick Image</Text>
             </TouchableOpacity>
             <ScrollView horizontal style={{ marginTop: 8 }}>
-              {images.map((uri, idx) => (
+              {images.map((file, idx) => (
                 <View key={idx} style={styles.imagePreview}>
-                  {/* Thumbnail click → preview */}
-                  <TouchableOpacity
-                    style={{ flex: 1 }}
-                    onPress={() => {
-                      setPreviewImage(uri);
-                      setPreviewVisible(true);
-                    }}
-                  >
-                    <Image source={{ uri }} style={styles.previewThumb} />
+                  <TouchableOpacity onPress={() => setPreviewImage(file.uri)} activeOpacity={0.8}>
+                    <Image source={{ uri: file.uri  }} style={styles.previewThumb} />
                   </TouchableOpacity>
-
-                  {/* X delete button */}
                   <TouchableOpacity
                     style={styles.deleteBtn}
-                    onPress={() => {
-                      const updated = images.filter((_, i) => i !== idx);
-                      setImages(updated);
-                    }}
+                  onPress={() => removeImage(idx)}
                   >
                     <Text style={styles.deleteText}>X</Text>
                   </TouchableOpacity>
                 </View>
               ))}
             </ScrollView>
-
-            {/* Fullscreen Image Preview Modal */}
-            <Modal
-              visible={previewVisible}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setPreviewVisible(false)}
-            >
-              <View style={styles.previewOverlay}>
-                <View style={styles.previewContainer}>
-                  <Image
-                    source={{ uri: previewImage || "" }}
-                    style={styles.fullImage}
-                  />
-                  <TouchableOpacity
-                    style={styles.closePreviewBtn}
-                    onPress={() => setPreviewVisible(false)}
-                  >
-                    <Text
-                      style={{
-                        color: "white",
-                        fontWeight: "bold",
-                        fontSize: 16,
-                      }}
-                    >
-                      X
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal>
           </ScrollView>
 
           <View style={styles.buttons}>
@@ -351,6 +332,25 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
           </View>
         </View>
       </View>
+
+      {/* Full Image Preview */}
+      {previewImage && (
+        <Modal visible transparent onRequestClose={() => setPreviewImage(null)}>
+          <View style={styles.previewOverlay}>
+            <TouchableOpacity
+              style={styles.previewClose}
+              onPress={() => setPreviewImage(null)}
+            >
+              <Text style={{ color: "white", fontSize: 18 }}>✕</Text>
+            </TouchableOpacity>
+            <Image
+              source={{ uri: previewImage }}
+              style={styles.previewLarge}
+              resizeMode="contain"
+            />
+          </View>
+        </Modal>
+      )}
     </Modal>
   );
 };
@@ -376,6 +376,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: "center",
   },
+  label: { marginTop: 12, fontWeight: "600" },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -506,5 +507,15 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     paddingHorizontal: 10,
     paddingVertical: 4,
+  },
+      previewLarge: {
+    width: "90%",
+    height: "80%",
+  },
+   previewClose: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    zIndex: 10,
   },
 });

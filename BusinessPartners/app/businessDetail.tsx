@@ -25,7 +25,7 @@ export default function BusinessDetail() {
     businessName?: string;
   }>();
 
-  console.log("➡️ Params received:", businessId, businessName);
+ // //console.log("➡️ Params received:", businessId, businessName);
 
   // Ensure safe usage
   const safeBusinessId = businessId ? String(businessId) : "";
@@ -51,7 +51,7 @@ export default function BusinessDetail() {
       const t = await AsyncStorage.getItem("token");
       const u = await AsyncStorage.getItem("userId");
 
-      console.log("📌 Loaded userId:", u);
+      //console.log("📌 Loaded userId:", u);
       setToken(t);
       setUserId(u);
     };
@@ -134,9 +134,8 @@ export default function BusinessDetail() {
   }, [safeBusinessId, token]);
 
   const handlePopupSave = async ({ investmentData, images }: any) => {
-    console.log("➡️ Popup images called with:",  images);
+    console.log("➡️ Popup images :",  images);
     try {
-        console.log("➡️ Saving investment data:", investmentData, images);
       const response = await axios.post(
         `${BASE_URL}/api/investment/add-investment`,
         investmentData,

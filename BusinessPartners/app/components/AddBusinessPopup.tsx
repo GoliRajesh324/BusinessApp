@@ -147,7 +147,7 @@ export default function AddBusinessPopup({ onClose, onSave, editingBusiness }: P
       }
 
       // DEBUG: uncomment if you need to see token (do NOT keep in prod)
-      // console.log('token startsWith:', token?.slice(0, 8));
+      // //console.log('token startsWith:', token?.slice(0, 8));
 
       const headers = {
         Authorization: `Bearer ${token}`,

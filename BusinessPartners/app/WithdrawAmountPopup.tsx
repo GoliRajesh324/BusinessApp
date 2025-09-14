@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,51 +8,109 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  Image,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { Picker } from "@react-native-picker/picker";
+
+type Partner = {
+  id: string | number;
+  username: string;
+};
+
+type InvestmentDetail = {
+  partner?: Partner;
+  leftOver: number;
+};
 
 type WithdrawAmountPopupProps = {
   visible: boolean;
   onClose: () => void;
   onSave: (data: any) => void;
-  partners: { id: string; username: string }[];
+  partners: Partner[];
+  cropDetails?: any;
+  investmentDetails?: InvestmentDetail[];
 };
 
 const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
   visible,
   onClose,
   onSave,
-  partners,
+  partners = [],
+  cropDetails,
+  investmentDetails = [],
 }) => {
-  const [totalWithdraw, setTotalWithdraw] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
-  const [rows, setRows] = useState<{ id: string; name: string; share: string }[]>([]);
+  const createdBy = "CurrentUser"; // replace with AsyncStorage/context
+  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    setRows(partners.map((p) => ({ id: p.id, name: p.username, share: "" })));
-  }, [partners]);
+  const [eligibleAmount, setEligibleAmount] = useState(0);
 
-  const handleShareChange = (index: number, value: string) => {
-    setRows((prev) => {
-      const next = [...prev];
-      next[index].share = value.replace(/^0+(?=\d)/, "");
-      return next;
+  useEffect(() => {
+    if (selectedPartner) {
+      const partnerData = investmentDetails.find(
+        (inv) =>
+          inv.partner?.username?.trim().toLowerCase() ===
+          selectedPartner.username?.trim().toLowerCase()
+      );
+      const leftover = partnerData?.leftOver ?? 0;
+      setEligibleAmount(leftover);
+      setWithdrawAmount("");
+    } else {
+      setEligibleAmount(0);
+      setWithdrawAmount("");
+    }
+  }, [selectedPartner, investmentDetails]);
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
     });
+    if (!result.canceled) {
+      setUploadedImages((prev) => [...prev, result.assets[0].uri]);
+    }
   };
 
   const handleSave = () => {
-    const totalEntered = rows.reduce((sum, r) => sum + (parseFloat(r.share) || 0), 0);
-    if (Math.round((totalEntered - parseFloat(totalWithdraw || "0")) * 100) / 100 !== 0) {
-      Alert.alert("Error", "Total withdrawal amount mismatch");
+    if (!selectedPartner) {
+      Alert.alert("Error", "Please select a partner.");
+      return;
+    }
+    const amt = parseFloat(withdrawAmount);
+    if (!amt || amt <= 0) {
+      Alert.alert("Error", "Please enter a valid withdraw amount.");
+      return;
+    }
+    if (amt > eligibleAmount) {
+      Alert.alert("Error", "Withdraw amount exceeds eligible amount!");
       return;
     }
 
-    const withdrawData = rows.map((r) => ({
-      partnerId: r.id,
-      amount: parseFloat(r.share || "0"),
-      description,
-    }));
+    const withdrawData = {
+      partnerId: selectedPartner.id,
+      cropId: cropDetails?.id,
+      description: description || "",
+      comments: description || "",
+      totalAmount: 0,
+      investable: 0,
+      invested: 0,
+      withdrawn: amt,
+      soldAmount: 0,
+      soldFlag: "N",
+      withdrawFlag: "Y",
+      splitType: "SHARE",
+      createdBy,
+      investmentGroupId: null,
+    };
 
-    onSave(withdrawData);
+    onSave({
+      investmentData: [withdrawData],
+      images: uploadedImages,
+    });
     onClose();
   };
 
@@ -62,36 +120,74 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
         <View style={styles.container}>
           <Text style={styles.title}>Withdraw Amount</Text>
           <ScrollView>
+            {/* Partner Dropdown */}
+            <Text style={styles.label}>Select Partner</Text>
+            <Picker
+            selectedValue={selectedPartner?.id || ""}
+            onValueChange={(value) => {
+              const partner = partners.find((p) => p.id === value) || null;
+              setSelectedPartner(partner);
+            }}
+          >
+            <Picker.Item label="-- Select Partner --" value="" />
+            {partners.map((p) => (
+              <Picker.Item key={p.id} label={p.username} value={p.id} />
+            ))}
+          </Picker>
+
+            {/* Eligible + Withdraw */}
+            {selectedPartner && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={styles.infoText}>
+                  Username: {selectedPartner.username}
+                </Text>
+                <Text style={styles.infoText}>
+                  Eligible Amount: {eligibleAmount.toFixed(2)}
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Withdraw Amount"
+                  keyboardType="numeric"
+                  value={withdrawAmount}
+                  onChangeText={setWithdrawAmount}
+                />
+              </View>
+            )}
+
+            {/* Description */}
+            <Text style={styles.label}>Description / Payment Method</Text>
             <TextInput
               style={styles.input}
-              placeholder="Description"
+              placeholder="Enter description"
               value={description}
               onChangeText={setDescription}
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Total Withdrawal Amount"
-              keyboardType="numeric"
-              value={totalWithdraw}
-              onChangeText={setTotalWithdraw}
-            />
 
-            <View style={styles.table}>
-              {rows.map((row, idx) => (
-                <View key={row.id} style={styles.row}>
-                  <Text style={styles.cell}>{row.name}</Text>
-                  <TextInput
-                    style={[styles.cell, styles.inputCell]}
-                    placeholder="Share"
-                    keyboardType="numeric"
-                    value={row.share}
-                    onChangeText={(val) => handleShareChange(idx, val)}
-                  />
+            {/* Image Upload */}
+            <Text style={styles.label}>Upload Images</Text>
+            <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
+              <Text style={{ color: "white" }}>Pick Image</Text>
+            </TouchableOpacity>
+            <ScrollView horizontal style={{ marginTop: 8 }}>
+              {uploadedImages.map((uri, idx) => (
+                <View key={idx} style={styles.imagePreview}>
+                  <TouchableOpacity onPress={() => setPreviewImage(uri)}>
+                    <Image source={{ uri }} style={styles.previewThumb} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    onPress={() =>
+                      setUploadedImages((prev) => prev.filter((_, i) => i !== idx))
+                    }
+                  >
+                    <Text style={styles.deleteText}>X</Text>
+                  </TouchableOpacity>
                 </View>
               ))}
-            </View>
+            </ScrollView>
           </ScrollView>
 
+          {/* Actions */}
           <View style={styles.buttons}>
             <TouchableOpacity onPress={onClose} style={styles.buttonCancel}>
               <Text style={styles.buttonText}>Cancel</Text>
@@ -102,6 +198,25 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
           </View>
         </View>
       </View>
+
+      {/* Full Image Preview */}
+      {previewImage && (
+        <Modal visible transparent onRequestClose={() => setPreviewImage(null)}>
+          <View style={styles.previewOverlay}>
+            <TouchableOpacity
+              style={styles.previewClose}
+              onPress={() => setPreviewImage(null)}
+            >
+              <Text style={{ color: "white", fontSize: 18 }}>✕</Text>
+            </TouchableOpacity>
+            <Image
+              source={{ uri: previewImage }}
+              style={styles.previewLarge}
+              resizeMode="contain"
+            />
+          </View>
+        </Modal>
+      )}
     </Modal>
   );
 };
@@ -109,16 +224,102 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
 export default WithdrawAmountPopup;
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 16 },
-  container: { backgroundColor: "white", borderRadius: 8, padding: 16, maxHeight: "90%" },
-  title: { fontSize: 20, fontWeight: "bold", marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 6, padding: 8, marginBottom: 12 },
-  table: { marginBottom: 12 },
-  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  cell: { flex: 1, textAlign: "center" },
-  inputCell: { borderWidth: 1, borderColor: "#ccc", borderRadius: 6, padding: 4 },
-  buttons: { flexDirection: "row", justifyContent: "flex-end", marginTop: 12 },
-  buttonCancel: { padding: 12, backgroundColor: "#ccc", borderRadius: 6, marginRight: 8 },
-  buttonSave: { padding: 12, backgroundColor: "#28a745", borderRadius: 6 },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    padding: 16,
+  },
+  container: {
+    backgroundColor: "white",
+    borderRadius: 8,
+    padding: 16,
+    maxHeight: "90%",
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  label: { marginTop: 12, fontWeight: "600" },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    padding: 8,
+    marginTop: 4,
+  },
+  partnerOption: {
+    padding: 8,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    marginTop: 6,
+  },
+  partnerOptionActive: {
+    backgroundColor: "#007bff",
+    borderColor: "#007bff",
+  },
+  infoText: { marginTop: 6, fontSize: 14 },
+  imageButton: {
+    padding: 10,
+    backgroundColor: "#007bff",
+    borderRadius: 6,
+    marginTop: 4,
+    alignItems: "center",
+  },
+  imagePreview: {
+    position: "relative",
+    marginRight: 10,
+  },
+  previewThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  deleteBtn: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "black",
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteText: { color: "white", fontSize: 12, fontWeight: "bold" },
+  buttons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 12,
+  },
+  buttonCancel: {
+    padding: 10,
+    backgroundColor: "#ccc",
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  buttonSave: {
+    padding: 10,
+    backgroundColor: "#28a745",
+    borderRadius: 6,
+  },
   buttonText: { color: "white", fontWeight: "bold" },
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  previewClose: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    zIndex: 10,
+  },
+  previewLarge: {
+    width: "90%",
+    height: "80%",
+  },
 });

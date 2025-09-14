@@ -1,4 +1,3 @@
-// BusinessDetail.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -48,7 +47,7 @@ export default function BusinessDetail() {
     const loadData = async () => {
       const t = await AsyncStorage.getItem("token");
       const u = await AsyncStorage.getItem("userId");
-      console.log("📌 Loaded token:", t);
+
       console.log("📌 Loaded userId:", u);
       setToken(t);
       setUserId(u);
@@ -176,6 +175,28 @@ export default function BusinessDetail() {
       {/* Business Name */}
       <Text style={styles.businessName}>{businessName}</Text>
 
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[styles.button, styles.addBtn]}
+          onPress={() => setSoldPopup(true)}
+        >
+          <Text style={styles.buttonText}>Investments</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.restartBtn]}
+          onPress={() => setShowPopup(true)}
+        >
+          <Text style={styles.buttonText}>Restart</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.auditBtn]}
+          onPress={() => setWithdrawPopup(true)}
+        >
+          <Text style={styles.buttonText}>View Audit</Text>
+        </TouchableOpacity>
+      </View>
       {/* Summary */}
       <View style={styles.summaryContainer}>
         <Text style={styles.summaryText}>
@@ -216,7 +237,7 @@ export default function BusinessDetail() {
         >
           <Text style={styles.buttonText}>+ Add Expense</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.button, styles.withdrawBtn]}
           onPress={() => setWithdrawPopup(true)}
@@ -235,7 +256,7 @@ export default function BusinessDetail() {
           onSave={handlePopupSave}
         />
       )}
-      {/* {withdrawPopup && (
+      {withdrawPopup && (
         <WithdrawAmountPopup
           partners={partners}
           cropDetails={cropDetails}
@@ -244,7 +265,7 @@ export default function BusinessDetail() {
           onClose={() => setWithdrawPopup(false)}
           onSave={handlePopupSave}
         />
-      )} */}
+      )}
       {soldPopup && (
         <SoldAmountPopup
           partners={partners}
@@ -296,5 +317,8 @@ const styles = StyleSheet.create({
   addBtn: { backgroundColor: "#4f93ff" },
   withdrawBtn: { backgroundColor: "#f44336" },
   soldBtn: { backgroundColor: "#ff9900" },
+  invBtn: { backgroundColor: "#4f93ff" },
+  restartBtn: { backgroundColor: "#f44336" },
+  auditBtn: { backgroundColor: "#999a9c" },
   buttonText: { color: "#fff", fontWeight: "400", fontSize: 11 },
 });

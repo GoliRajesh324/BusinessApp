@@ -54,7 +54,7 @@ export default function LoginScreen() {
         await AsyncStorage.setItem("userId", String(userId));
 
         setMessage("Login successful!");
-        router.push("/dashboard"); // ✅ route to dashboard
+        router.replace("/dashboard"); // ✅ route to dashboard
       } else {
         setMessage("Registered successfully. You can now login.");
         setIsLogin(true);

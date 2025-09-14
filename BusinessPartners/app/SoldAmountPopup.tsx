@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { numberToWords } from "./utils/numberToWords";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 type Partner = {
   id: string;
   username: string;
@@ -42,8 +44,23 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
   const [images, setImages] = useState<string[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
-  const createdBy = "CurrentUser"; // replace with AsyncStorage/context
+  // Load token & userId
+  useEffect(() => {
+    const loadData = async () => {
+      const n = await AsyncStorage.getItem("userName");
+      const u = await AsyncStorage.getItem("userId");
+
+      console.log("📌 Loaded userId:", u);
+      setUserName(n);
+      setUserId(u);
+    };
+    loadData();
+  }, []);
+
+  const createdBy = userName; // Replace with AsyncStorage/context
 
   useEffect(() => {
     const initial = partners.map((p) => ({
@@ -105,17 +122,22 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
       return;
     }
 
-    const soldData = rows.map((r) => ({
+    const investmentData = rows.map((r) => ({
       partnerId: r.id,
       cropId: cropDetails?.id,
-      description,
-      totalAmount: expected,
+      description: description || "",
+      comments: description || "",
+      totalAmount: expected, // ❌ wrong → you’re passing total business amount
+      investable: 0, // per-partner split amount (corrected here)
+      invested: 0, // user entered / default invested
       soldAmount: parseFloat(r.investing || 0),
+      withdrawn: 0,
+      soldFlag: "Y",
+      withdrawFlag: "N",
       splitType: splitMode.toUpperCase(),
-      createdBy,
+      createdBy: createdBy,
     }));
-
-    onSave({ soldData, images });
+    onSave({ investmentData, images });
     onClose();
   };
 

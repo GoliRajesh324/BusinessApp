@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Switch,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import axios from "axios";
@@ -42,7 +43,9 @@ export default function BusinessDetail() {
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // ✅ Load token & userId before fetching
+  const [showActions, setShowActions] = useState(false); // ✅ toggle state
+
+  // Load token & userId
   useEffect(() => {
     const loadData = async () => {
       const t = await AsyncStorage.getItem("token");
@@ -68,9 +71,9 @@ export default function BusinessDetail() {
       maximumFractionDigits: 2,
     });
 
+  // Fetch business info
   useEffect(() => {
     if (!token || !safeBusinessId) return;
-
     const fetchBusinessInfo = async () => {
       try {
         const response = await fetch(
@@ -78,11 +81,7 @@ export default function BusinessDetail() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const text = await response.text();
-        console.log("📌 Raw response text:", text);
-
-        if (!response.ok) return;
-        if (!text) return;
-
+        if (!response.ok || !text) return;
         const data = JSON.parse(text);
 
         setTotalInvestment(data.totalInvestment || 0);
@@ -103,6 +102,7 @@ export default function BusinessDetail() {
     fetchBusinessInfo();
   }, [safeBusinessId, token]);
 
+  // Fetch partners
   useEffect(() => {
     if (!token || !safeBusinessId) return;
 
@@ -113,8 +113,6 @@ export default function BusinessDetail() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const text = await response.text();
-        console.log("📌 Partners raw:", text);
-
         if (!response.ok || !text) return;
         const data = JSON.parse(text);
 
@@ -136,14 +134,16 @@ export default function BusinessDetail() {
   }, [safeBusinessId, token]);
 
   const handlePopupSave = async ({ investmentData, images }: any) => {
+    console.log("➡️ Popup images called with:",  images);
     try {
+        console.log("➡️ Saving investment data:", investmentData, images);
       const response = await axios.post(
         `${BASE_URL}/api/investment/add-investment`,
         investmentData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const investmentGroupId = response?.data;
-
+      console.log("➡️ Investment Group ID:", investmentGroupId);
       if (images && images.length > 0) {
         for (let file of images) {
           const formData = new FormData();
@@ -174,7 +174,8 @@ export default function BusinessDetail() {
     <ScrollView style={styles.container}>
       {/* Business Name */}
       <Text style={styles.businessName}>{businessName}</Text>
-
+     {showActions && (
+        <View>
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.button, styles.addBtn]}
@@ -197,32 +198,53 @@ export default function BusinessDetail() {
           <Text style={styles.buttonText}>View Audit</Text>
         </TouchableOpacity>
       </View>
-      {/* Summary */}
-      <View style={styles.summaryContainer}>
-        <Text style={styles.summaryText}>
-          <Text style={styles.summaryLabel}>Crop: </Text>
-          <Text style={styles.summaryValue}>{cropDetails?.cropNumber}</Text>
-        </Text>
-
-        <Text style={styles.summaryText}>
-          <Text style={styles.summaryLabel}>Total Investment: </Text>
-          <Text style={styles.summaryValue}>
-            {formatAmount(totalInvestment)}
-          </Text>
-        </Text>
-
-        <Text style={styles.summaryText}>
-          <Text style={styles.summaryLabel}>Total Sold: </Text>
-          <Text style={styles.summaryValue}>
-            {formatAmount(totalSoldAmount)}
-          </Text>
-        </Text>
       </View>
+      )}
+  {/* Summary Row with Toggle */}
+
+  <View style={styles.summaryRow}>
+    {/* Summary Info */}
+    <View style={styles.summaryInfo}>
+      <Text style={styles.summaryText}>
+        <Text style={styles.summaryLabel}>Crop: </Text>
+        <Text style={styles.summaryValue}>{cropDetails?.cropNumber}</Text>
+      </Text>
+
+      <Text style={styles.summaryText}>
+        <Text style={styles.summaryLabel}>Total Investment: </Text>
+        <Text style={styles.summaryValue}>
+          {formatAmount(totalInvestment)}
+        </Text>
+      </Text>
+
+      <Text style={styles.summaryText}>
+        <Text style={styles.summaryLabel}>Total Sold: </Text>
+        <Text style={styles.summaryValue}>
+          {formatAmount(totalSoldAmount)}
+        </Text>
+      </Text>
+    </View>
+
+    {/* Toggle Switch */}
+    <View style={styles.toggleContainer}>
+      <Text style={styles.toggleLabel}>
+        {showActions ? "Normal" : "Show All"}
+      </Text>
+      <Switch
+        value={showActions}
+        onValueChange={setShowActions}
+        thumbColor={showActions ? "#ccc" : "#ccc"}
+      />
+    </View>
+  </View>
+
 
       {/* Investment Table */}
       <InvestmentTable investmentDetails={investmentDetails} />
 
-      {/* Buttons */}
+      {/* Action Buttons - Only show when toggle is ON */}
+      {showActions && (
+        <View>
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.button, styles.soldBtn]}
@@ -245,6 +267,8 @@ export default function BusinessDetail() {
           <Text style={styles.buttonText}>Withdraw</Text>
         </TouchableOpacity>
       </View>
+        </View>
+      )}
 
       {/* Popups */}
       {showPopup && (
@@ -287,25 +311,36 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
   },
+ /*  toggleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  toggleLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginRight: 8,
+  }, */
   summaryContainer: {
     backgroundColor: "#f5f5f5",
     padding: 12,
     borderRadius: 10,
     marginBottom: 16,
   },
-  summaryText: { fontSize: 16, fontWeight: "600", marginBottom: 6 },
+  /* summaryText: { fontSize: 16, fontWeight: "600", marginBottom: 6 },
+  summaryLabel: {
+    color: "#666",
+    fontWeight: "500",
+  },
+  summaryValue: {
+    color: "#111",
+    fontWeight: "700",
+  }, */
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 16,
-  },
-  summaryLabel: {
-    color: "#666", // lighter grey for labels
-    fontWeight: "500",
-  },
-  summaryValue: {
-    color: "#111", // darker black for values
-    fontWeight: "700", // make values stand out
   },
   button: {
     flex: 1,
@@ -321,4 +356,44 @@ const styles = StyleSheet.create({
   restartBtn: { backgroundColor: "#f44336" },
   auditBtn: { backgroundColor: "#999a9c" },
   buttonText: { color: "#fff", fontWeight: "400", fontSize: 11 },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+
+  summaryInfo: {
+    flex: 1,
+  },
+
+  summaryText: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+
+  summaryLabel: {
+    color: "#777", // lighter
+  },
+
+  summaryValue: {
+    color: "#222", // darker
+    fontWeight: "bold",
+  },
+
+  toggleContainer: {
+    alignItems: "center",
+    marginLeft: 12,
+  },
+  toggleLabel: {
+    fontSize: 8,
+    color: "#555",
+    marginBottom: 4,
+  },
+
+
 });

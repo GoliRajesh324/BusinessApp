@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { numberToWords } from "./utils/numberToWords";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 type Partner = {
   id: string;
   username: string;
@@ -51,7 +53,23 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
 
-  const createdBy = "CurrentUser"; // Replace with AsyncStorage/context
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+
+  // Load token & userId
+  useEffect(() => {
+    const loadData = async () => {
+      const n = await AsyncStorage.getItem("userName");
+      const u = await AsyncStorage.getItem("userId");
+
+      console.log("📌 Loaded userId:", u);
+      setUserName(n);
+      setUserId(u);
+    };
+    loadData();
+  }, []);
+
+  const createdBy = userName; 
 
   useEffect(() => {
     const initial = partners.map((p) => ({
@@ -112,16 +130,22 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
       return;
     }
 
-    const investmentData = rows.map((r) => ({
+        const investmentData = rows.map((r) => ({
       partnerId: r.id,
       cropId: cropDetails?.id,
-      description,
-      totalAmount: expected,
-      invested: parseFloat(r.investing || 0),
+      description: description || "",
+      comments: description || "",
+      totalAmount: expected, // ❌ wrong → you’re passing total business amount
+      investable: parseFloat(r.actual || 0), // per-partner split amount (corrected here)
+      invested: parseFloat(r.investing || 0), // user entered / default invested
+      soldAmount: 0,
+      withdrawn: 0,
+      soldFlag: "N",
+      withdrawFlag: "N",
       splitType: splitMode.toUpperCase(),
-      createdBy,
+      createdBy: createdBy,
     }));
-
+    console.log("➡️ Saving investment data:", investmentData, images);
     onSave({ investmentData, images });
     onClose();
   };
@@ -346,7 +370,12 @@ const styles = StyleSheet.create({
     padding: 16,
     maxHeight: "90%",
   },
-  title: { fontSize: 20, fontWeight: "bold", marginBottom: 12, textAlign: "center" },
+  title: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 12,
+    textAlign: "center",
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -375,7 +404,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 6,
   },
-  headerRow: { borderBottomWidth: 1, borderColor: "#dc3131ff", paddingBottom: 4 },
+  headerRow: {
+    borderBottomWidth: 1,
+    borderColor: "#dc3131ff",
+    paddingBottom: 4,
+  },
   cell: { flex: 1, textAlign: "center", fontSize: 13 },
   inputCell: {
     borderWidth: 1,
@@ -384,12 +417,12 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerCell: {
-  flex: 1,
-  textAlign: "center",
-  fontSize: 13,
-  fontWeight: "600", // bold for header
-  color: "#111",     // darker text
-},
+    flex: 1,
+    textAlign: "center",
+    fontSize: 13,
+    fontWeight: "600", // bold for header
+    color: "#111", // darker text
+  },
   buttons: {
     flexDirection: "row",
     justifyContent: "flex-end",

@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Picker } from "@react-native-picker/picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Partner = {
   id: string | number;
@@ -40,14 +41,34 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
   cropDetails,
   investmentDetails = [],
 }) => {
-  const createdBy = "CurrentUser"; // replace with AsyncStorage/context
+ 
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [images, setImages] = useState<any[]>([]);
 
   const [eligibleAmount, setEligibleAmount] = useState(0);
+
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+
+  // Load token & userId
+  useEffect(() => {
+    const loadData = async () => {
+      const n = await AsyncStorage.getItem("userName");
+      const u = await AsyncStorage.getItem("userId");
+
+      console.log("📌 Loaded userId:", u);
+      setUserName(n);
+      setUserId(u);
+    };
+    loadData();
+  }, []);
+
+  const createdBy = userName; 
+
+
 
   useEffect(() => {
     if (selectedPartner) {
@@ -68,13 +89,29 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.7,
+      quality: 0.8,
     });
+
     if (!result.canceled) {
-      setUploadedImages((prev) => [...prev, result.assets[0].uri]);
+      const asset = result.assets[0];
+      const file = {
+        uri: asset.uri,
+        name: asset.uri.split("/").pop() || "image.jpg",
+        type: asset.mimeType || "image/jpeg",
+      };
+      setImages([...images, file]);
     }
   };
+  
 
+  // Remove image
+  const removeImage = (index: number) => {
+    const updated = [...images];
+    updated.splice(index, 1);
+    setImages(updated);
+  };
+
+  // Save handler
   const handleSave = () => {
     if (!selectedPartner) {
       Alert.alert("Error", "Please select a partner.");
@@ -98,18 +135,19 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
       totalAmount: 0,
       investable: 0,
       invested: 0,
-      withdrawn: amt,
+      withdrawn: parseFloat(withdrawAmount),
       soldAmount: 0,
       soldFlag: "N",
       withdrawFlag: "Y",
-      splitType: "SHARE",
+      splitType: "MANUAL",
       createdBy,
-      investmentGroupId: null,
+      investmentGroupId: null, // new group id will be generated for withdraw
     };
 
+    console.log("➡️ Withdraw data to save:", images);
     onSave({
       investmentData: [withdrawData],
-      images: uploadedImages,
+      images: images,
     });
     onClose();
   };
@@ -169,16 +207,14 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
               <Text style={{ color: "white" }}>Pick Image</Text>
             </TouchableOpacity>
             <ScrollView horizontal style={{ marginTop: 8 }}>
-              {uploadedImages.map((uri, idx) => (
+              {images.map((file, idx) => (
                 <View key={idx} style={styles.imagePreview}>
-                  <TouchableOpacity onPress={() => setPreviewImage(uri)}>
-                    <Image source={{ uri }} style={styles.previewThumb} />
+                  <TouchableOpacity onPress={() => setPreviewImage(file.uri)} activeOpacity={0.8}>
+                    <Image source={{ uri: file.uri  }} style={styles.previewThumb} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.deleteBtn}
-                    onPress={() =>
-                      setUploadedImages((prev) => prev.filter((_, i) => i !== idx))
-                    }
+                  onPress={() => removeImage(idx)}
                   >
                     <Text style={styles.deleteText}>X</Text>
                   </TouchableOpacity>

@@ -178,7 +178,6 @@ const styles = StyleSheet.create({
   },
   cell: {
     padding: 8,
-    minWidth: 100,
     borderRightWidth: 1,
     borderColor: "#ddd",
     fontSize: 12,

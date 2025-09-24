@@ -16,7 +16,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import BASE_URL from "../src/config/config";
 import AddBusinessPopup from "./components/AddBusinessPopup";
-import Header from "./components/Header";
 
 export default function Dashboard() {
   const [showPopup, setShowPopup] = useState(false);
@@ -29,6 +28,18 @@ export default function Dashboard() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Logout
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem("token");
+      await AsyncStorage.removeItem("userId");
+      router.replace("/login"); // Navigate to login page
+    } catch (err) {
+      console.error("❌ Logout error:", err);
+      Alert.alert("Error", "Failed to logout");
+    }
+  };
 
   // ✅ Load token & userId before fetching
   useEffect(() => {
@@ -146,7 +157,9 @@ export default function Dashboard() {
 
   return (
     <View style={styles.container}>
-      <Header/>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <Text style={styles.logoutBtnText}>Logout</Text>
+      </TouchableOpacity>
       <FlatList
         data={businesses}
         keyExtractor={(item) => item.id.toString()}
@@ -163,7 +176,10 @@ export default function Dashboard() {
                   onPress={() =>
                     router.push({
                       pathname: "/businessDetail",
-                      params: { businessId:  item.id.toString(), businessName: item.name },
+                      params: {
+                        businessId: item.id.toString(),
+                        businessName: item.name,
+                      },
                     })
                   }
                 >
@@ -182,11 +198,8 @@ export default function Dashboard() {
         )}
       />
 
-      <TouchableOpacity
-        style={styles.addBtn}
-        onPress={() => setShowPopup(true)}
-      >
-        <Text style={styles.addBtnText}>+ Add Business</Text>
+      <TouchableOpacity style={styles.fab} onPress={() => setShowPopup(true)}>
+        <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
       {/* Add/Edit Popup */}
@@ -325,5 +338,39 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     minWidth: 100,
     alignItems: "center",
+  },
+  logoutBtn: {
+    backgroundColor: "#ef4444",
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  logoutBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 30,
+    backgroundColor: "#2563eb",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  fabText: {
+    fontSize: 32,
+    color: "#fff",
+    fontWeight: "bold",
+    marginBottom: 2,
   },
 });

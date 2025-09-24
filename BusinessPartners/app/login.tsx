@@ -27,11 +27,14 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false); // ✅ new state
 
   const router = useRouter();
 
   const handleSubmit = async () => {
+    if (loading) return; // prevent double clicks
     setMessage("");
+    setLoading(true); // start loading
 
     const url = isLogin
       ? `${BASE_URL}/api/auth/login`
@@ -69,6 +72,8 @@ export default function LoginScreen() {
         err.response?.data?.message || "Something went wrong";
       setMessage(errorMsg);
       setPassword("");
+    } finally {
+      setLoading(false); // ✅ stop loading
     }
   };
 
@@ -137,9 +142,19 @@ export default function LoginScreen() {
           ) : null}
 
           {/* Submit */}
-          <Pressable onPress={handleSubmit} style={styles.button}>
+            <Pressable
+              onPress={handleSubmit}
+              style={[styles.button, loading && { opacity: 0.6 }]}
+              disabled={loading}
+            >
             <Text style={styles.buttonText}>
-              {isLogin ? "Login" : "Register"}
+                {loading
+                  ? isLogin
+                    ? "Logging in..."
+                    : "Registering..."
+                  : isLogin
+                  ? "Login"
+                  : "Register"}
             </Text>
           </Pressable>
 
@@ -156,6 +171,7 @@ export default function LoginScreen() {
                 setMessage("");
                 setPassword("");
               }}
+                disabled={loading}
             >
               <Text style={styles.link}>
                 {isLogin ? "Register here" : "Login here"}

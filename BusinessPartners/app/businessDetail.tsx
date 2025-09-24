@@ -8,6 +8,8 @@ import {
   Switch,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
+
+import { useRouter } from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams } from "expo-router";
@@ -17,6 +19,7 @@ import InvestmentTable from "./InvestmentTable";
 import AddInvestmentPopup from "./addInvestmentPopup";
 import WithdrawAmountPopup from "./WithdrawAmountPopup";
 import SoldAmountPopup from "./SoldAmountPopup";
+import InvestmentAudit from "./components/InvestmentAudit";
 //import styles from "./BusinessDetailStyles";
 
 export default function BusinessDetail() {
@@ -25,7 +28,9 @@ export default function BusinessDetail() {
     businessName?: string;
   }>();
 
- // //console.log("➡️ Params received:", businessId, businessName);
+  const router = useRouter();
+
+  // //console.log("➡️ Params received:", businessId, businessName);
 
   // Ensure safe usage
   const safeBusinessId = businessId ? String(businessId) : "";
@@ -39,6 +44,10 @@ export default function BusinessDetail() {
   const [totalInvestment, setTotalInvestment] = useState(0);
   const [totalSoldAmount, setTotalSoldAmount] = useState(0);
   const [cropDetails, setCropDetails] = useState<any>(null);
+  const [showAuditPopup, setShowAuditPopup] = useState(false);
+  const [confirmRestart, setConfirmRestart] = useState<
+    { partnerName: string; leftOver: number }[]
+  >([]);
 
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -133,8 +142,65 @@ export default function BusinessDetail() {
     fetchPartners();
   }, [safeBusinessId, token]);
 
+  // --- Inside BusinessDetail component ---
+
+  // Handle "Restart" (End Crop) click
+  const handleRestartClick = () => {
+    if (!investmentDetails || investmentDetails.length === 0) {
+      handleRestartCrop();
+      return;
+    }
+
+    // Check leftover money for partners
+    const leftovers = investmentDetails
+      .map((inv) => ({
+        partnerName: inv?.partner?.username || "Unknown",
+        leftOver: parseAmount(inv?.leftOver),
+      }))
+      .filter((p) => p.leftOver !== 0);
+
+    if (!leftovers || leftovers.length === 0) {
+      handleRestartCrop();
+    } else {
+      setConfirmRestart(leftovers);
+    }
+  };
+
+  // Restart crop API call
+  const handleRestartCrop = async () => {
+    try {
+      const cropId = cropDetails?.id;
+      if (!cropId) return;
+
+      await axios.post(
+        `${BASE_URL}/api/crop/end/${cropId}/${userId}`,
+        investmentDetails,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      // Refresh and navigate
+      router.push("/dashboard");
+    } catch (err: any) {
+      console.error("❌ Restart crop error:", err);
+      if (err.response?.status === 400) alert("Invalid partner data.");
+      else if (err.response?.status === 403) alert("Access forbidden!");
+      else alert("Error restarting crop.");
+    }
+    setConfirmRestart([]);
+  };
+
+  // Handle Withdraw from confirm popup
+  const handleWithdrawFromPopup = () => {
+    setWithdrawPopup(true);
+    setConfirmRestart([]);
+  };
+
   const handlePopupSave = async ({ investmentData, images }: any) => {
-    console.log("➡️ Popup images :",  images);
+    console.log("➡️ Popup images :", images);
     try {
       const response = await axios.post(
         `${BASE_URL}/api/investment/add-investment`,
@@ -173,70 +239,77 @@ export default function BusinessDetail() {
     <ScrollView style={styles.container}>
       {/* Business Name */}
       <Text style={styles.businessName}>{businessName}</Text>
-     {showActions && (
+      {showActions && (
         <View>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.button, styles.addBtn]}
-          onPress={() => setSoldPopup(true)}
-        >
-          <Text style={styles.buttonText}>Investments</Text>
-        </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+             style={[styles.button, styles.invBtn]}
+              onPress={() =>
+                router.push({
+                  pathname: "/crop-details/[businessId]", // dynamic route
+                  params: {
+                    businessId: businessId,
+                    businessName: businessName,
+                  },
+                })
+              }
+            >
+              <Text style={styles.buttonText}>Investments</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.restartBtn]}
-          onPress={() => setShowPopup(true)}
-        >
-          <Text style={styles.buttonText}>Restart</Text>
-        </TouchableOpacity>
+           {/*  <TouchableOpacity
+              style={[styles.button, styles.restartBtn]}
+              onPress={() => handleRestartClick}
+            >
+              <Text style={styles.buttonText}>Restart</Text>
+            </TouchableOpacity> */}
 
-        <TouchableOpacity
-          style={[styles.button, styles.auditBtn]}
-          onPress={() => setWithdrawPopup(true)}
-        >
-          <Text style={styles.buttonText}>View Audit</Text>
-        </TouchableOpacity>
-      </View>
-      </View>
+            <TouchableOpacity
+              style={[styles.button, styles.auditBtn]}
+              onPress={() => setShowAuditPopup(true)}
+            >
+              <Text style={styles.buttonText}>View Audit</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       )}
-  {/* Summary Row with Toggle */}
+      {/* Summary Row with Toggle */}
 
-  <View style={styles.summaryRow}>
-    {/* Summary Info */}
-    <View style={styles.summaryInfo}>
-      <Text style={styles.summaryText}>
-        <Text style={styles.summaryLabel}>Crop: </Text>
-        <Text style={styles.summaryValue}>{cropDetails?.cropNumber}</Text>
-      </Text>
+      <View style={styles.summaryRow}>
+        {/* Summary Info */}
+        <View style={styles.summaryInfo}>
+          <Text style={styles.summaryText}>
+            <Text style={styles.summaryLabel}>Crop: </Text>
+            <Text style={styles.summaryValue}>{cropDetails?.cropNumber}</Text>
+          </Text>
 
-      <Text style={styles.summaryText}>
-        <Text style={styles.summaryLabel}>Total Investment: </Text>
-        <Text style={styles.summaryValue}>
-          {formatAmount(totalInvestment)}
-        </Text>
-      </Text>
+          <Text style={styles.summaryText}>
+            <Text style={styles.summaryLabel}>Total Investment: </Text>
+            <Text style={styles.summaryValue}>
+              {formatAmount(totalInvestment)}
+            </Text>
+          </Text>
 
-      <Text style={styles.summaryText}>
-        <Text style={styles.summaryLabel}>Total Sold: </Text>
-        <Text style={styles.summaryValue}>
-          {formatAmount(totalSoldAmount)}
-        </Text>
-      </Text>
-    </View>
+          <Text style={styles.summaryText}>
+            <Text style={styles.summaryLabel}>Total Sold: </Text>
+            <Text style={styles.summaryValue}>
+              {formatAmount(totalSoldAmount)}
+            </Text>
+          </Text>
+        </View>
 
-    {/* Toggle Switch */}
-    <View style={styles.toggleContainer}>
-      <Text style={styles.toggleLabel}>
-        {showActions ? "Normal" : "Show All"}
-      </Text>
-      <Switch
-        value={showActions}
-        onValueChange={setShowActions}
-        thumbColor={showActions ? "#ccc" : "#ccc"}
-      />
-    </View>
-  </View>
-
+        {/* Toggle Switch */}
+        <View style={styles.toggleContainer}>
+          <Text style={styles.toggleLabel}>
+            {showActions ? "Normal" : "Show All"}
+          </Text>
+          <Switch
+            value={showActions}
+            onValueChange={setShowActions}
+            thumbColor={showActions ? "#ccc" : "#ccc"}
+          />
+        </View>
+      </View>
 
       {/* Investment Table */}
       <InvestmentTable investmentDetails={investmentDetails} />
@@ -244,28 +317,28 @@ export default function BusinessDetail() {
       {/* Action Buttons - Only show when toggle is ON */}
       {showActions && (
         <View>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.button, styles.soldBtn]}
-          onPress={() => setSoldPopup(true)}
-        >
-          <Text style={styles.buttonText}>Sold</Text>
-        </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.soldBtn]}
+              onPress={() => setSoldPopup(true)}
+            >
+              <Text style={styles.buttonText}>Sold</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.addBtn]}
-          onPress={() => setShowPopup(true)}
-        >
-          <Text style={styles.buttonText}>+ Add Expense</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.addBtn]}
+              onPress={() => setShowPopup(true)}
+            >
+              <Text style={styles.buttonText}>Add Expense</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.withdrawBtn]}
-          onPress={() => setWithdrawPopup(true)}
-        >
-          <Text style={styles.buttonText}>Withdraw</Text>
-        </TouchableOpacity>
-      </View>
+            <TouchableOpacity
+              style={[styles.button, styles.withdrawBtn]}
+              onPress={() => setWithdrawPopup(true)}
+            >
+              <Text style={styles.buttonText}>Withdraw</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -298,6 +371,57 @@ export default function BusinessDetail() {
           visible={soldPopup} // pass visible prop
         />
       )}
+      {showAuditPopup && (
+        <InvestmentAudit
+          businessId={safeBusinessId}
+          businessName={safeBusinessName}
+          onClose={() => setShowAuditPopup(false)}
+          visible={showAuditPopup} // pass visible prop
+        />
+      )}
+      {/* Confirm Restart Popup */}
+      {confirmRestart && confirmRestart.length > 0 && (
+        <View style={styles.popupOverlay}>
+          <View style={styles.popupContent}>
+            <Text style={styles.popupTitle}>
+              Do you really want to restart crop?{"\n"}
+              Leftover money exists for some partners.
+            </Text>
+
+            <View style={styles.leftoverList}>
+              {confirmRestart.map((p, idx) => (
+                <View key={idx} style={styles.leftoverItem}>
+                  <Text style={styles.partnerName}>{p.partnerName}</Text>
+                  <Text style={styles.partnerAmount}>
+                    ₹{formatAmount(p.leftOver)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.popupButtons}>
+              <TouchableOpacity
+                style={styles.moveBtn}
+                onPress={handleRestartCrop}
+              >
+                <Text style={styles.buttonText}>Move</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.withdrawBtn}
+                onPress={handleWithdrawFromPopup}
+              >
+                <Text style={styles.buttonText}>Withdraw</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setConfirmRestart([])}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -310,7 +434,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
   },
- /*  toggleContainer: {
+  /*  toggleContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -393,6 +517,92 @@ const styles = StyleSheet.create({
     color: "#555",
     marginBottom: 4,
   },
+  // Overlay behind the popup
+  popupOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999,
+  },
 
+  // Popup container
+  popupContent: {
+    width: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    elevation: 5, // shadow for Android
+    shadowColor: "#000", // shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
 
+  // Popup title text
+  popupTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 16,
+    textAlign: "center",
+    color: "#333",
+  },
+
+  // Leftover balances container
+  leftoverList: {
+    marginBottom: 20,
+  },
+
+  // Each partner row
+  leftoverItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+
+  // Partner name
+  partnerName: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#444",
+  },
+
+  // Partner amount
+  partnerAmount: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#222",
+  },
+
+  // Buttons container
+  popupButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  // Move button
+  moveBtn: {
+    flex: 1,
+    backgroundColor: "#4f93ff",
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 4,
+    alignItems: "center",
+  },
+
+  // Cancel button
+  cancelBtn: {
+    flex: 1,
+    backgroundColor: "#999a9c",
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 4,
+    alignItems: "center",
+  },
 });

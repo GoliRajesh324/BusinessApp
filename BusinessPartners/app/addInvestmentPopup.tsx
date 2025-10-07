@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Image,
+  Modal,
   Platform,
   ScrollView,
   StatusBar,
@@ -15,7 +16,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { ImageFile, pickImageFromCamera, pickImageFromGallery } from "./utils/ImagePickerService";
+import {
+  ImageFile,
+  pickImageFromCamera,
+  pickImageFromGallery,
+} from "./utils/ImagePickerService";
 import { numberToWords } from "./utils/numberToWords";
 
 type Partner = {
@@ -24,18 +29,27 @@ type Partner = {
   share?: number;
 };
 
-type AddInvestmentPageProps = {
-  partners: Partner[];
-  cropDetails?: any;
-  onSave: (data: any) => void;
+type CropDetails = {
+  id: string;
+  businessId: string;
+  [key: string]: any;
 };
 
-const AddInvestmentPopup: React.FC<{
+interface AddInvestmentPopupProps {
+  visible: boolean;
   partners: Partner[];
-  cropDetails?: any;
-  onSave: (data: any) => void;
-  onClose: () => void; // ✅ add this
-}> = ({ partners, cropDetails, onSave }) => {
+  cropDetails?: CropDetails;
+  onSave: (data: { investmentData: any[]; images: ImageFile[] }) => void;
+  onClose: () => void;
+}
+
+const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
+  visible,
+  partners,
+  cropDetails,
+  onSave,
+  onClose,
+}) => {
   const router = useRouter();
 
   const [splitMode, setSplitMode] = useState<"share" | "equal" | "manual">(
@@ -44,7 +58,7 @@ const AddInvestmentPopup: React.FC<{
   const [totalAmount, setTotalAmount] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [rows, setRows] = useState<any[]>([]);
-  const [images, setImages] = useState<any[]>([]);
+  const [images, setImages] = useState<ImageFile[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -63,6 +77,7 @@ const AddInvestmentPopup: React.FC<{
 
   const createdBy = userName;
 
+  // Initialize rows for partners
   useEffect(() => {
     const initial = partners.map((p) => ({
       id: p.id,
@@ -150,163 +165,170 @@ const AddInvestmentPopup: React.FC<{
     }));
 
     onSave({ investmentData, images });
-    router.back();
+    onClose();
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.headerLeft}
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose} style={styles.headerLeft}>
+            <Ionicons name="arrow-back" size={28} color="#fff" />
+          </TouchableOpacity>
+
+          <Text style={styles.headerTitle}>Add Investment</Text>
+
+          <TouchableOpacity onPress={handleSave} style={styles.headerRight}>
+            <Text style={styles.saveText}>Save</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 16 }}
         >
-          <Ionicons name="arrow-back" size={28} color="#fff" />
-        </TouchableOpacity>
+          {/* Description */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Description</Text>
+            <TextInput
+              style={styles.inputBox}
+              placeholder="Enter description"
+              value={description}
+              onChangeText={setDescription}
+            />
+          </View>
 
-        <Text style={styles.headerTitle}>Add Investment</Text>
+          {/* Amount */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Amount</Text>
+            <TextInput
+              style={styles.inputBox}
+              placeholder="Enter amount"
+              keyboardType="numeric"
+              value={totalAmount}
+              onChangeText={setTotalAmount}
+            />
+          </View>
 
-        <TouchableOpacity onPress={handleSave} style={styles.headerRight}>
-          <Text style={styles.saveText}>Save</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 16 }}
-      >
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Description</Text>
-          <TextInput
-            style={styles.inputBox}
-            placeholder="Enter description"
-            value={description}
-            onChangeText={setDescription}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Amount</Text>
-          <TextInput
-            style={styles.inputBox}
-            placeholder="Enter amount"
-            keyboardType="numeric"
-            value={totalAmount}
-            onChangeText={setTotalAmount}
-          />
-        </View>
-
-        {!!totalAmount && (
-          <Text style={styles.amountWords}>
-            {numberToWords(Number(totalAmount))}
-          </Text>
-        )}
-
-        {/* Split Mode Buttons */}
-        <View style={styles.splitContainer}>
-          {["share", "equal", "manual"].map((mode) => (
-            <TouchableOpacity
-              key={mode}
-              onPress={() => setSplitMode(mode as any)}
-              style={[
-                styles.splitButton,
-                splitMode === mode && styles.splitButtonActive,
-              ]}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: splitMode === mode ? "white" : "black",
-                }}
-              >
-                {mode.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Table */}
-        <View style={[styles.row, styles.headerRow]}>
-          <Text style={styles.headerCell}>User</Text>
-          {splitMode === "share" && (
-            <Text style={styles.headerCell}>Share %</Text>
+          {!!totalAmount && (
+            <Text style={styles.amountWords}>
+              {numberToWords(Number(totalAmount))}
+            </Text>
           )}
-          <Text style={styles.headerCell}>Actual</Text>
-          <Text style={styles.headerCell}>Investing</Text>
-          <Text style={styles.headerCell}>Diff</Text>
-        </View>
 
-        {rows.map((row, idx) => {
-          const actualNum = parseFloat(row.actual) || 0;
-          const investNum = parseFloat(row.investing) || 0;
-          const diff = investNum - actualNum;
-
-          return (
-            <View key={row.id} style={styles.row}>
-              <Text
+          {/* Split Mode Buttons */}
+          <View style={styles.splitContainer}>
+            {["share", "equal", "manual"].map((mode) => (
+              <TouchableOpacity
+                key={mode}
+                onPress={() => setSplitMode(mode as any)}
                 style={[
-                  styles.cell,
-                  { fontSize: row.name.length > 10 ? 11 : 13 },
+                  styles.splitButton,
+                  splitMode === mode && styles.splitButtonActive,
                 ]}
               >
-                {row.name}
-              </Text>
-              {splitMode === "share" && (
-                <Text style={styles.cell}>{row.share}%</Text>
-              )}
-              <Text
-                style={[
-                  styles.cell,
-                  { fontSize: row.actual.length > 6 ? 11 : 13 },
-                ]}
-              >
-                {row.actual}
-              </Text>
-              <TextInput
-                style={[styles.cell, styles.inputCell]}
-                value={row.investing}
-                keyboardType="numeric"
-                onChangeText={(val) => handleInvestingChange(idx, val)}
-              />
-              <Text
-                style={[
-                  styles.cell,
-                  { color: diff > 0 ? "green" : diff < 0 ? "red" : "#333" },
-                ]}
-              >
-                {diff !== 0 ? diff.toFixed(2) : ""}
-              </Text>
-            </View>
-          );
-        })}
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: splitMode === mode ? "white" : "black",
+                  }}
+                >
+                  {mode.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-        {/* Images */}
-        <Text style={styles.sectionTitle}>Images</Text>
-        <View style={styles.imagesRow}>
-          {/* Camera Button */}
-          <TouchableOpacity
-            style={styles.cameraBtn}
-            onPress={async () => {
-              const file: ImageFile | null = await pickImageFromCamera();
-              if (file) setImages((prev) => [...prev, file]);
-            }}
-          >
-            <Ionicons name="camera" size={28} color="white" />
-          </TouchableOpacity>
+          {/* Table Header */}
+          <View style={[styles.row, styles.headerRow]}>
+            <Text style={styles.headerCell}>User</Text>
+            {splitMode === "share" && (
+              <Text style={styles.headerCell}>Share %</Text>
+            )}
+            <Text style={styles.headerCell}>Actual</Text>
+            <Text style={styles.headerCell}>Investing</Text>
+            <Text style={styles.headerCell}>Diff</Text>
+          </View>
 
-          {/* Gallery Button */}
-          <TouchableOpacity
-            style={[styles.cameraBtn, { backgroundColor: "#28a745" }]}
-            onPress={async () => {
-              const file: ImageFile | null = await pickImageFromGallery();
-              if (file) setImages((prev) => [...prev, file]);
-            }}
-          >
-            <Ionicons name="image" size={28} color="white" />
-          </TouchableOpacity>
+          {/* Table Rows */}
+          {rows.map((row, idx) => {
+            const actualNum = parseFloat(row.actual) || 0;
+            const investNum = parseFloat(row.investing) || 0;
+            const diff = investNum - actualNum;
 
+            return (
+              <View key={row.id} style={styles.row}>
+                <Text
+                  style={[
+                    styles.cell,
+                    { fontSize: row.name.length > 10 ? 11 : 13 },
+                  ]}
+                >
+                  {row.name}
+                </Text>
+                {splitMode === "share" && (
+                  <Text style={styles.cell}>{row.share}%</Text>
+                )}
+                <Text
+                  style={[
+                    styles.cell,
+                    { fontSize: row.actual.length > 6 ? 11 : 13 },
+                  ]}
+                >
+                  {row.actual}
+                </Text>
+                <TextInput
+                  style={[styles.cell, styles.inputCell]}
+                  value={row.investing}
+                  keyboardType="numeric"
+                  onChangeText={(val) => handleInvestingChange(idx, val)}
+                />
+                <Text
+                  style={[
+                    styles.cell,
+                    { color: diff > 0 ? "green" : diff < 0 ? "red" : "#333" },
+                  ]}
+                >
+                  {diff !== 0 ? diff.toFixed(2) : ""}
+                </Text>
+              </View>
+            );
+          })}
+
+          {/* Images Section */}
+          <Text style={styles.sectionTitle}>Images</Text>
+          <View style={{ flexDirection: "row", marginBottom: 10 }}>
+            {/* Camera */}
+            <TouchableOpacity
+              style={styles.cameraBtn}
+              onPress={async () => {
+                const file = await pickImageFromCamera();
+                if (file) setImages((prev) => [...prev, file]);
+              }}
+            >
+              <Ionicons name="camera" size={28} color="white" />
+            </TouchableOpacity>
+
+            {/* Gallery */}
+            <TouchableOpacity
+              style={[styles.cameraBtn, { backgroundColor: "#28a745" }]}
+              onPress={async () => {
+                const file = await pickImageFromGallery();
+                if (file) setImages((prev) => [...prev, file]);
+              }}
+            >
+              <Ionicons name="image" size={28} color="white" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Image Thumbnails */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {images.map((file, idx) => (
-              <View key={idx} style={styles.imagePreview}>
+              <TouchableOpacity
+                key={idx}
+                style={styles.imagePreview}
+                onPress={() => setPreviewImage(file.uri)}
+              >
                 <Image source={{ uri: file.uri }} style={styles.previewThumb} />
                 <TouchableOpacity
                   style={styles.deleteBtn}
@@ -314,33 +336,42 @@ const AddInvestmentPopup: React.FC<{
                 >
                   <Text style={styles.deleteText}>X</Text>
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             ))}
           </ScrollView>
-        </View>
-      </ScrollView>
-    </View>
+        </ScrollView>
+
+        {/* Full-Screen Preview */}
+        <Modal visible={!!previewImage} transparent>
+          <View style={styles.previewContainer}>
+            <Image source={{ uri: previewImage! }} style={styles.fullPreview} />
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={() => setPreviewImage(null)}
+            >
+              <Ionicons name="close" size={36} color="white" />
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      </View>
+    </Modal>
   );
 };
 
 export default AddInvestmentPopup;
 
+// ---------- Styles ----------
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-
-  // -------- Header --------
+  container: { flex: 1, backgroundColor: "#fff" },
   header: {
     height:
       Platform.OS === "android" ? 90 + (StatusBar.currentHeight || 0) : 110,
     paddingTop:
       Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
     backgroundColor: "#4f93ff",
-    flexDirection: "row", // horizontal layout
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between", // left, center, right
+    justifyContent: "space-between",
     paddingHorizontal: 16,
   },
   headerLeft: { width: 40, justifyContent: "center", alignItems: "flex-start" },
@@ -353,10 +384,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   saveText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-
-  inputContainer: {
-    marginVertical: 10,
-  },
+  inputContainer: { marginVertical: 10 },
   inputLabel: {
     fontSize: 16,
     fontWeight: "600",
@@ -368,8 +396,8 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 8,
     paddingHorizontal: 14,
-    paddingVertical: 14, // increased height
-    fontSize: 16, // bigger text
+    paddingVertical: 14,
+    fontSize: 16,
     color: "#000",
     backgroundColor: "#f9f9f9",
   },
@@ -443,16 +471,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   deleteText: { color: "white", fontSize: 12, fontWeight: "bold" },
-  saveButton: {
-    backgroundColor: "#4f93ff",
-    paddingVertical: 14, // bigger button
-    borderRadius: 8,
+  previewContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: 20,
   },
-  saveButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+  fullPreview: {
+    width: "90%",
+    height: "70%",
+    resizeMode: "contain",
+    borderRadius: 12,
   },
+  closeBtn: { position: "absolute", top: 40, right: 20 },
 });

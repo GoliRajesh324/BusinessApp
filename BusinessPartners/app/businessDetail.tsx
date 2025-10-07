@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  Modal,
   Platform,
   ScrollView,
   StatusBar,
@@ -251,7 +250,7 @@ export default function BusinessDetail() {
       </View>
       {/* Scrollable content */}
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 140, paddingHorizontal: 16 }}
+        contentContainerStyle={{ paddingBottom: 180, paddingHorizontal: 16 }}
       >
         {/*  <Text style={styles.businessName}>{String(businessName || "")}</Text> */}
 
@@ -337,10 +336,18 @@ export default function BusinessDetail() {
 
         <TouchableOpacity
           style={styles.bottomButtonIcon}
+          onPress={() => alert("Inventory")}
+        >
+          <Ionicons name="cube-outline" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>Inventory</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.bottomButtonIcon}
           onPress={() => alert("All Investments")}
         >
           <Ionicons name="cash-outline" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>All Investments</Text>
+          <Text style={styles.bottomButtonText}>Investments</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -348,20 +355,24 @@ export default function BusinessDetail() {
           onPress={() => setShowAuditPopup(true)}
         >
           <MaterialIcons name="history" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>Change History</Text>
+          <Text style={styles.bottomButtonText}>History</Text>
         </TouchableOpacity>
       </View>
+
       {/* Popups */}
       {/* inside BusinessDetail */}
+
       {showPopup && (
-        <Modal visible={showPopup} animationType="slide" transparent={true}>
-          <AddInvestmentPopup
-            partners={partners}
-            cropDetails={cropDetails}
-            onClose={() => setShowPopup(false)}
-            onSave={handlePopupSave}
-          />
-        </Modal>
+        <AddInvestmentPopup
+          visible={showPopup}
+          partners={partners}
+          cropDetails={cropDetails}
+          onClose={() => setShowPopup(false)}
+          onSave={(data) => {
+            handlePopupSave(data);
+            setShowPopup(false);
+          }}
+        />
       )}
 
       {withdrawPopup && (
@@ -380,9 +391,13 @@ export default function BusinessDetail() {
           cropDetails={cropDetails}
           visible={soldPopup}
           onClose={() => setSoldPopup(false)}
-          onSave={handlePopupSave}
+          onSave={(data) => {
+            handlePopupSave(data);
+            setSoldPopup(false);
+          }}
         />
       )}
+
       {showAuditPopup && (
         <InvestmentAudit
           businessId={String(businessId || "")}
@@ -593,43 +608,91 @@ const styles = StyleSheet.create({
 
   // -------- Floating Action Button --------
   fabContainer: {
-    position: "absolute",
-    bottom: 80,
-    right: 20,
-    zIndex: 1000,
-    alignItems: "flex-end",
-  }, // bottom above footer
-  fab: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#2196F3",
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 5,
-  },
-  fabText: { fontSize: 28, color: "#fff", fontWeight: "bold" },
-  fabOptions: { marginBottom: 10, alignItems: "flex-end" },
-  fabOption: {
-    width: 150,
-    height: 45,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 25,
-    marginBottom: 12,
-  },
-  fabOptionText: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  position: "absolute",
+  bottom: Platform.OS === "ios" ? 110 : 90, // ⬆️ lifted to sit nicely above bottom bar
+  right: 25,
+  zIndex: 1000,
+  alignItems: "flex-end",
+},
+
+fab: {
+  width: 60,
+  height: 60,
+  borderRadius: 30,
+  backgroundColor: "#2196F3",
+  justifyContent: "center",
+  alignItems: "center",
+  elevation: 6,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+},
+
+fabText: {
+  fontSize: 28,
+  color: "#fff",
+  fontWeight: "bold",
+},
+
+fabOptions: {
+  marginBottom: 14,
+  alignItems: "flex-end",
+},
+
+fabOption: {
+  width: 150,
+  height: 45,
+  justifyContent: "center",
+  alignItems: "center",
+  borderRadius: 25,
+  marginBottom: 12,
+  backgroundColor: "#4F93FF",
+  elevation: 3,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.2,
+  shadowRadius: 2,
+},
+
+fabOptionText: {
+  color: "#fff",
+  fontWeight: "600",
+  fontSize: 14,
+},
+
 
   // -------- Bottom Buttons --------
   bottomButtonsContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 20,
+    justifyContent: "space-evenly",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingBottom: Platform.OS === "ios" ? 30 : 16, // safe area spacing
     borderTopWidth: 1,
-    borderTopColor: "#ddd",
+    borderColor: "#e0e0e0",
     backgroundColor: "#fff",
+    position: "absolute",
+    bottom: Platform.OS === "ios" ? 10 : 0, // ⬅️ lifts bar a bit upward
+    left: 0,
+    right: 0,
+    elevation: 10, // Android shadow
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: -2 },
+    shadowRadius: 4,
   },
-  bottomButton: { alignItems: "center" },
-  bottomButtonIcon: { width: 24, height: 24, marginBottom: 4 },
-  bottomButtonText: { fontSize: 12, color: "#333" },
+
+  bottomButtonIcon: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+  },
+
+  bottomButtonText: {
+    fontSize: 13,
+    color: "#4f93ff",
+    marginTop: 2,
+    textAlign: "center",
+  },
 });

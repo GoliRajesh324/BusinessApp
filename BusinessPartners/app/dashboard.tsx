@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Modal,
-  StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-} from "react-native";
-import { useRouter } from "expo-router";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
 import BASE_URL from "../src/config/config";
 import AddBusinessPopup from "./components/AddBusinessPopup";
 
@@ -24,6 +24,7 @@ export default function Dashboard() {
   const [confirmDelete, setConfirmDelete] = useState<any>(null);
   const [confirmStart, setConfirmStart] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [username, setUsername] = useState("User");
 
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
@@ -46,10 +47,18 @@ export default function Dashboard() {
     const loadData = async () => {
       const t = await AsyncStorage.getItem("token");
       const u = await AsyncStorage.getItem("userId");
-      //console.log("📌 Loaded token:", t);
-      //console.log("📌 Loaded userId:", u);
+      const n = await AsyncStorage.getItem("userName");
       setToken(t);
       setUserId(u);
+      if (n) {
+        // Convert to Camel Case (Title Case)
+        const formatted = n
+          .toLowerCase()
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+        setUsername(formatted);
+      }
     };
     loadData();
   }, []);
@@ -86,9 +95,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (token && userId) {
-      fetchBusinesses();
-    }
+    if (token && userId) fetchBusinesses();
   }, [token, userId]);
 
   // Save (add/edit)
@@ -157,9 +164,31 @@ export default function Dashboard() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <Text style={styles.logoutBtnText}>Logout</Text>
-      </TouchableOpacity>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <View style={styles.profileSection}>
+          <Image
+            source={{
+              uri: "https://cdn-icons-png.flaticon.com/512/847/847969.png",
+            }}
+            style={styles.profileIcon}
+          />
+          <View style={styles.usernameContainer}>
+            <Text style={styles.username}>{username}</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          onPress={() => {
+            handleLogout();
+            console.log("Notification clicked");
+          }}
+        >
+          <Ionicons name="notifications-outline" size={28} color="#333" />
+        </TouchableOpacity>
+      </View>
+
+      {/* BUSINESS LIST */}
       <FlatList
         data={businesses}
         keyExtractor={(item) => item.id.toString()}
@@ -198,28 +227,40 @@ export default function Dashboard() {
         )}
       />
 
-      <TouchableOpacity style={styles.fab} onPress={() => setShowPopup(true)}>
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
+      {/* FOOTER BAR */}
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.footerItem}>
+          <Ionicons name="home" size={26} color="#2563eb" />
+          <Text style={styles.footerText}>Home</Text>
+        </TouchableOpacity>
 
-      {/* Add/Edit Popup */}
-      <Modal visible={showPopup} transparent animationType="fade">
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => {
+            setEditingBusiness(null);
+            setShowPopup(true);
+          }}
         >
-          <AddBusinessPopup
-            onClose={() => {
-              setShowPopup(false);
-              setEditingBusiness(null);
-            }}
-            onSave={handleSaveBusiness}
-            editingBusiness={editingBusiness}
-          />
-        </KeyboardAvoidingView>
-      </Modal>
+          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity>
 
-      {/* Confirm Start */}
+        <TouchableOpacity style={styles.footerItem}>
+          <MaterialIcons name="manage-history" size={26} color="#2563eb" />
+          <Text style={styles.footerText}>History</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ADD BUSINESS POPUP */}
+      {showPopup && (
+            <AddBusinessPopup
+              visible={showPopup}
+              onClose={() => setShowPopup(false)}
+          onSave={handleSaveBusiness}
+              editingBusiness={editingBusiness}
+            />
+      )}
+
+      {/* CONFIRM START */}
       <Modal visible={!!confirmStart} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.popupBox}>
@@ -245,7 +286,7 @@ export default function Dashboard() {
         </View>
       </Modal>
 
-      {/* Confirm Delete */}
+      {/* CONFIRM DELETE */}
       <Modal visible={!!confirmDelete} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.popupBox}>
@@ -274,13 +315,38 @@ export default function Dashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb", padding: 16 },
+  container: { flex: 1, backgroundColor: "#f9fafb" },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
+
+  // HEADER
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    paddingBottom: 12,
+    backgroundColor: "#6d5fe9ff",
+    elevation: 4,
+  },
+  profileSection: { flexDirection: "row", alignItems: "center" },
+  profileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#2563eb",
+  },
+  usernameContainer: { marginLeft: 10 },
+  username: { fontSize: 16, fontWeight: "700", color: "#333" },
+
+  // BUSINESS CARD
   emptyMessage: { textAlign: "center", marginTop: 20, color: "#777" },
   businessCard: {
     flexDirection: "row",
     justifyContent: "space-between",
     padding: 12,
+    marginHorizontal: 16,
     marginVertical: 6,
     backgroundColor: "#fff",
     borderRadius: 8,
@@ -301,14 +367,42 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   btnText: { color: "#fff", fontWeight: "600" },
-  addBtn: {
-    backgroundColor: "#2563eb",
-    padding: 14,
-    borderRadius: 8,
+
+  // FOOTER BAR
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 10,
+    backgroundColor: "#fff",
+    paddingVertical: 10,
+    paddingHorizontal: 40,
+    elevation: 10,
   },
-  addBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  footerItem: { alignItems: "center" },
+  footerText: {
+    fontSize: 12,
+    color: "#2563eb",
+    fontWeight: "600",
+    marginTop: 4,
+  },
+  addButton: {
+    backgroundColor: "#2563eb",
+    width: 65,
+    height: 65,
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: -30,
+    elevation: 6,
+  },
+  addButtonText: {
+    color: "#fff",
+    fontSize: 40,
+    fontWeight: "bold",
+    marginBottom: 2,
+  },
+
+  // POPUP
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",

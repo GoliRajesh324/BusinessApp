@@ -48,6 +48,7 @@ export default function BusinessDetail() {
   const [confirmRestart, setConfirmRestart] = useState<
     { partnerName: string; leftOver: number }[]
   >([]);
+  const [fabOpen, setFabOpen] = useState(false);
 
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -234,35 +235,30 @@ export default function BusinessDetail() {
       console.error(error);
     }
   };
-
-  return (
+return (
+  <View style={{ flex: 1, position: "relative" }}>
     <ScrollView style={styles.container}>
       {/* Business Name */}
-      <Text style={styles.businessName}>{businessName}</Text>
+      <Text style={styles.businessName}>{String(businessName || "")}</Text>
+
+      {/* Toggle-dependent actions */}
       {showActions && (
         <View>
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-             style={[styles.button, styles.invBtn]}
+              style={[styles.button, styles.invBtn]}
               onPress={() =>
                 router.push({
-                  pathname: "/crop-details/[businessId]", // dynamic route
+                  pathname: "/crop-details/[businessId]",
                   params: {
-                    businessId: businessId,
-                    businessName: businessName,
+                    businessId: String(businessId || ""),
+                    businessName: String(businessName || ""),
                   },
                 })
               }
             >
               <Text style={styles.buttonText}>Investments</Text>
             </TouchableOpacity>
-
-           {/*  <TouchableOpacity
-              style={[styles.button, styles.restartBtn]}
-              onPress={() => handleRestartClick}
-            >
-              <Text style={styles.buttonText}>Restart</Text>
-            </TouchableOpacity> */}
 
             <TouchableOpacity
               style={[styles.button, styles.auditBtn]}
@@ -273,14 +269,15 @@ export default function BusinessDetail() {
           </View>
         </View>
       )}
-      {/* Summary Row with Toggle */}
 
+      {/* Summary Row */}
       <View style={styles.summaryRow}>
-        {/* Summary Info */}
         <View style={styles.summaryInfo}>
           <Text style={styles.summaryText}>
             <Text style={styles.summaryLabel}>Crop: </Text>
-            <Text style={styles.summaryValue}>{cropDetails?.cropNumber}</Text>
+            <Text style={styles.summaryValue}>
+              {String(cropDetails?.cropNumber || "-")}
+            </Text>
           </Text>
 
           <Text style={styles.summaryText}>
@@ -314,72 +311,74 @@ export default function BusinessDetail() {
       {/* Investment Table */}
       <InvestmentTable investmentDetails={investmentDetails} />
 
-      {/* Action Buttons - Only show when toggle is ON */}
-      {showActions && (
-        <View>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.soldBtn]}
-              onPress={() => setSoldPopup(true)}
-            >
-              <Text style={styles.buttonText}>Sold</Text>
-            </TouchableOpacity>
+      {/* Action Buttons */}
+      {/* {showActions && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.button, styles.soldBtn]}
+            onPress={() => setSoldPopup(true)}
+          >
+            <Text style={styles.buttonText}>Sold</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.button, styles.addBtn]}
-              onPress={() => setShowPopup(true)}
-            >
-              <Text style={styles.buttonText}>Add Expense</Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, styles.addBtn]}
+            onPress={() => setShowPopup(true)}
+          >
+            <Text style={styles.buttonText}>Add Expense</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.button, styles.withdrawBtn]}
-              onPress={() => setWithdrawPopup(true)}
-            >
-              <Text style={styles.buttonText}>Withdraw</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[styles.button, styles.withdrawBtn]}
+            onPress={() => setWithdrawPopup(true)}
+          >
+            <Text style={styles.buttonText}>Withdraw</Text>
+          </TouchableOpacity>
         </View>
-      )}
+      )} */}
 
       {/* Popups */}
       {showPopup && (
         <AddInvestmentPopup
           partners={partners}
           cropDetails={cropDetails}
-          visible={showPopup} // pass visible prop
+          visible={showPopup}
           onClose={() => setShowPopup(false)}
           onSave={handlePopupSave}
         />
       )}
+
       {withdrawPopup && (
         <WithdrawAmountPopup
           partners={partners}
           cropDetails={cropDetails}
           investmentDetails={investmentDetails}
-          visible={withdrawPopup} // use visible
+          visible={withdrawPopup}
           onClose={() => setWithdrawPopup(false)}
           onSave={handlePopupSave}
         />
       )}
+
       {soldPopup && (
         <SoldAmountPopup
           partners={partners}
           cropDetails={cropDetails}
+          visible={soldPopup}
           onClose={() => setSoldPopup(false)}
           onSave={handlePopupSave}
-          visible={soldPopup} // pass visible prop
         />
       )}
+
       {showAuditPopup && (
         <InvestmentAudit
-          businessId={safeBusinessId}
-          businessName={safeBusinessName}
+          businessId={String(businessId || "")}
+          businessName={String(businessName || "")}
+          visible={showAuditPopup}
           onClose={() => setShowAuditPopup(false)}
-          visible={showAuditPopup} // pass visible prop
         />
       )}
-      {/* Confirm Restart Popup */}
+
+      {/* Confirm Restart */}
       {confirmRestart && confirmRestart.length > 0 && (
         <View style={styles.popupOverlay}>
           <View style={styles.popupContent}>
@@ -391,7 +390,7 @@ export default function BusinessDetail() {
             <View style={styles.leftoverList}>
               {confirmRestart.map((p, idx) => (
                 <View key={idx} style={styles.leftoverItem}>
-                  <Text style={styles.partnerName}>{p.partnerName}</Text>
+                  <Text style={styles.partnerName}>{String(p.partnerName)}</Text>
                   <Text style={styles.partnerAmount}>
                     ₹{formatAmount(p.leftOver)}
                   </Text>
@@ -406,12 +405,14 @@ export default function BusinessDetail() {
               >
                 <Text style={styles.buttonText}>Move</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.withdrawBtn}
                 onPress={handleWithdrawFromPopup}
               >
                 <Text style={styles.buttonText}>Withdraw</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.cancelBtn}
                 onPress={() => setConfirmRestart([])}
@@ -423,7 +424,53 @@ export default function BusinessDetail() {
         </View>
       )}
     </ScrollView>
-  );
+
+    {/* Floating Action Button */}
+    <View style={styles.fabContainer}>
+      {fabOpen && (
+        <View style={styles.fabOptions}>
+          <TouchableOpacity
+            style={[styles.fabOption, { backgroundColor: "#ff9900" }]}
+            onPress={() => {
+              setSoldPopup(true);
+              setFabOpen(false);
+            }}
+          >
+            <Text style={styles.fabOptionText}>Sold</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.fabOption, { backgroundColor: "#4f93ff" }]}
+            onPress={() => {
+              setShowPopup(true);
+              setFabOpen(false);
+            }}
+          >
+            <Text style={styles.fabOptionText}>Add Expense</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.fabOption, { backgroundColor: "#f44336" }]}
+            onPress={() => {
+              setWithdrawPopup(true);
+              setFabOpen(false);
+            }}
+          >
+            <Text style={styles.fabOptionText}>Withdraw</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setFabOpen(!fabOpen)}
+      >
+        <Text style={styles.fabText}>{fabOpen ? "×" : "+"}</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+);
+
 }
 
 const styles = StyleSheet.create({
@@ -605,4 +652,51 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     alignItems: "center",
   },
+fabContainer: {
+  position: "absolute",
+  bottom: 20,
+  right: 20,
+  zIndex: 1000,
+  alignItems: "flex-end", // ensures options align to right
+},
+
+
+fab: {
+  width: 60,
+  height: 60,
+  borderRadius: 30,
+  backgroundColor: "#2196F3",
+  justifyContent: "center",
+  alignItems: "center",
+  elevation: 5,
+},
+
+fabText: {
+  fontSize: 28,
+  color: "#fff",
+  fontWeight: "bold",
+},
+
+fabOptions: {
+  marginBottom: 10,
+  alignItems: "flex-end",
+},
+
+
+fabOption: {
+  width: 150,             // ✅ same width for all
+  height: 45,             // ✅ same height for all
+  justifyContent: "center",
+  alignItems: "center",
+  borderRadius: 25,
+  marginBottom: 12,
+},
+
+fabOptionText: {
+  color: "#fff",
+  fontWeight: "600",
+  fontSize: 14,
+},
+
+
 });

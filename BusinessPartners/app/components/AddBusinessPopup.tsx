@@ -1,19 +1,20 @@
-// AddBusinessPopup.tsx
-import React, { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
+  Alert,
+  Animated,
+  KeyboardAvoidingView,
+  PanResponder,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  StyleSheet,
-  Alert,
+  TouchableWithoutFeedback,
+  View
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import BASE_URL from "../../src/config/config";
 
 interface Partner {
@@ -21,18 +22,21 @@ interface Partner {
   share: string;
 }
 interface Props {
+  visible: boolean;
   onClose: () => void;
   onSave: () => void;
   editingBusiness?: any;
 }
 
-/**
- * NOTE:
- * - This component is a *content view* (no internal Modal) — it is designed
- *   to be placed inside the Modal wrapper you're already using in Dashboard.
- */
-export default function AddBusinessPopup({ onClose, onSave, editingBusiness }: Props) {
-  const [businessName, setBusinessName] = useState<string>(editingBusiness?.name || "");
+export default function AddBusinessPopup({
+  visible,
+  onClose,
+  onSave,
+  editingBusiness,
+}: Props) {
+  const [businessName, setBusinessName] = useState<string>(
+    editingBusiness?.name || ""
+  );
   const [partnerName, setPartnerName] = useState<string>("");
   const [share, setShare] = useState<string>("");
   const [partners, setPartners] = useState<Partner[]>(
@@ -46,21 +50,59 @@ export default function AddBusinessPopup({ onClose, onSave, editingBusiness }: P
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Keep form synced when editingBusiness prop changes
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const panY = useRef(new Animated.Value(0)).current;
+
+  // Smooth entrance
   useEffect(() => {
-    if (editingBusiness) {
-      setBusinessName(editingBusiness.name || "");
-      setPartners(
-        (editingBusiness.partners || []).map((p: any) => ({
-          name: p.username ?? p.name,
-          share: String(p.share),
-        }))
-      );
+    if (visible) {
+      Animated.timing(slideAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     } else {
-      resetForm();
+      slideAnim.setValue(0);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingBusiness]);
+  }, [visible]);
+
+  const translateY = Animated.add(
+    slideAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [600, 0],
+    }),
+    panY
+  );
+
+  // Detect swipe down to close
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        Math.abs(gestureState.dy) > 10,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          panY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 150) {
+          Animated.timing(panY, {
+            toValue: 600,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            panY.setValue(0);
+            onClose();
+          });
+        } else {
+          Animated.spring(panY, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   const resetForm = () => {
     setBusinessName("");
@@ -77,12 +119,13 @@ export default function AddBusinessPopup({ onClose, onSave, editingBusiness }: P
     }
     const shareNum = Number(share);
     if (isNaN(shareNum) || shareNum <= 0) {
-      Alert.alert("Error", "Share % must be a positive number");
+      Alert.alert("Error", "Share % must be positive");
       return;
     }
+
     const totalShare =
       partners.reduce((sum, p, idx) => {
-        if (idx === editingIndex) return sum; // skip old when editing
+        if (idx === editingIndex) return sum;
         return sum + Number(p.share);
       }, 0) + shareNum;
 
@@ -93,11 +136,17 @@ export default function AddBusinessPopup({ onClose, onSave, editingBusiness }: P
 
     if (editingIndex !== null) {
       const updated = [...partners];
-      updated[editingIndex] = { name: partnerName.trim(), share: shareNum.toString() };
+      updated[editingIndex] = {
+        name: partnerName.trim(),
+        share: shareNum.toString(),
+      };
       setPartners(updated);
       setEditingIndex(null);
     } else {
-      setPartners([...partners, { name: partnerName.trim(), share: shareNum.toString() }]);
+      setPartners([
+        ...partners,
+        { name: partnerName.trim(), share: shareNum.toString() },
+      ]);
     }
 
     setPartnerName("");
@@ -133,21 +182,19 @@ export default function AddBusinessPopup({ onClose, onSave, editingBusiness }: P
 
     const payload = {
       name: businessName.trim(),
-      partners: partners.map((p) => ({ username: p.name, share: Number(p.share) })),
+      partners: partners.map((p) => ({
+        username: p.name,
+        share: Number(p.share),
+      })),
     };
 
     try {
       setLoading(true);
-
-      // ALWAYS read token right before the call (helps avoid stale/undefined token)
       const token = await AsyncStorage.getItem("token");
       if (!token) {
         Alert.alert("Session expired", "Please login again.");
         return;
       }
-
-      // DEBUG: uncomment if you need to see token (do NOT keep in prod)
-      // //console.log('token startsWith:', token?.slice(0, 8));
 
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -155,9 +202,15 @@ export default function AddBusinessPopup({ onClose, onSave, editingBusiness }: P
       };
 
       if (editingBusiness) {
-        await axios.put(`${BASE_URL}/api/business/${editingBusiness.id}`, payload, { headers });
+        await axios.put(
+          `${BASE_URL}/api/business/${editingBusiness.id}`,
+          payload,
+          { headers }
+        );
       } else {
-        await axios.post(`${BASE_URL}/api/business/create`, payload, { headers });
+        await axios.post(`${BASE_URL}/api/business/create`, payload, {
+          headers,
+        });
       }
 
       // successful save: call parent handlers and reset
@@ -176,7 +229,10 @@ export default function AddBusinessPopup({ onClose, onSave, editingBusiness }: P
       const serverMsg = err?.response?.data?.message || err?.response?.data;
 
       if (status === 403) {
-        Alert.alert("Unauthorized", serverMsg || "Access denied (403). Please login or check permissions.");
+        Alert.alert(
+          "Unauthorized",
+          serverMsg || "Access denied (403). Please login or check permissions."
+        );
         // do not auto-navigate away — keep behaviour unchanged
       } else {
         Alert.alert("Error", serverMsg || "Failed to save business");
@@ -186,179 +242,190 @@ export default function AddBusinessPopup({ onClose, onSave, editingBusiness }: P
     }
   };
 
-  const saveDisabled = businessName.trim() === "" || partners.length === 0 || loading;
+  const saveDisabled =
+    businessName.trim() === "" || partners.length === 0 || loading;
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={styles.wrapper}
-    >
-      <View style={styles.container}>
-        {/* header row */}
-        <View style={styles.headerRow}>
-          <Text style={styles.title}>{editingBusiness ? "Edit Business" : "Add Business"}</Text>
-          <TouchableOpacity
-            onPress={() => {
-              resetForm();
-              onClose();
-            }}
-            style={styles.closeBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text style={styles.closeText}>✕</Text>
-          </TouchableOpacity>
-        </View>
+    <View style={styles.overlay}>
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.overlay} />
+      </TouchableWithoutFeedback>
 
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.scrollContent}
-          style={{ width: "100%" }}
+      <Animated.View
+        {...panResponder.panHandlers}
+        style={[styles.bottomSheet, { transform: [{ translateY }] }]}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <Text style={styles.label}>Business name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter Business Name"
-            value={businessName}
-            onChangeText={setBusinessName}
-            returnKeyType="done"
-          />
+          <View style={styles.dragHandle} />
 
-          <Text style={[styles.label, { marginTop: 8 }]}>Add partner</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter Username"
-            value={partnerName}
-            onChangeText={setPartnerName}
-          />
-
-          <View style={styles.partnerRow}>
-            <TextInput
-              style={[styles.input, styles.shareInput]}
-              placeholder="Enter Share %"
-              keyboardType="numeric"
-              value={share}
-              onChangeText={setShare}
-            />
-            <TouchableOpacity
-              style={[styles.addBtn, editingIndex !== null ? styles.updateBtn : {}]}
-              onPress={handleAddOrUpdatePartner}
-            >
-              <Text style={styles.addBtnText}>{editingIndex !== null ? "Update" : "Add"}</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.title}>
+              {editingBusiness ? "Edit Business" : "Add Business"}
+            </Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+              <Text style={styles.closeText}>✕</Text>
             </TouchableOpacity>
           </View>
 
-          {partners.length === 0 ? (
-            <Text style={styles.emptyPartners}>No partners added</Text>
-          ) : (
-            partners.map((p, idx) => (
-              <View key={idx} style={styles.partnerCard}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.partnerName}>{p.name}</Text>
-                  <Text style={styles.partnerShare}>{p.share}%</Text>
-                </View>
-                <View style={styles.partnerActions}>
-                  <TouchableOpacity
-                    style={styles.smallBtn}
-                    onPress={() => handleEditPartner(idx)}
-                  >
-                    <Text style={styles.smallBtnText}>Edit</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.smallBtn, styles.removeBtn]}
-                    onPress={() => handleRemovePartner(idx)}
-                  >
-                    <Text style={[styles.smallBtnText, { color: "white" }]}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          )}
-        </ScrollView>
-
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.cancelAction]}
-            onPress={() => {
-              resetForm();
-              onClose();
-            }}
-            disabled={loading}
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContent}
           >
-            <Text style={styles.actionText}>Cancel</Text>
-          </TouchableOpacity>
+            <Text style={styles.label}>Business Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter Business Name"
+              placeholderTextColor="#888"   // Add this line
+              value={businessName}
+              onChangeText={setBusinessName}
+            />
 
-          <TouchableOpacity
-            style={[
-              styles.actionBtn,
-              styles.saveAction,
-              saveDisabled ? styles.disabledSave : {},
-            ]}
-            onPress={handleSave}
-            disabled={saveDisabled}
-          >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionText}>Save</Text>}
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+            <Text style={[styles.label, { marginTop: 10 }]}>Partner Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter Partner Name"
+              placeholderTextColor="#888"   // Add this line
+              value={partnerName}
+              onChangeText={setPartnerName}
+            />
+
+            <View style={styles.partnerRow}>
+              <TextInput
+                style={[styles.input, styles.shareInput]}
+                placeholder="Enter Share %"
+                placeholderTextColor="#888"   // Add this line
+                keyboardType="numeric"
+                value={share}
+                onChangeText={setShare}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.addBtn,
+                  editingIndex !== null && styles.updateBtn,
+                ]}
+                onPress={handleAddOrUpdatePartner}
+              >
+                <Text style={styles.addBtnText}>
+                  {editingIndex !== null ? "Update" : "Add"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {partners.length === 0 ? (
+              <Text style={styles.emptyPartners}>No partners added</Text>
+            ) : (
+              partners.map((p, idx) => (
+                <View key={idx} style={styles.partnerCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.partnerName}>{p.name}</Text>
+                    <Text style={styles.partnerShare}>{p.share}%</Text>
+                  </View>
+                  <View style={styles.partnerActions}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setEditingIndex(idx);
+                        setPartnerName(p.name);
+                        setShare(p.share);
+                      }}
+                      style={styles.smallBtn}
+                    >
+                      <Text style={styles.smallBtnText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() =>
+                        setPartners(partners.filter((_, i) => i !== idx))
+                      }
+                      style={[styles.smallBtn, styles.deleteBtn]}
+                    >
+                      <Text style={styles.smallBtnText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+
+            <TouchableOpacity
+              style={[styles.saveBtn, saveDisabled && styles.disabledBtn]}
+              onPress={handleSave}
+              disabled={saveDisabled}
+            >
+              {loading ? (
+                <Text style={styles.saveBtnText}>Saving...</Text>
+              ) : (
+                <Text style={styles.saveBtnText}>Save Business</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { width: "100%", alignItems: "center" },
-  container: {
-    width: "100%",
-    maxWidth: 720,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  bottomSheet: {
+    height: "85%",
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 18,
-    maxHeight: "86%",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 15,
+  },
+  dragHandle: {
+    width: 50,
+    height: 5,
+    backgroundColor: "#ccc",
+    borderRadius: 5,
+    alignSelf: "center",
+    marginBottom: 10,
   },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  title: { fontSize: 18, fontWeight: "700" },
-  closeBtn: { padding: 6 },
-  closeText: { fontSize: 18, color: "#444" },
-  scrollContent: { paddingVertical: 12 },
-  label: { color: "#374151", marginBottom: 6, fontWeight: "600" },
+  title: { fontSize: 20, fontWeight: "bold" },
+  closeBtn: { padding: 5 },
+  closeText: { fontSize: 18 },
+  scrollContent: { paddingBottom: 20 },
+  label: { fontSize: 16, fontWeight: "500", marginBottom: 5 },
   input: {
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: "#ccc",
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#fbfbfb",
+    padding: 10,
+    marginBottom: 10,
   },
-  partnerRow: { flexDirection: "row", alignItems: "center", marginTop: 8 },
-  shareInput: { flex: 1, marginRight: 8, minWidth: 80 },
-  addBtn: {
-    backgroundColor: "#2563eb",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-  },
-  updateBtn: { backgroundColor: "#f59e0b" },
-  addBtnText: { color: "#fff", fontWeight: "700" },
-  emptyPartners: { textAlign: "center", color: "#9ca3af", marginTop: 12 },
+  partnerRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  shareInput: { flex: 1, marginRight: 10 },
+  addBtn: { backgroundColor: "#2563eb", padding: 10, borderRadius: 8 },
+  updateBtn: { backgroundColor: "#16a34a" },
+  addBtnText: { color: "#fff", fontWeight: "bold" },
   partnerCard: {
     flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f8fafc",
-    borderRadius: 10,
     padding: 10,
-    marginTop: 10,
     borderWidth: 1,
-    borderColor: "#eef2f7",
+    borderColor: "#ddd",
+    borderRadius: 8,
+    marginBottom: 5,
+    alignItems: "center",
   },
-  partnerName: { fontWeight: "600" },
-  partnerShare: { color: "#6b7280", marginTop: 4 },
-  partnerActions: { flexDirection: "row" },
-  smallBtn: { paddingVertical: 6, paddingHorizontal: 10, marginLeft: 8, borderRadius: 8, backgroundColor: "#fde68a" },
-  removeBtn: { backgroundColor: "#ef4444" },
-  smallBtnText: { fontWeight: "600", color: "#1f2937" },
-  actionRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 14 },
-  actionBtn: { flex: 1, padding: 12, borderRadius: 8, alignItems: "center", marginHorizontal: 6 },
-  cancelAction: { backgroundColor: "#ef4444" },
-  saveAction: { backgroundColor: "#16a34a" },
-  disabledSave: { backgroundColor: "#9ca3af" },
-  actionText: { color: "#fff", fontWeight: "700" },
+  partnerName: { fontWeight: "bold", fontSize: 16 },
+  partnerShare: { color: "#555" },
+  partnerActions: { flexDirection: "row", gap: 5 },
+  smallBtn: { padding: 5, backgroundColor: "#2563eb", borderRadius: 5, marginLeft: 5 },
+  deleteBtn: { backgroundColor: "#dc2626" },
+  smallBtnText: { color: "#fff" },
+  emptyPartners: { textAlign: "center", color: "#888", marginVertical: 10 },
+  saveBtn: {
+    backgroundColor: "#2563eb",
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 15,
+    alignItems: "center",
+  },
+  saveBtnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  disabledBtn: { backgroundColor: "#999" },
 });

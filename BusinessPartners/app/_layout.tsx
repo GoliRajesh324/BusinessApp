@@ -22,14 +22,14 @@ export default function RootLayout() {
         <Stack.Screen
           name="dashboard"
           options={{
-            headerShown: true, // or false if you don’t want a header at all
+            headerShown: false, // or false if you don’t want a header at all
             title: "Business Dashboard", // custom title
           }}
         />
          <Stack.Screen
           name="businessDetail"
           options={{
-            headerShown: true, // or false if you don’t want a header at all
+            headerShown: false, // or false if you don’t want a header at all
             title: "Business Details", // custom title
           }}
         />

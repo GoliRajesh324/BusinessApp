@@ -1,33 +1,32 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
+  Modal,
+  Platform,
   ScrollView,
-  TouchableOpacity,
+  StatusBar,
   StyleSheet,
-  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRoute } from "@react-navigation/native";
 
-import { useRouter } from "expo-router";
-import axios from "axios";
+import { Entypo, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useLocalSearchParams } from "expo-router";
+import axios from "axios";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 import BASE_URL from "../src/config/config";
 import InvestmentTable from "./InvestmentTable";
-import AddInvestmentPopup from "./addInvestmentPopup";
-import WithdrawAmountPopup from "./WithdrawAmountPopup";
 import SoldAmountPopup from "./SoldAmountPopup";
+import WithdrawAmountPopup from "./WithdrawAmountPopup";
+import AddInvestmentPopup from "./addInvestmentPopup";
 import InvestmentAudit from "./components/InvestmentAudit";
-//import styles from "./BusinessDetailStyles";
 
 export default function BusinessDetail() {
   const { businessId, businessName } = useLocalSearchParams<{
     businessId?: string;
     businessName?: string;
   }>();
-
   const router = useRouter();
 
   // //console.log("➡️ Params received:", businessId, businessName);
@@ -49,11 +48,8 @@ export default function BusinessDetail() {
     { partnerName: string; leftOver: number }[]
   >([]);
   const [fabOpen, setFabOpen] = useState(false);
-
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-
-  const [showActions, setShowActions] = useState(false); // ✅ toggle state
 
   // Load token & userId
   useEffect(() => {
@@ -235,117 +231,137 @@ export default function BusinessDetail() {
       console.error(error);
     }
   };
-return (
-  <View style={{ flex: 1, position: "relative" }}>
-    <ScrollView style={styles.container}>
-      {/* Business Name */}
-      <Text style={styles.businessName}>{String(businessName || "")}</Text>
 
-      {/* Toggle-dependent actions */}
-      {showActions && (
-        <View>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.invBtn]}
-              onPress={() =>
-                router.push({
-                  pathname: "/crop-details/[businessId]",
-                  params: {
-                    businessId: String(businessId || ""),
-                    businessName: String(businessName || ""),
-                  },
-                })
-              }
-            >
-              <Text style={styles.buttonText}>Investments</Text>
-            </TouchableOpacity>
+  const handleBack = () => router.back();
 
-            <TouchableOpacity
-              style={[styles.button, styles.auditBtn]}
-              onPress={() => setShowAuditPopup(true)}
-            >
-              <Text style={styles.buttonText}>View Audit</Text>
-            </TouchableOpacity>
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBack} style={styles.headerLeft}>
+          <Ionicons name="arrow-back" size={28} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{String(businessName || "")}</Text>
+        <TouchableOpacity
+          style={styles.headerRight}
+          onPress={() => alert("Header actions")}
+        >
+          <Entypo name="dots-three-vertical" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
+      {/* Scrollable content */}
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 140, paddingHorizontal: 16 }}
+      >
+        {/*  <Text style={styles.businessName}>{String(businessName || "")}</Text> */}
+
+        {/* Summary Row */}
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryInfo}>
+            <Text style={styles.summaryText}>
+              <Text style={styles.summaryLabel}>Crop: </Text>
+              <Text style={styles.summaryValue}>
+                {String(cropDetails?.cropNumber || "-")}
+              </Text>
+            </Text>
+            <Text style={styles.summaryText}>
+              <Text style={styles.summaryLabel}>Total Investment: </Text>
+              <Text style={styles.summaryValue}>
+                {formatAmount(totalInvestment)}
+              </Text>
+            </Text>
+            <Text style={styles.summaryText}>
+              <Text style={styles.summaryLabel}>Total Sold: </Text>
+              <Text style={styles.summaryValue}>
+                {formatAmount(totalSoldAmount)}
+              </Text>
+            </Text>
           </View>
         </View>
-      )}
 
-      {/* Summary Row */}
-      <View style={styles.summaryRow}>
-        <View style={styles.summaryInfo}>
-          <Text style={styles.summaryText}>
-            <Text style={styles.summaryLabel}>Crop: </Text>
-            <Text style={styles.summaryValue}>
-              {String(cropDetails?.cropNumber || "-")}
-            </Text>
-          </Text>
+        {/* Investment Table */}
+        <InvestmentTable investmentDetails={investmentDetails} />
+      </ScrollView>
+      {/* Floating Action Button */}
+      <View style={styles.fabContainer}>
+        {fabOpen && (
+          <View style={styles.fabOptions}>
+            <TouchableOpacity
+              style={[styles.fabOption, { backgroundColor: "#ff9900" }]}
+              onPress={() => {
+                setSoldPopup(true);
+                setFabOpen(false);
+              }}
+            >
+              <Text style={styles.fabOptionText}>Sold</Text>
+            </TouchableOpacity>
 
-          <Text style={styles.summaryText}>
-            <Text style={styles.summaryLabel}>Total Investment: </Text>
-            <Text style={styles.summaryValue}>
-              {formatAmount(totalInvestment)}
-            </Text>
-          </Text>
+            <TouchableOpacity
+              style={[styles.fabOption, { backgroundColor: "#4f93ff" }]}
+              onPress={() => {
+                setShowPopup(true);
+                setFabOpen(false);
+              }}
+            >
+              <Text style={styles.fabOptionText}>Add Expense</Text>
+            </TouchableOpacity>
 
-          <Text style={styles.summaryText}>
-            <Text style={styles.summaryLabel}>Total Sold: </Text>
-            <Text style={styles.summaryValue}>
-              {formatAmount(totalSoldAmount)}
-            </Text>
-          </Text>
-        </View>
+            <TouchableOpacity
+              style={[styles.fabOption, { backgroundColor: "#f44336" }]}
+              onPress={() => {
+                setWithdrawPopup(true);
+                setFabOpen(false);
+              }}
+            >
+              <Text style={styles.fabOptionText}>Withdraw</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-        {/* Toggle Switch */}
-        <View style={styles.toggleContainer}>
-          <Text style={styles.toggleLabel}>
-            {showActions ? "Normal" : "Show All"}
-          </Text>
-          <Switch
-            value={showActions}
-            onValueChange={setShowActions}
-            thumbColor={showActions ? "#ccc" : "#ccc"}
-          />
-        </View>
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setFabOpen(!fabOpen)}
+        >
+          <Text style={styles.fabText}>{fabOpen ? "×" : "+"}</Text>
+        </TouchableOpacity>
       </View>
+      {/* Bottom Footer Buttons */}
+      <View style={styles.bottomButtonsContainer}>
+        <TouchableOpacity
+          style={styles.bottomButtonIcon}
+          onPress={() => alert("Charts")}
+        >
+          <MaterialIcons name="bar-chart" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>Charts</Text>
+        </TouchableOpacity>
 
-      {/* Investment Table */}
-      <InvestmentTable investmentDetails={investmentDetails} />
+        <TouchableOpacity
+          style={styles.bottomButtonIcon}
+          onPress={() => alert("All Investments")}
+        >
+          <Ionicons name="cash-outline" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>All Investments</Text>
+        </TouchableOpacity>
 
-      {/* Action Buttons */}
-      {/* {showActions && (
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.soldBtn]}
-            onPress={() => setSoldPopup(true)}
-          >
-            <Text style={styles.buttonText}>Sold</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, styles.addBtn]}
-            onPress={() => setShowPopup(true)}
-          >
-            <Text style={styles.buttonText}>Add Expense</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, styles.withdrawBtn]}
-            onPress={() => setWithdrawPopup(true)}
-          >
-            <Text style={styles.buttonText}>Withdraw</Text>
-          </TouchableOpacity>
-        </View>
-      )} */}
-
+        <TouchableOpacity
+          style={styles.bottomButtonIcon}
+          onPress={() => setShowAuditPopup(true)}
+        >
+          <MaterialIcons name="history" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>Change History</Text>
+        </TouchableOpacity>
+      </View>
       {/* Popups */}
+      {/* inside BusinessDetail */}
       {showPopup && (
-        <AddInvestmentPopup
-          partners={partners}
-          cropDetails={cropDetails}
-          visible={showPopup}
-          onClose={() => setShowPopup(false)}
-          onSave={handlePopupSave}
-        />
+        <Modal visible={showPopup} animationType="slide" transparent={true}>
+          <AddInvestmentPopup
+            partners={partners}
+            cropDetails={cropDetails}
+            onClose={() => setShowPopup(false)}
+            onSave={handlePopupSave}
+          />
+        </Modal>
       )}
 
       {withdrawPopup && (
@@ -358,7 +374,6 @@ return (
           onSave={handlePopupSave}
         />
       )}
-
       {soldPopup && (
         <SoldAmountPopup
           partners={partners}
@@ -368,7 +383,6 @@ return (
           onSave={handlePopupSave}
         />
       )}
-
       {showAuditPopup && (
         <InvestmentAudit
           businessId={String(businessId || "")}
@@ -377,20 +391,20 @@ return (
           onClose={() => setShowAuditPopup(false)}
         />
       )}
-
-      {/* Confirm Restart */}
       {confirmRestart && confirmRestart.length > 0 && (
         <View style={styles.popupOverlay}>
           <View style={styles.popupContent}>
             <Text style={styles.popupTitle}>
-              Do you really want to restart crop?{"\n"}
-              Leftover money exists for some partners.
+              Do you really want to restart crop?{"\n"}Leftover money exists for
+              some partners.
             </Text>
 
             <View style={styles.leftoverList}>
               {confirmRestart.map((p, idx) => (
                 <View key={idx} style={styles.leftoverItem}>
-                  <Text style={styles.partnerName}>{String(p.partnerName)}</Text>
+                  <Text style={styles.partnerName}>
+                    {String(p.partnerName)}
+                  </Text>
                   <Text style={styles.partnerAmount}>
                     ₹{formatAmount(p.leftOver)}
                   </Text>
@@ -423,94 +437,86 @@ return (
           </View>
         </View>
       )}
-    </ScrollView>
-
-    {/* Floating Action Button */}
-    <View style={styles.fabContainer}>
-      {fabOpen && (
-        <View style={styles.fabOptions}>
-          <TouchableOpacity
-            style={[styles.fabOption, { backgroundColor: "#ff9900" }]}
-            onPress={() => {
-              setSoldPopup(true);
-              setFabOpen(false);
-            }}
-          >
-            <Text style={styles.fabOptionText}>Sold</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.fabOption, { backgroundColor: "#4f93ff" }]}
-            onPress={() => {
-              setShowPopup(true);
-              setFabOpen(false);
-            }}
-          >
-            <Text style={styles.fabOptionText}>Add Expense</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.fabOption, { backgroundColor: "#f44336" }]}
-            onPress={() => {
-              setWithdrawPopup(true);
-              setFabOpen(false);
-            }}
-          >
-            <Text style={styles.fabOptionText}>Withdraw</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setFabOpen(!fabOpen)}
-      >
-        <Text style={styles.fabText}>{fabOpen ? "×" : "+"}</Text>
-      </TouchableOpacity>
     </View>
-  </View>
-);
-
+  );
 }
 
+// Existing styles + new styles for header & bottom buttons
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#f9fafb" },
-  businessName: {
-    fontSize: 24,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 20,
+  container: {
+    flex: 1,
+    backgroundColor: "#fff", // page background
   },
-  /*  toggleContainer: {
+
+  // -------- Header --------
+  header: {
+    height:
+      Platform.OS === "android" ? 80 + (StatusBar.currentHeight || 0) : 100,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
+    backgroundColor: "#fff",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    zIndex: 100,
   },
-  toggleLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginRight: 8,
-  }, */
-  summaryContainer: {
-    backgroundColor: "#f5f5f5",
+  headerLeft: { width: 40, justifyContent: "center", alignItems: "flex-start" },
+  headerRight: { width: 40, justifyContent: "center", alignItems: "flex-end" },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#000",
+  },
+
+  // -------- Business Name --------
+  businessName: {
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+    marginVertical: 12,
+    color: "#000",
+  },
+
+  // -------- Summary Row --------
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#fff",
     padding: 12,
     borderRadius: 10,
+    marginHorizontal: 16,
     marginBottom: 16,
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
   },
-  /* summaryText: { fontSize: 16, fontWeight: "600", marginBottom: 6 },
-  summaryLabel: {
-    color: "#666",
-    fontWeight: "500",
+  summaryInfo: { flex: 1 },
+  summaryText: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 6,
+    color: "#000",
   },
-  summaryValue: {
-    color: "#111",
-    fontWeight: "700",
-  }, */
+  summaryLabel: { color: "#555" },
+  summaryValue: { color: "#222", fontWeight: "700" },
+
+  // -------- Buttons --------
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 16,
+    marginHorizontal: 16,
   },
   button: {
     flex: 1,
@@ -525,46 +531,9 @@ const styles = StyleSheet.create({
   invBtn: { backgroundColor: "#4f93ff" },
   restartBtn: { backgroundColor: "#f44336" },
   auditBtn: { backgroundColor: "#999a9c" },
-  buttonText: { color: "#fff", fontWeight: "400", fontSize: 11 },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#f5f5f5",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 16,
-  },
+  buttonText: { color: "#fff", fontWeight: "500", fontSize: 13 },
 
-  summaryInfo: {
-    flex: 1,
-  },
-
-  summaryText: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 6,
-  },
-
-  summaryLabel: {
-    color: "#777", // lighter
-  },
-
-  summaryValue: {
-    color: "#222", // darker
-    fontWeight: "bold",
-  },
-
-  toggleContainer: {
-    alignItems: "center",
-    marginLeft: 12,
-  },
-  toggleLabel: {
-    fontSize: 8,
-    color: "#555",
-    marginBottom: 4,
-  },
-  // Overlay behind the popup
+  // -------- Popup --------
   popupOverlay: {
     position: "absolute",
     top: 0,
@@ -576,21 +545,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 999,
   },
-
-  // Popup container
   popupContent: {
     width: "90%",
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 20,
-    elevation: 5, // shadow for Android
-    shadowColor: "#000", // shadow for iOS
+    elevation: 5,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
-
-  // Popup title text
   popupTitle: {
     fontSize: 18,
     fontWeight: "600",
@@ -598,13 +563,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#333",
   },
-
-  // Leftover balances container
-  leftoverList: {
-    marginBottom: 20,
-  },
-
-  // Each partner row
+  leftoverList: { marginBottom: 20 },
   leftoverItem: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -612,28 +571,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
-
-  // Partner name
-  partnerName: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#444",
-  },
-
-  // Partner amount
-  partnerAmount: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#222",
-  },
-
-  // Buttons container
-  popupButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  // Move button
+  partnerName: { fontSize: 16, fontWeight: "500", color: "#444" },
+  partnerAmount: { fontSize: 16, fontWeight: "700", color: "#222" },
+  popupButtons: { flexDirection: "row", justifyContent: "space-between" },
   moveBtn: {
     flex: 1,
     backgroundColor: "#4f93ff",
@@ -642,8 +582,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     alignItems: "center",
   },
-
-  // Cancel button
   cancelBtn: {
     flex: 1,
     backgroundColor: "#999a9c",
@@ -652,51 +590,46 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     alignItems: "center",
   },
-fabContainer: {
-  position: "absolute",
-  bottom: 20,
-  right: 20,
-  zIndex: 1000,
-  alignItems: "flex-end", // ensures options align to right
-},
 
+  // -------- Floating Action Button --------
+  fabContainer: {
+    position: "absolute",
+    bottom: 80,
+    right: 20,
+    zIndex: 1000,
+    alignItems: "flex-end",
+  }, // bottom above footer
+  fab: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#2196F3",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 5,
+  },
+  fabText: { fontSize: 28, color: "#fff", fontWeight: "bold" },
+  fabOptions: { marginBottom: 10, alignItems: "flex-end" },
+  fabOption: {
+    width: 150,
+    height: 45,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 25,
+    marginBottom: 12,
+  },
+  fabOptionText: { color: "#fff", fontWeight: "600", fontSize: 14 },
 
-fab: {
-  width: 60,
-  height: 60,
-  borderRadius: 30,
-  backgroundColor: "#2196F3",
-  justifyContent: "center",
-  alignItems: "center",
-  elevation: 5,
-},
-
-fabText: {
-  fontSize: 28,
-  color: "#fff",
-  fontWeight: "bold",
-},
-
-fabOptions: {
-  marginBottom: 10,
-  alignItems: "flex-end",
-},
-
-
-fabOption: {
-  width: 150,             // ✅ same width for all
-  height: 45,             // ✅ same height for all
-  justifyContent: "center",
-  alignItems: "center",
-  borderRadius: 25,
-  marginBottom: 12,
-},
-
-fabOptionText: {
-  color: "#fff",
-  fontWeight: "600",
-  fontSize: 14,
-},
-
-
+  // -------- Bottom Buttons --------
+  bottomButtonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#ddd",
+    backgroundColor: "#fff",
+  },
+  bottomButton: { alignItems: "center" },
+  bottomButtonIcon: { width: 24, height: 24, marginBottom: 4 },
+  bottomButtonText: { fontSize: 12, color: "#333" },
 });

@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import {
+  Dimensions,
+  LayoutAnimation,
   Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
+  UIManager,
   View,
 } from "react-native";
 
@@ -49,6 +52,25 @@ export default function BusinessDetail() {
   const [fabOpen, setFabOpen] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+
+  const [expanded, setExpanded] = useState(false);
+
+  // enable LayoutAnimation for Android
+  useEffect(() => {
+    if (
+      Platform.OS === "android" &&
+      UIManager.setLayoutAnimationEnabledExperimental
+    ) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
+  const toggleExpanded = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpanded((v) => !v);
+  };
+
+  const tableMaxHeight = Math.round(Dimensions.get("window").height * 0.55); // adjust as needed
 
   // Load token & userId
   useEffect(() => {
@@ -243,44 +265,107 @@ export default function BusinessDetail() {
         <Text style={styles.headerTitle}>{String(businessName || "")}</Text>
         <TouchableOpacity
           style={styles.headerRight}
-          onPress={() => alert("Header actions")}
+          onPress={() => alert("Header actions comming soon")}
         >
           <Entypo name="dots-three-vertical" size={24} color="#000" />
         </TouchableOpacity>
       </View>
+
       {/* Scrollable content */}
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 180, paddingHorizontal: 16 }}
+        contentContainerStyle={{
+          paddingBottom: 180,
+          paddingHorizontal: 16,
+          paddingTop: 16, // spacing from header
+        }}
       >
-        {/*  <Text style={styles.businessName}>{String(businessName || "")}</Text> */}
-
-        {/* Summary Row */}
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryInfo}>
-            <Text style={styles.summaryText}>
-              <Text style={styles.summaryLabel}>Crop: </Text>
-              <Text style={styles.summaryValue}>
-                {String(cropDetails?.cropNumber || "-")}
+        {/* Summary Card (tap to expand/collapse) */}
+        <TouchableOpacity
+          activeOpacity={0.95}
+          onPress={toggleExpanded}
+          style={[styles.summaryCard, expanded && styles.summaryCardExpanded]}
+        >
+          <View style={styles.summaryVertical}>
+            {/*  <View style={styles.summaryItemRow}>
+              <Text style={styles.summaryLabelSmall}>Crop :</Text>
+              <Text style={styles.summaryValueLarge}>
+                {String(cropDetails?.cropNumber ?? "-")}
               </Text>
-            </Text>
-            <Text style={styles.summaryText}>
-              <Text style={styles.summaryLabel}>Total Investment: </Text>
-              <Text style={styles.summaryValue}>
+            </View> */}
+
+            <View style={styles.summaryItemRow}>
+              <Text style={styles.summaryLabelSmall}>Availabe Money :</Text>
+              <Text style={styles.summaryValueLarge}>
                 {formatAmount(totalInvestment)}
               </Text>
-            </Text>
-            <Text style={styles.summaryText}>
-              <Text style={styles.summaryLabel}>Total Sold: </Text>
-              <Text style={styles.summaryValue}>
+            </View>
+
+            <View style={styles.summaryItemRow}>
+              <Text style={styles.summaryLabelSmall}>You Investment :</Text>
+              <Text style={styles.summaryValueLarge}>
+                {formatAmount(totalInvestment)}
+              </Text>
+            </View>
+
+            <View style={styles.summaryItemRow}>
+              <Text style={styles.summaryLabelSmall}>You Sold :</Text>
+              <Text style={styles.summaryValueLarge}>
                 {formatAmount(totalSoldAmount)}
               </Text>
-            </Text>
-          </View>
-        </View>
+            </View>
 
-        {/* Investment Table */}
-        <InvestmentTable investmentDetails={investmentDetails} />
+            <View style={styles.summaryItemRow}>
+              <Text style={styles.summaryLabelSmall}>You Share :</Text>
+              <Text style={styles.summaryValueLarge}>
+                75%
+              </Text>
+            </View>
+            <View style={styles.summaryItemRow}>
+              <Text style={styles.summaryLabelSmall}>Total Investment :</Text>
+              <Text style={styles.summaryValueLarge}>
+                {formatAmount(totalInvestment)}
+              </Text>
+            </View>
+
+            <View style={styles.summaryItemRow}>
+              <Text style={styles.summaryLabelSmall}>Total Sold :</Text>
+              <Text style={styles.summaryValueLarge}>
+                {formatAmount(totalSoldAmount)}
+              </Text>
+            </View>
+
+            <View style={{ alignItems: "center", marginTop: 4 }}>
+              <Ionicons
+                name={expanded ? "chevron-up" : "chevron-down"}
+                size={22}
+                color="#666"
+              />
+            </View>
+          </View>
+
+          {/* optional expanded summary area (additional details) */}
+          {expanded && (
+            <View style={styles.expandedContent}>
+              {/* you can show more summary details here if needed */}
+              <Text style={{ color: "#666" }}>
+                Tap the card to collapse. Scroll the table below for more
+                details.
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* Expanded table area */}
+        {expanded && (
+          <View style={[styles.tableContainer, { maxHeight: tableMaxHeight }]}>
+            {/* nested scroll enabled so table can scroll inside main scroll */}
+            <ScrollView nestedScrollEnabled>
+              <InvestmentTable investmentDetails={investmentDetails} />
+            </ScrollView>
+          </View>
+        )}
       </ScrollView>
+
       {/* Floating Action Button */}
       <View style={styles.fabContainer}>
         {fabOpen && (
@@ -328,7 +413,7 @@ export default function BusinessDetail() {
       <View style={styles.bottomButtonsContainer}>
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() => alert("Charts")}
+          onPress={() => alert("Charts Feature coming soon")}
         >
           <MaterialIcons name="bar-chart" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Charts</Text>
@@ -336,7 +421,7 @@ export default function BusinessDetail() {
 
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() => alert("Inventory")}
+          onPress={() => alert("Inventory Feature coming soon")}
         >
           <Ionicons name="cube-outline" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Inventory</Text>
@@ -344,7 +429,7 @@ export default function BusinessDetail() {
 
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() => alert("All Investments")}
+          onPress={() => alert("All Investments Feature coming soon")}
         >
           <Ionicons name="cash-outline" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Investments</Text>
@@ -501,7 +586,7 @@ const styles = StyleSheet.create({
   },
 
   // -------- Summary Row --------
-  summaryRow: {
+  /*   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -515,7 +600,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 1,
-  },
+  }, */
   summaryInfo: { flex: 1 },
   summaryText: {
     fontSize: 16,
@@ -523,8 +608,70 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     color: "#000",
   },
-  summaryLabel: { color: "#555" },
-  summaryValue: { color: "#222", fontWeight: "700" },
+  /*   summaryLabel: { color: "#555" },
+  summaryValue: { color: "#222", fontWeight: "700" }, */
+  summaryCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+  },
+  summaryCardExpanded: {
+    // tiny visual difference when expanded
+    borderColor: "#e6f0ff",
+    borderWidth: 1,
+  },
+  summaryTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  summaryItem: {
+    flex: 1,
+    paddingHorizontal: 6,
+  },
+
+  summaryLabelSmall: {
+    fontSize: 13,
+    color: "#6b7280",
+    fontWeight: "600",
+  },
+  summaryValueLarge: {
+    fontSize: 15,
+    color: "#111827",
+    fontWeight: "700",
+  },
+  expandedContent: {
+    marginTop: 12,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#f1f5f9",
+  },
+  tableContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 8,
+    marginBottom: 20,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+  },
+  summaryVertical: {
+    flexDirection: "column",
+    gap: 6,
+  },
+  summaryItemRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 2,
+  },
 
   // -------- Buttons --------
   buttonContainer: {
@@ -608,59 +755,58 @@ const styles = StyleSheet.create({
 
   // -------- Floating Action Button --------
   fabContainer: {
-  position: "absolute",
-  bottom: Platform.OS === "ios" ? 110 : 90, // ⬆️ lifted to sit nicely above bottom bar
-  right: 25,
-  zIndex: 1000,
-  alignItems: "flex-end",
-},
+    position: "absolute",
+    bottom: Platform.OS === "ios" ? 110 : 90, // ⬆️ lifted to sit nicely above bottom bar
+    right: 25,
+    zIndex: 1000,
+    alignItems: "flex-end",
+  },
 
-fab: {
-  width: 60,
-  height: 60,
-  borderRadius: 30,
-  backgroundColor: "#2196F3",
-  justifyContent: "center",
-  alignItems: "center",
-  elevation: 6,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.25,
-  shadowRadius: 3.84,
-},
+  fab: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#2196F3",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
 
-fabText: {
-  fontSize: 28,
-  color: "#fff",
-  fontWeight: "bold",
-},
+  fabText: {
+    fontSize: 28,
+    color: "#fff",
+    fontWeight: "bold",
+  },
 
-fabOptions: {
-  marginBottom: 14,
-  alignItems: "flex-end",
-},
+  fabOptions: {
+    marginBottom: 14,
+    alignItems: "flex-end",
+  },
 
-fabOption: {
-  width: 150,
-  height: 45,
-  justifyContent: "center",
-  alignItems: "center",
-  borderRadius: 25,
-  marginBottom: 12,
-  backgroundColor: "#4F93FF",
-  elevation: 3,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.2,
-  shadowRadius: 2,
-},
+  fabOption: {
+    width: 150,
+    height: 45,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 25,
+    marginBottom: 12,
+    backgroundColor: "#4F93FF",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
 
-fabOptionText: {
-  color: "#fff",
-  fontWeight: "600",
-  fontSize: 14,
-},
-
+  fabOptionText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
 
   // -------- Bottom Buttons --------
   bottomButtonsContainer: {

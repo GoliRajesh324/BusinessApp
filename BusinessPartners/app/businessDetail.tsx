@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 
-import { Entypo, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Entypo, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -415,14 +415,14 @@ export default function BusinessDetail() {
           style={styles.bottomButtonIcon}
           onPress={()=>router.push("/dashboard")}
         >
-          <MaterialIcons name="home-work" size={28} color="#4f93ff" />
+          <Ionicons name="home" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.bottomButtonIcon}
           onPress={() => alert("Charts Feature coming soon")}
         >
-          <MaterialIcons name="bar-chart" size={28} color="#4f93ff" />
+          <Ionicons name="bar-chart" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Charts</Text>
         </TouchableOpacity>
 
@@ -430,7 +430,7 @@ export default function BusinessDetail() {
           style={styles.bottomButtonIcon}
           onPress={() => alert("Inventory Feature coming soon")}
         >
-          <Ionicons name="cube-outline" size={28} color="#4f93ff" />
+          <Ionicons name="cube" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Inventory</Text>
         </TouchableOpacity>
 
@@ -446,7 +446,7 @@ export default function BusinessDetail() {
           style={styles.bottomButtonIcon}
           onPress={() => setShowAuditPopup(true)}
         >
-          <MaterialIcons name="history" size={28} color="#4f93ff" />
+          <Ionicons name="time" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>History</Text>
         </TouchableOpacity>
       </View>

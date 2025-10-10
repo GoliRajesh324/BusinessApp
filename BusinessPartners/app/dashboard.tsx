@@ -9,10 +9,11 @@ import {
   FlatList,
   Image,
   Modal,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import BASE_URL from "../src/config/config";
 import AddBusinessPopup from "./components/AddBusinessPopup";
@@ -166,25 +167,23 @@ export default function Dashboard() {
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <View style={styles.profileSection}>
+        <TouchableOpacity
+          style={styles.profileSection}
+          onPress={() => router.push("/profileScreen")}
+        >
           <Image
             source={{
-              uri: "https://cdn-icons-png.flaticon.com/512/847/847969.png",
+              uri: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
             }}
             style={styles.profileIcon}
           />
           <View style={styles.usernameContainer}>
             <Text style={styles.username}>{username}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => {
-            handleLogout();
-            console.log("Notification clicked");
-          }}
-        >
-          <Ionicons name="notifications-outline" size={28} color="#333" />
+        <TouchableOpacity onPress={() => alert("Notifications feature coming soon")}>
+          <Ionicons name="notifications-outline" size={28} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -227,8 +226,10 @@ export default function Dashboard() {
         )}
       />
 
+     
+
       {/* FOOTER BAR */}
-      <View style={styles.footer}>
+      {/*   <View style={styles.footer}>
         <TouchableOpacity style={styles.footerItem}>
           <Ionicons name="home" size={26} color="#2563eb" />
           <Text style={styles.footerText}>Home</Text>
@@ -248,16 +249,67 @@ export default function Dashboard() {
           <MaterialIcons name="manage-history" size={26} color="#2563eb" />
           <Text style={styles.footerText}>History</Text>
         </TouchableOpacity>
+      </View> */}
+
+      {/* Bottom Footer Buttons */}
+      <View style={styles.bottomButtonsContainer}>
+         <TouchableOpacity
+        style={styles.floatingButton}
+        onPress={() => {
+          setEditingBusiness(null);
+          setShowPopup(true);
+        }}
+      >
+        <Text style={styles.floatingButtonText}>Add business</Text>
+      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.bottomButtonIcon}
+          // onPress={()=>router.push("/dashboard")}
+        >
+          <MaterialIcons name="home-work" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.bottomButtonIcon}
+          onPress={() => alert("Charts Feature coming soon")}
+        >
+          <MaterialIcons name="bar-chart" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>Charts</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.bottomButtonIcon}
+          onPress={() => alert("Inventory Feature coming soon")}
+        >
+          <Ionicons name="cube-outline" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>Inventory</Text>
+        </TouchableOpacity>
+
+        {/*  <TouchableOpacity
+                style={styles.bottomButtonIcon}
+                onPress={() => alert("All Investments Feature coming soon")}
+              >
+                <Ionicons name="cash-outline" size={28} color="#4f93ff" />
+                <Text style={styles.bottomButtonText}>Investments</Text>
+              </TouchableOpacity> */}
+
+        <TouchableOpacity
+          style={styles.bottomButtonIcon}
+          onPress={() => alert("History Feature coming soon")}
+        >
+          <MaterialIcons name="history" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>History</Text>
+        </TouchableOpacity>
       </View>
 
       {/* ADD BUSINESS POPUP */}
       {showPopup && (
-            <AddBusinessPopup
-              visible={showPopup}
-              onClose={() => setShowPopup(false)}
+        <AddBusinessPopup
+          visible={showPopup}
+          onClose={() => setShowPopup(false)}
           onSave={handleSaveBusiness}
-              editingBusiness={editingBusiness}
-            />
+          editingBusiness={editingBusiness}
+        />
       )}
 
       {/* CONFIRM START */}
@@ -467,4 +519,61 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 2,
   },
+
+  // -------- Bottom Buttons --------
+  bottomButtonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingBottom: Platform.OS === "ios" ? 30 : 16, // safe area spacing
+    borderTopWidth: 1,
+    borderColor: "#e0e0e0",
+    backgroundColor: "#fff",
+    position: "absolute",
+    bottom: Platform.OS === "ios" ? 10 : 0, // ⬅️ lifts bar a bit upward
+    left: 0,
+    right: 0,
+    elevation: 10, // Android shadow
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: -2 },
+    shadowRadius: 4,
+  },
+
+  bottomButtonIcon: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+  },
+
+  bottomButtonText: {
+    fontSize: 13,
+    color: "#4f93ff",
+    marginTop: 2,
+    textAlign: "center",
+  },
+
+  // ------------------------------Floating Add business button ------------------------------
+floatingButton: {
+  position: 'absolute',
+  bottom: 110, // above bottom buttons
+  right: 15,
+  paddingHorizontal: 16,
+  paddingVertical: 12,
+  borderRadius: 30,
+  backgroundColor: '#1E90FF',
+  justifyContent: 'center',
+  alignItems: 'center',
+  elevation: 5,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 4,
+},
+floatingButtonText: {
+  fontSize: 16,
+  color: '#fff',
+  fontWeight: '600',
+},
 });

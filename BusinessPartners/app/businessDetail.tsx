@@ -413,6 +413,13 @@ export default function BusinessDetail() {
       <View style={styles.bottomButtonsContainer}>
         <TouchableOpacity
           style={styles.bottomButtonIcon}
+          onPress={()=>router.push("/dashboard")}
+        >
+          <MaterialIcons name="home-work" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.bottomButtonIcon}
           onPress={() => alert("Charts Feature coming soon")}
         >
           <MaterialIcons name="bar-chart" size={28} color="#4f93ff" />
@@ -427,13 +434,13 @@ export default function BusinessDetail() {
           <Text style={styles.bottomButtonText}>Inventory</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
+       {/*  <TouchableOpacity
           style={styles.bottomButtonIcon}
           onPress={() => alert("All Investments Feature coming soon")}
         >
           <Ionicons name="cash-outline" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Investments</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity
           style={styles.bottomButtonIcon}

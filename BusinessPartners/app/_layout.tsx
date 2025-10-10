@@ -33,6 +33,13 @@ export default function RootLayout() {
             title: "Business Details", // custom title
           }}
         />
+        <Stack.Screen
+          name="profileScreen"
+          options={{
+            headerShown: false, // or false if you don’t want a header at all
+           
+          }}
+        />
         {/* <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="dashboard" options={{ headerShown: false }} /> */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

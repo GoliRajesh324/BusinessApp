@@ -260,7 +260,7 @@ export default function Dashboard() {
           setShowPopup(true);
         }}
       >
-        <Text style={styles.floatingButtonText}>Add business</Text>
+        <Text style={styles.floatingButtonText}>+ Add business</Text>
       </TouchableOpacity>
         <TouchableOpacity
           style={styles.bottomButtonIcon}

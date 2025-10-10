@@ -54,7 +54,7 @@ export default function ProfileScreen() {
       {/* PROFILE INFO */}
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ flexGrow: 1,paddingBottom: 40 }}
         >
         <View style={styles.profileSection}>
            <Image
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f6fb",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    marginTop: 20,
+    //marginTop: 20,
     paddingVertical: 20,
     paddingHorizontal: 15,
 

@@ -36,6 +36,7 @@ export default function BusinessDetail() {
   // Ensure safe usage
   const safeBusinessId = businessId ? String(businessId) : "";
   const safeBusinessName = businessName ? String(businessName) : "";
+  // AsyncStorage.setItem("businessName", safeBusinessName);
 
   const [partners, setPartners] = useState<any[]>([]);
   const [showPopup, setShowPopup] = useState(false);
@@ -313,13 +314,6 @@ export default function BusinessDetail() {
                 {formatAmount(totalSoldAmount)}
               </Text>
             </View>
-
-            <View style={styles.summaryItemRow}>
-              <Text style={styles.summaryLabelSmall}>You Share :</Text>
-              <Text style={styles.summaryValueLarge}>
-                75%
-              </Text>
-            </View>
             <View style={styles.summaryItemRow}>
               <Text style={styles.summaryLabelSmall}>Total Investment :</Text>
               <Text style={styles.summaryValueLarge}>
@@ -367,7 +361,7 @@ export default function BusinessDetail() {
       </ScrollView>
 
       {/* Floating Action Button */}
-      <View style={styles.fabContainer}>
+      {/*       <View style={styles.fabContainer}>
         {fabOpen && (
           <View style={styles.fabOptions}>
             <TouchableOpacity
@@ -408,12 +402,24 @@ export default function BusinessDetail() {
         >
           <Text style={styles.fabText}>{fabOpen ? "×" : "+"}</Text>
         </TouchableOpacity>
+      </View> */}
+
+      <View style={styles.fabContainer}>
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => {
+            setShowPopup(true);
+            setFabOpen(false);
+          }}
+        >
+          <Text style={styles.fabText}>+</Text>
+        </TouchableOpacity>
       </View>
       {/* Bottom Footer Buttons */}
       <View style={styles.bottomButtonsContainer}>
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={()=>router.push("/dashboard")}
+          onPress={() => router.push("/dashboard")}
         >
           <Ionicons name="home" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Home</Text>
@@ -434,7 +440,7 @@ export default function BusinessDetail() {
           <Text style={styles.bottomButtonText}>Inventory</Text>
         </TouchableOpacity>
 
-       {/*  <TouchableOpacity
+        {/*  <TouchableOpacity
           style={styles.bottomButtonIcon}
           onPress={() => alert("All Investments Feature coming soon")}
         >
@@ -565,7 +571,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop:
       Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
-    backgroundColor: "#fff",
+    backgroundColor: "#4f93ff",
     elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },

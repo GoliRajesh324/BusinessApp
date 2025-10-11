@@ -32,7 +32,7 @@ export default function ProfileScreen() {
     { icon: "star", text: "Rate Us" },
     { icon: "diamond", text: "Business Money Pro", color: "#c9a46a" },
     { icon: "share-social-outline", text: "Share" },
-    { icon: "settings-outline", text: "Settings" },
+    { icon: "settings-outline", text: "Settings", action: () => router.push("/settingsScreen") },
     { icon: "help-circle-outline", text: "Help & Support" },
     { icon: "log-out-outline", text: "Logout", action: handleLogout },
   ];
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#e8eaf6", // soft background behind card
   },
-  container: { flex: 1, backgroundColor: "#8e83b7ff" },
+  container: { flex: 1, backgroundColor: "#4f93ff" },
   header: {
     flexDirection: "row",
     alignItems: "center",

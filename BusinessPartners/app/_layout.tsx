@@ -40,8 +40,13 @@ export default function RootLayout() {
            
           }}
         />
-        {/* <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="dashboard" options={{ headerShown: false }} /> */}
+        <Stack.Screen
+          name="settingsScreen"
+          options={{
+            headerShown: false, // or false if you don’t want a header at all
+           
+          }}
+        />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="modal"

@@ -1,0 +1,171 @@
+import React, { useState } from "react";
+import {
+    Alert,
+    Platform,
+    StatusBar,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+
+import { Ionicons } from "@expo/vector-icons";
+import * as LocalAuthentication from "expo-local-authentication";
+import { useRouter } from "expo-router";
+
+export default function SettingsScreen() {
+  const router = useRouter();
+  const [appLockEnabled, setAppLockEnabled] = useState(false);
+
+  // Check device support for biometrics
+  const checkBiometricSupport = async () => {
+    const compatible = await LocalAuthentication.hasHardwareAsync();
+    const enrolled = await LocalAuthentication.isEnrolledAsync();
+
+    if (!compatible) {
+      Alert.alert("Not Supported", "Biometric authentication is not supported on this device.");
+      return false;
+    }
+
+    if (!enrolled) {
+      Alert.alert("Not Set Up", "Please set up Face ID or Fingerprint on your device first.");
+      return false;
+    }
+
+    return true;
+  };
+
+  // Perform biometric authentication
+  const handleBiometricAuth = async () => {
+    const supported = await checkBiometricSupport();
+    if (!supported) return false;
+
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: "Authenticate to enable App Lock",
+      fallbackLabel: "Use Passcode",
+      disableDeviceFallback: false,
+    });
+
+    if (result.success) {
+      console.log("✅ Authentication successful");
+      Alert.alert("Success", "App Lock enabled successfully!");
+      return true;
+    } else {
+      console.log("❌ Authentication failed or cancelled");
+      Alert.alert("Failed", "Authentication failed or cancelled.");
+      return false;
+    }
+  };
+
+  // Toggle App Lock
+  const toggleAppLock = async (value: boolean) => {
+    if (value) {
+      const authSuccess = await handleBiometricAuth();
+      if (authSuccess) {
+        setAppLockEnabled(true);
+      } else {
+        setAppLockEnabled(false);
+      }
+    } else {
+      setAppLockEnabled(false);
+      Alert.alert("App Lock Disabled", "App Lock has been turned off.");
+    }
+  };
+
+  const handleBack = () => router.back();
+
+  return (
+    <View style={styles.container}>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBack} style={styles.headerLeft}>
+          <Ionicons name="arrow-back" size={28} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Settings</Text>
+        <View style={styles.headerRight} />
+      </View>
+
+      {/* SETTINGS CONTENT */}
+      <View style={styles.card}>
+        <View style={styles.optionRow}>
+          <View style={styles.optionLeft}>
+            <Ionicons name="lock-closed-outline" size={22} color="#333" />
+            <Text style={styles.optionText}>App Lock</Text>
+          </View>
+          <Switch
+            value={appLockEnabled}
+            onValueChange={toggleAppLock}
+            trackColor={{ false: "#ccc", true: "#4f93ff" }}
+            thumbColor={appLockEnabled ? "#fff" : "#f4f3f4"}
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#e8eaf6",
+  },
+
+  // HEADER
+  header: {
+    height:
+      Platform.OS === "android" ? 80 + (StatusBar.currentHeight || 0) : 100,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
+    backgroundColor: "#4f93ff",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    zIndex: 100,
+  },
+  headerLeft: { width: 40, justifyContent: "center", alignItems: "flex-start" },
+  headerRight: { width: 40 },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#fff",
+  },
+
+  // CONTENT CARD
+  card: {
+    backgroundColor: "#fff",
+    marginTop: 20,
+    marginHorizontal: 15,
+    borderRadius: 15,
+    padding: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  optionRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  optionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  optionText: {
+    fontSize: 16,
+    color: "#333",
+    marginLeft: 10,
+  },
+});

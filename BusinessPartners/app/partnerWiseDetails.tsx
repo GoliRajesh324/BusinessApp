@@ -18,6 +18,10 @@ export default function PartnerWiseDetails() {
   const { businessId, businessName } = useLocalSearchParams();
   const [partners, setPartners] = useState<any[]>([]);
   const [token, setToken] = useState<string | null>(null);
+    const [investmentDetails, setInvestmentDetails] = useState<any[]>([]);
+    const [investments, setInvestments] = useState<any[]>([]); // <-- new
+    const [totalInvestment, setTotalInvestment] = useState(0);
+    const [totalSoldAmount, setTotalSoldAmount] = useState(0);  
 
   useEffect(() => {
     const loadData = async () => {
@@ -49,6 +53,38 @@ export default function PartnerWiseDetails() {
     fetchPartners();
   }, [token, businessId]);
 
+
+    // Fetch business info
+  useEffect(() => {
+    if (!token || !businessId) return;
+    const fetchBusinessInfo = async () => {
+      try {
+        const response = await fetch(
+          `${BASE_URL}/api/business/${businessId}/business-details-by-id`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const text = await response.text();
+        if (!response.ok || !text) return;
+        const data = JSON.parse(text);
+
+        setTotalInvestment(data.totalInvestment || 0);
+        setTotalSoldAmount(data.totalSoldAmount || 0);
+        setInvestmentDetails(data.investmentDetails || []);
+
+       /*  if (data.crop) {
+          setCropDetails({
+            id: data.crop.id,
+            cropNumber: data.crop.cropNumber,
+          });
+        } */
+      } catch (err) {
+        console.error("❌ Error fetching business info:", err);
+      }
+    };
+
+    fetchBusinessInfo();
+  }, [businessId, token]);
+
   const formatAmount = (v: any) =>
     Number(v || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
@@ -67,32 +103,32 @@ export default function PartnerWiseDetails() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {partners.map((p, index) => (
+        {investmentDetails.map((inv, index) => (
           <View key={index} style={styles.card}>
             <View style={styles.rowBetween}>
-              <Text style={styles.partnerName}>{p.username}</Text>
-              <Text style={styles.smallShare}>Share: {p.share}%</Text>
+              <Text style={styles.partnerName}>{inv.partner.username}</Text>
+              <Text style={styles.smallShare}>Share: {inv.partner.share}%</Text>
             </View>
 
             <View style={styles.rowWrap}>
               <View style={styles.item}>
                 <Text style={styles.label}>Available Money</Text>
-                <Text style={styles.value}>₹{formatAmount(p.leftOver)}</Text>
+                <Text style={styles.value}>₹{formatAmount(inv.leftOver)}</Text>
               </View>
               <View style={styles.item}>
                 <Text style={styles.label}>Withdrawn</Text>
-                <Text style={styles.value}>₹{formatAmount(p.withdrawn)}</Text>
+                <Text style={styles.value}>₹{formatAmount(inv.withdrawn)}</Text>
               </View>
               <View style={styles.item}>
                 <Text style={styles.label}>Actual Investment</Text>
                 <Text style={styles.value}>
-                  ₹{formatAmount(p.actualInvestment)}
+                  ₹{formatAmount(inv.actualInvestment)}
                 </Text>
               </View>
               <View style={styles.item}>
                 <Text style={styles.label}>You Invested</Text>
                 <Text style={styles.value}>
-                  ₹{formatAmount(p.yourInvestment)}
+                  ₹{formatAmount(inv.yourInvestment)}
                 </Text>
               </View>
             </View>

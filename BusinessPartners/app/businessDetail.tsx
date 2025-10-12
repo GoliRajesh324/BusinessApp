@@ -39,8 +39,8 @@ export default function BusinessDetail() {
 
   const [partners, setPartners] = useState<any[]>([]);
   const [showPopup, setShowPopup] = useState(false);
-  const [soldPopup, setSoldPopup] = useState(false);
-  const [withdrawPopup, setWithdrawPopup] = useState(false);
+  const [leftOver, setLeftOver] = useState(0);
+  const [yourInvestment, setYourInvestment] = useState(0);
   const [investmentDetails, setInvestmentDetails] = useState<any[]>([]);
   const [investments, setInvestments] = useState<any[]>([]); // <-- new
   const [totalInvestment, setTotalInvestment] = useState(0);
@@ -291,6 +291,12 @@ export default function BusinessDetail() {
       setTotalSoldAmount(data.totalSoldAmount);
       setCropDetails(data.crop);
       setInvestmentDetails(data.investmentDetails);
+      investmentDetails.forEach((item) => {
+        const partner = item.partner; // partner object
+        if (partner.userId === userId) {
+          setYourInvestment(item.yourInvestment);
+        }
+      });
       // refresh investments list
       fetchInvestments();
     } catch (error) {
@@ -310,13 +316,18 @@ export default function BusinessDetail() {
 
   // Render intelligent card based on flags
   const renderInvestmentCard = (inv: any, idx: number) => {
+    // Choose background color based on investmentGroupId
+    const bgColor =
+      (inv?.investmentGroupId ?? 0) % 2 === 0 ? "#e1e3e6ff" : "#fff";
+
     const soldFlag = inv?.soldFlag ?? inv?.soldflag ?? "N";
     const withdrawFlag = inv?.withdrawFlag ?? inv?.withdrawflag ?? "N";
 
     // Normalize names
     const description = inv?.description || inv?.comments || "-";
     const partnerName = inv?.partnerName || inv?.supplierName || "-";
-    const totalAmount = inv?.totalAmount ?? inv?.invested ?? inv?.investable ?? 0;
+    const totalAmount =
+      inv?.totalAmount ?? inv?.invested ?? inv?.investable ?? 0;
     const invested = inv?.invested ?? inv?.investable ?? 0;
     const investable = inv?.investable ?? 0;
     const withdrawn = inv?.withdrawn ?? 0;
@@ -327,7 +338,10 @@ export default function BusinessDetail() {
     const createdAt = inv?.createdAt || inv?.createdDate || null;
 
     return (
-      <View key={String(inv?.investmentId ?? idx)} style={styles.investmentCard}>
+      <View
+        key={String(inv?.investmentId ?? idx)}
+        style={[styles.investmentCard, { backgroundColor: bgColor }]}
+      >
         <View style={styles.cardHeader}>
           <View style={{ flex: 1 }}>
             <Text style={styles.cardTitle} numberOfLines={2}>
@@ -377,7 +391,7 @@ export default function BusinessDetail() {
         <View style={styles.cardFooter}>
           <Text style={styles.createdAtText}>{formatDateTime(createdAt)}</Text>
 
-        {/*   <TouchableOpacity
+          {/*   <TouchableOpacity
             onPress={() => {
               // light action: maybe open audit or navigate to detailed view later
               Alert.alert("Investment", `${description}\n\nID: ${inv?.investmentId}`);
@@ -423,19 +437,27 @@ export default function BusinessDetail() {
               params: {
                 businessId: safeBusinessId,
                 businessName: safeBusinessName,
+                investmentDetails: investmentDetails,
               },
             })
           }
           style={[styles.summaryCard, expanded && styles.summaryCardExpanded]}
         >
-          <View style={styles.summaryVertical}>
-            {/*  <View style={styles.summaryItemRow}>
-              <Text style={styles.summaryLabelSmall}>Crop :</Text>
-              <Text style={styles.summaryValueLarge}>
-                {String(cropDetails?.cropNumber ?? "-")}
-              </Text>
-            </View> */}
+          <View style={styles.summaryItemRow}>
+            <Text style={styles.summaryLabelSmall}>Total Investment :</Text>
+            <Text style={styles.summaryValueLarge}>
+              {formatAmount(totalInvestment)}
+            </Text>
+          </View>
 
+          <View style={styles.summaryItemRow}>
+            <Text style={styles.summaryLabelSmall}>Total Sold :</Text>
+            <Text style={styles.summaryValueLarge}>
+              {formatAmount(totalSoldAmount)}
+            </Text>
+          </View>
+
+          <View style={styles.summaryVertical}>
             <View style={styles.summaryItemRow}>
               <Text style={styles.summaryLabelSmall}>Availabe Money :</Text>
               <Text style={styles.summaryValueLarge}>
@@ -446,27 +468,7 @@ export default function BusinessDetail() {
             <View style={styles.summaryItemRow}>
               <Text style={styles.summaryLabelSmall}>Your Investment :</Text>
               <Text style={styles.summaryValueLarge}>
-                {formatAmount(totalInvestment)}
-              </Text>
-            </View>
-
-            <View style={styles.summaryItemRow}>
-              <Text style={styles.summaryLabelSmall}>You Sold :</Text>
-              <Text style={styles.summaryValueLarge}>
-                {formatAmount(totalSoldAmount)}
-              </Text>
-            </View>
-            <View style={styles.summaryItemRow}>
-              <Text style={styles.summaryLabelSmall}>Total Investment :</Text>
-              <Text style={styles.summaryValueLarge}>
-                {formatAmount(totalInvestment)}
-              </Text>
-            </View>
-
-            <View style={styles.summaryItemRow}>
-              <Text style={styles.summaryLabelSmall}>Total Sold :</Text>
-              <Text style={styles.summaryValueLarge}>
-                {formatAmount(totalSoldAmount)}
+                {formatAmount(yourInvestment)}
               </Text>
             </View>
 
@@ -478,7 +480,6 @@ export default function BusinessDetail() {
               />
             </View> */}
           </View>
-      
 
           {/* optional expanded summary area (additional details) */}
           {/* {expanded && (
@@ -500,8 +501,8 @@ export default function BusinessDetail() {
             </ScrollView>
           </View>
         )} */}
-         {/* --- New section: list of investment cards --- */}
-          <View style={{ marginTop: 12 }}>
+        {/* --- New section: list of investment cards --- */}
+        <View style={{ marginTop: 12 }}>
           <Text style={{ fontSize: 16, fontWeight: "700", marginBottom: 8 }}>
             All Investments
           </Text>
@@ -509,7 +510,7 @@ export default function BusinessDetail() {
           {investments.length === 0 ? (
             <View style={{ padding: 12 }}>
               <Text style={{ color: "#666" }}>No investments found.</Text>
-       </View>
+            </View>
           ) : (
             investments.map((inv, idx) => renderInvestmentCard(inv, idx))
           )}
@@ -631,7 +632,7 @@ export default function BusinessDetail() {
           }}
         />
       )}
-{/* 
+      {/* 
       {withdrawPopup && (
         <WithdrawAmountPopup
           partners={partners}
@@ -784,7 +785,7 @@ const styles = StyleSheet.create({
   /*   summaryLabel: { color: "#555" },
   summaryValue: { color: "#222", fontWeight: "700" }, */
   summaryCard: {
-    backgroundColor: "#d8dee1ff",
+    backgroundColor: "#a5c4f5ff",
     borderRadius: 14,
     padding: 14,
     marginBottom: 12,
@@ -882,7 +883,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  cardBody: { marginTop: 6, borderTopWidth: 1, borderTopColor: "#f3f4f6", paddingTop: 8 },
+  cardBody: {
+    marginTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
+    paddingTop: 8,
+  },
   invRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1045,7 +1051,7 @@ const styles = StyleSheet.create({
     borderColor: "#e0e0e0",
     backgroundColor: "#fff",
     position: "absolute",
-    bottom: Platform.OS === "ios" ? 10 : 0, // ⬅️ lifts bar a bit upward
+    bottom: 0, // ⬅️ lifts bar a bit upward
     left: 0,
     right: 0,
     elevation: 10, // Android shadow
@@ -1068,15 +1074,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   cardContainer: {
-  padding: 14,
-  borderRadius: 12,
-  marginVertical: 6,
-  marginHorizontal: 10,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 3,
-  elevation: 2,
-},
-
+    padding: 14,
+    borderRadius: 12,
+    marginVertical: 6,
+    marginHorizontal: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
 });

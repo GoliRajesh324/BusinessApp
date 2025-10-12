@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Dimensions,
+  Image,
   LayoutAnimation,
   Platform,
   ScrollView,
@@ -18,9 +20,6 @@ import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import BASE_URL from "../src/config/config";
-import InvestmentTable from "./InvestmentTable";
-import SoldAmountPopup from "./SoldAmountPopup";
-import WithdrawAmountPopup from "./WithdrawAmountPopup";
 import AddInvestmentPopup from "./addInvestmentPopup";
 import InvestmentAudit from "./components/InvestmentAudit";
 
@@ -43,6 +42,7 @@ export default function BusinessDetail() {
   const [soldPopup, setSoldPopup] = useState(false);
   const [withdrawPopup, setWithdrawPopup] = useState(false);
   const [investmentDetails, setInvestmentDetails] = useState<any[]>([]);
+  const [investments, setInvestments] = useState<any[]>([]); // <-- new
   const [totalInvestment, setTotalInvestment] = useState(0);
   const [totalSoldAmount, setTotalSoldAmount] = useState(0);
   const [cropDetails, setCropDetails] = useState<any>(null);
@@ -98,6 +98,16 @@ export default function BusinessDetail() {
     Number(parseAmount(v)).toLocaleString("en-IN", {
       maximumFractionDigits: 2,
     });
+
+  const formatDateTime = (isoOrObj: any) => {
+    if (!isoOrObj) return "-";
+    try {
+      const d = new Date(isoOrObj);
+      return isNaN(d.getTime()) ? String(isoOrObj) : d.toLocaleString();
+    } catch {
+      return String(isoOrObj);
+    }
+  };
 
   // Fetch business info
   useEffect(() => {
@@ -161,7 +171,39 @@ export default function BusinessDetail() {
     fetchPartners();
   }, [safeBusinessId, token]);
 
-  // --- Inside BusinessDetail component ---
+  // --- NEW: fetch investments when businessId or token changes ---
+  useEffect(() => {
+    if (safeBusinessId && token) {
+      fetchInvestments();
+    }
+  }, [safeBusinessId, token]);
+
+  const fetchInvestments = async () => {
+    try {
+      const response = await fetch(
+        `${BASE_URL}/api/investment/all-investments/${safeBusinessId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch investments");
+
+      const data = await response.json();
+      setInvestments(
+        Array.isArray(data)
+          ? data.sort((a, b) => (b.investmentId || 0) - (a.investmentId || 0))
+          : []
+      );
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Error fetching investments");
+    }
+  };
 
   // Handle "Restart" (End Crop) click
   const handleRestartClick = () => {
@@ -249,12 +291,104 @@ export default function BusinessDetail() {
       setTotalSoldAmount(data.totalSoldAmount);
       setCropDetails(data.crop);
       setInvestmentDetails(data.investmentDetails);
+      // refresh investments list
+      fetchInvestments();
     } catch (error) {
       console.error(error);
     }
   };
 
   const handleBack = () => router.back();
+
+  // Render a small label-value row
+  const RowKV = ({ k, v }: { k: string; v: any }) => (
+    <View style={styles.invRow}>
+      <Text style={styles.invLabel}>{k}</Text>
+      <Text style={styles.invValue}>{v ?? "-"}</Text>
+    </View>
+  );
+
+  // Render intelligent card based on flags
+  const renderInvestmentCard = (inv: any, idx: number) => {
+    const soldFlag = inv?.soldFlag ?? inv?.soldflag ?? "N";
+    const withdrawFlag = inv?.withdrawFlag ?? inv?.withdrawflag ?? "N";
+
+    // Normalize names
+    const description = inv?.description || inv?.comments || "-";
+    const partnerName = inv?.partnerName || inv?.supplierName || "-";
+    const totalAmount = inv?.totalAmount ?? inv?.invested ?? inv?.investable ?? 0;
+    const invested = inv?.invested ?? inv?.investable ?? 0;
+    const investable = inv?.investable ?? 0;
+    const withdrawn = inv?.withdrawn ?? 0;
+    const splitType = inv?.splitType ?? inv?.splittype ?? "-";
+    const updatedBy = inv?.updatedBy || inv?.createdBy || "-";
+    const shareAmount = inv?.share ?? inv?.soldAmount ?? inv?.soldAmount ?? 0;
+    const imageUrl = inv?.imageUrl || null;
+    const createdAt = inv?.createdAt || inv?.createdDate || null;
+
+    return (
+      <View key={String(inv?.investmentId ?? idx)} style={styles.investmentCard}>
+        <View style={styles.cardHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cardTitle} numberOfLines={2}>
+              {description}
+            </Text>
+            <Text style={styles.cardSubtitle}>{partnerName}</Text>
+          </View>
+
+          {imageUrl ? (
+            <Image source={{ uri: imageUrl }} style={styles.imageThumb} />
+          ) : (
+            <View style={styles.imageThumbPlaceholder}>
+              <Ionicons name="cash-outline" size={22} color="#fff" />
+            </View>
+          )}
+        </View>
+
+        <View style={styles.cardBody}>
+          <RowKV k="Total Amount" v={`₹${formatAmount(totalAmount)}`} />
+          {soldFlag === "N" && withdrawFlag === "N" && (
+            <>
+              <RowKV k="Invested" v={`₹${formatAmount(invested)}`} />
+              <RowKV k="Investable" v={`₹${formatAmount(investable)}`} />
+              <RowKV k="Split Type" v={splitType} />
+              <RowKV k="Updated" v={updatedBy} />
+            </>
+          )}
+
+          {soldFlag === "N" && withdrawFlag === "Y" && (
+            <>
+              <RowKV k="Withdrawn" v={`₹${formatAmount(withdrawn)}`} />
+              <RowKV k="Split" v={splitType} />
+              <RowKV k="Updated" v={updatedBy} />
+            </>
+          )}
+
+          {soldFlag === "Y" && withdrawFlag === "N" && (
+            <>
+              <RowKV k="Share" v={`₹${formatAmount(shareAmount)}`} />
+              <RowKV k="Withdrawn" v={`₹${formatAmount(withdrawn)}`} />
+              <RowKV k="Split" v={splitType} />
+              <RowKV k="Updated" v={updatedBy} />
+            </>
+          )}
+        </View>
+
+        <View style={styles.cardFooter}>
+          <Text style={styles.createdAtText}>{formatDateTime(createdAt)}</Text>
+
+        {/*   <TouchableOpacity
+            onPress={() => {
+              // light action: maybe open audit or navigate to detailed view later
+              Alert.alert("Investment", `${description}\n\nID: ${inv?.investmentId}`);
+            }}
+          >
+            <Text style={styles.viewMore}>View</Text>
+          </TouchableOpacity> */}
+        </View>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -283,7 +417,15 @@ export default function BusinessDetail() {
         {/* Summary Card (tap to expand/collapse) */}
         <TouchableOpacity
           activeOpacity={0.95}
-          onPress={toggleExpanded}
+          onPress={() =>
+            router.push({
+              pathname: "/partnerWiseDetails",
+              params: {
+                businessId: safeBusinessId,
+                businessName: safeBusinessName,
+              },
+            })
+          }
           style={[styles.summaryCard, expanded && styles.summaryCardExpanded]}
         >
           <View style={styles.summaryVertical}>
@@ -302,7 +444,7 @@ export default function BusinessDetail() {
             </View>
 
             <View style={styles.summaryItemRow}>
-              <Text style={styles.summaryLabelSmall}>You Investment :</Text>
+              <Text style={styles.summaryLabelSmall}>Your Investment :</Text>
               <Text style={styles.summaryValueLarge}>
                 {formatAmount(totalInvestment)}
               </Text>
@@ -328,36 +470,50 @@ export default function BusinessDetail() {
               </Text>
             </View>
 
-            <View style={{ alignItems: "center", marginTop: 4 }}>
+            {/*   <View style={{ alignItems: "center", marginTop: 4 }}>
               <Ionicons
                 name={expanded ? "chevron-up" : "chevron-down"}
                 size={22}
                 color="#666"
               />
-            </View>
+            </View> */}
           </View>
+      
 
           {/* optional expanded summary area (additional details) */}
-          {expanded && (
+          {/* {expanded && (
             <View style={styles.expandedContent}>
-              {/* you can show more summary details here if needed */}
+              
               <Text style={{ color: "#666" }}>
                 Tap the card to collapse. Scroll the table below for more
                 details.
               </Text>
             </View>
-          )}
+          )} */}
         </TouchableOpacity>
 
         {/* Expanded table area */}
-        {expanded && (
+        {/* {expanded && (
           <View style={[styles.tableContainer, { maxHeight: tableMaxHeight }]}>
-            {/* nested scroll enabled so table can scroll inside main scroll */}
             <ScrollView nestedScrollEnabled>
               <InvestmentTable investmentDetails={investmentDetails} />
             </ScrollView>
           </View>
-        )}
+        )} */}
+         {/* --- New section: list of investment cards --- */}
+          <View style={{ marginTop: 12 }}>
+          <Text style={{ fontSize: 16, fontWeight: "700", marginBottom: 8 }}>
+            All Investments
+          </Text>
+
+          {investments.length === 0 ? (
+            <View style={{ padding: 12 }}>
+              <Text style={{ color: "#666" }}>No investments found.</Text>
+       </View>
+          ) : (
+            investments.map((inv, idx) => renderInvestmentCard(inv, idx))
+          )}
+        </View>
       </ScrollView>
 
       {/* Floating Action Button */}
@@ -415,6 +571,7 @@ export default function BusinessDetail() {
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
       </View>
+
       {/* Bottom Footer Buttons */}
       <View style={styles.bottomButtonsContainer}>
         <TouchableOpacity
@@ -463,6 +620,8 @@ export default function BusinessDetail() {
       {showPopup && (
         <AddInvestmentPopup
           visible={showPopup}
+          businessId={String(businessId || "")}
+          businessName={String(businessName || "")}
           partners={partners}
           cropDetails={cropDetails}
           onClose={() => setShowPopup(false)}
@@ -472,7 +631,7 @@ export default function BusinessDetail() {
           }}
         />
       )}
-
+{/* 
       {withdrawPopup && (
         <WithdrawAmountPopup
           partners={partners}
@@ -495,7 +654,7 @@ export default function BusinessDetail() {
           }}
         />
       )}
-
+ */}
       {showAuditPopup && (
         <InvestmentAudit
           businessId={String(businessId || "")}
@@ -504,6 +663,7 @@ export default function BusinessDetail() {
           onClose={() => setShowAuditPopup(false)}
         />
       )}
+
       {confirmRestart && confirmRestart.length > 0 && (
         <View style={styles.popupOverlay}>
           <View style={styles.popupContent}>
@@ -554,7 +714,7 @@ export default function BusinessDetail() {
   );
 }
 
-// Existing styles + new styles for header & bottom buttons
+// Existing styles + new styles for header & bottom buttons + investment cards
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -624,7 +784,7 @@ const styles = StyleSheet.create({
   /*   summaryLabel: { color: "#555" },
   summaryValue: { color: "#222", fontWeight: "700" }, */
   summaryCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#d8dee1ff",
     borderRadius: 14,
     padding: 14,
     marginBottom: 12,
@@ -685,6 +845,59 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 2,
   },
+
+  // -------- Investment Card styles (new) --------
+  investmentCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  cardTitle: { fontSize: 15, fontWeight: "700", color: "#111827" },
+  cardSubtitle: { fontSize: 13, color: "#6b7280", marginTop: 4 },
+  imageThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    marginLeft: 12,
+    resizeMode: "cover",
+    backgroundColor: "#eee",
+  },
+  imageThumbPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    marginLeft: 12,
+    backgroundColor: "#4f93ff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardBody: { marginTop: 6, borderTopWidth: 1, borderTopColor: "#f3f4f6", paddingTop: 8 },
+  invRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+  },
+  invLabel: { color: "#6b7280", fontSize: 13, fontWeight: "600" },
+  invValue: { color: "#111827", fontSize: 13, fontWeight: "700" },
+  cardFooter: {
+    marginTop: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  createdAtText: { color: "#9ca3af", fontSize: 12 },
+  viewMore: { color: "#4f93ff", fontWeight: "700" },
 
   // -------- Buttons --------
   buttonContainer: {
@@ -854,4 +1067,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textAlign: "center",
   },
+  cardContainer: {
+  padding: 14,
+  borderRadius: 12,
+  marginVertical: 6,
+  marginHorizontal: 10,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 3,
+  elevation: 2,
+},
+
 });

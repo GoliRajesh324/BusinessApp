@@ -38,6 +38,8 @@ type CropDetails = {
 
 interface AddInvestmentPopupProps {
   visible: boolean;
+  businessId: string;
+  businessName: string;
   partners: Partner[];
   cropDetails?: CropDetails;
   onSave: (data: { investmentData: any[]; images: ImageFile[] }) => void;
@@ -48,6 +50,8 @@ const SLIDER_THUMB_SIZE = 18;
 
 const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   visible,
+  businessId,
+  businessName,
   partners,
   cropDetails,
   onSave,
@@ -315,7 +319,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
         {/* Footer */}
         <View style={styles.footer}>
           <TouchableOpacity style={styles.footerOutlineBtn}>
-            <Text style={{ color: "#333" }}>{"Business Name"}</Text>
+            <Text style={{ color: "#333" }}>{businessName}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.footerOutlineBtn} onPress={() => setTypeModalVisible(true)}>
             <Text style={{ color: "#333" }}>{transactionType}</Text>

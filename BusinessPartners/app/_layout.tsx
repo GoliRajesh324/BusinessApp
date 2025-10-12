@@ -47,12 +47,20 @@ export default function RootLayout() {
            
           }}
         />
+          <Stack.Screen
+          name="partnerWiseDetails"
+          options={{
+            headerShown: false, // or false if you don’t want a header at all
+           
+          }}
+        />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}
         />
       </Stack>
+      
       <StatusBar style="auto" />
     </ThemeProvider>
   );

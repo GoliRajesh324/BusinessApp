@@ -46,6 +46,7 @@ export default function BusinessDetail() {
   const [totalInvestment, setTotalInvestment] = useState(0);
   const [totalSoldAmount, setTotalSoldAmount] = useState(0);
   const [cropDetails, setCropDetails] = useState<any>(null);
+  const [withdrawPopup, setWithdrawPopup] = useState(false);
   const [showAuditPopup, setShowAuditPopup] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState<
     { partnerName: string; leftOver: number }[]
@@ -294,7 +295,9 @@ export default function BusinessDetail() {
       investmentDetails.forEach((item) => {
         const partner = item.partner; // partner object
         if (partner.userId === userId) {
+          console.log("➡️ Your investment item:", item);
           setYourInvestment(item.yourInvestment);
+          setLeftOver(item.leftOver);
         }
       });
       // refresh investments list
@@ -461,7 +464,7 @@ export default function BusinessDetail() {
             <View style={styles.summaryItemRow}>
               <Text style={styles.summaryLabelSmall}>Availabe Money :</Text>
               <Text style={styles.summaryValueLarge}>
-                {formatAmount(totalInvestment)}
+                {formatAmount(leftOver)}
               </Text>
             </View>
 

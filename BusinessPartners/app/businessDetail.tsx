@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Dimensions,
@@ -13,6 +13,8 @@ import {
   UIManager,
   View,
 } from "react-native";
+
+import DropDownPicker from "react-native-dropdown-picker";
 
 import { Entypo, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -54,8 +56,25 @@ export default function BusinessDetail() {
   const [fabOpen, setFabOpen] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
   const [expanded, setExpanded] = useState(false);
+
+  const [selectedFilter, setSelectedFilter] = useState("byLoggedInUser"); // default
+  const [open, setOpen] = useState(false);
+
+  const [items, setItems] = useState([
+    { label: "Your Records", value: "byLoggedInUser" },
+    { label: "Your Investments", value: "byInvestment" },
+    { label: "Your Withdraws", value: "byWithdraw" },
+    { label: "Your Sold", value: "bySold" },
+    { label: "All Records", value: "allInvestments" },
+  ]);
+
+  // 🏷 Get label text dynamically based on selected value
+  const currentLabel =
+    items.find((item) => item.value === selectedFilter)?.label ||
+    "Select Filter";
 
   // enable LayoutAnimation for Android
   useEffect(() => {
@@ -66,6 +85,10 @@ export default function BusinessDetail() {
       UIManager.setLayoutAnimationEnabledExperimental(true);
     }
   }, []);
+
+  useEffect(() => {
+    fetchBusinessDetails();
+  }, [safeBusinessId, token]);
 
   const toggleExpanded = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -79,8 +102,9 @@ export default function BusinessDetail() {
     const loadData = async () => {
       const t = await AsyncStorage.getItem("token");
       const u = await AsyncStorage.getItem("userId");
-
-      //console.log("📌 Loaded userId:", u);
+      const uName = await AsyncStorage.getItem("userName");
+      setUserName(uName);
+      console.log("📌 Loaded username:", uName);
       setToken(t);
       setUserId(u);
     };
@@ -173,10 +197,12 @@ export default function BusinessDetail() {
   }, [safeBusinessId, token]);
 
   // --- NEW: fetch investments when businessId or token changes ---
+  const [allInvestments, setAllInvestments] = useState<any[]>([]);
+
+  // fetch once
   useEffect(() => {
-    if (safeBusinessId && token) {
-      fetchInvestments();
-    }
+    if (safeBusinessId && token) fetchInvestments();
+    //businessDetails();
   }, [safeBusinessId, token]);
 
   const fetchInvestments = async () => {
@@ -191,20 +217,78 @@ export default function BusinessDetail() {
           },
         }
       );
-
       if (!response.ok) throw new Error("Failed to fetch investments");
-
       const data = await response.json();
-      setInvestments(
-        Array.isArray(data)
-          ? data.sort((a, b) => (b.investmentId || 0) - (a.investmentId || 0))
-          : []
-      );
+      setAllInvestments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Error fetching investments");
     }
   };
+  const fetchBusinessDetails = async () => {
+    if (!token || !safeBusinessId) return;
+    try {
+      const response = await fetch(
+        `${BASE_URL}/api/business/${safeBusinessId}/business-details-by-id`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const data = await response.json();
+
+      // 🧮 Safely update top-level totals
+      setTotalInvestment(data?.totalInvestment || 0);
+      setTotalSoldAmount(data?.totalSoldAmount || 0);
+      setInvestmentDetails(
+        Array.isArray(data?.investmentDetails) ? data.investmentDetails : []
+      );
+      setCropDetails(data?.crop || null);
+
+      // 🧍‍♂️ Find record for logged-in user safely
+      if (Array.isArray(data?.investmentDetails) && userName) {
+        const myRecord =
+          data.investmentDetails.find((inv: any) => {
+            const partnerName =
+              inv?.partnerName ?? inv?.partner?.username ?? "";
+            return (
+              partnerName.toString().toLowerCase() ===
+              userName.toString().toLowerCase()
+            );
+          }) || null;
+
+        if (myRecord) {
+          setYourInvestment(myRecord.yourInvestment || 0);
+          setLeftOver(myRecord.leftOver || 0);
+        } else {
+          setYourInvestment(0);
+          setLeftOver(0);
+        }
+      }
+    } catch (err) {
+      console.error("❌ Error fetching business details:", err);
+    }
+  };
+
+  const filteredInvestments = useMemo(() => {
+    if (!allInvestments) return [];
+
+    switch (selectedFilter) {
+      case "byLoggedInUser":
+        return allInvestments.filter(
+          (inv) => inv.partnerName?.toString() === userName?.toString()
+        );
+      case "byInvestment":
+        return allInvestments.filter(
+          (inv) => inv?.soldFlag === "N" && inv?.withdrawFlag === "N"
+        );
+      case "byWithdraw":
+        return allInvestments.filter((inv) => inv?.withdrawFlag === "Y");
+      case "bySold":
+        return allInvestments.filter((inv) => inv?.soldFlag === "Y");
+      case "allInvestments":
+      default:
+        return allInvestments;
+    }
+  }, [allInvestments, selectedFilter, userId]);
 
   // Handle "Restart" (End Crop) click
   const handleRestartClick = () => {
@@ -282,25 +366,29 @@ export default function BusinessDetail() {
           );
         }
       }
-
+      /* 
       const res = await fetch(
         `${BASE_URL}/api/business/${businessId}/business-details-by-id`,
         { method: "GET", headers: { Authorization: `Bearer ${token}` } }
       );
+
       const data = await res.json();
       setTotalInvestment(data.totalInvestment);
       setTotalSoldAmount(data.totalSoldAmount);
       setCropDetails(data.crop);
       setInvestmentDetails(data.investmentDetails);
+
       investmentDetails.forEach((item) => {
         const partner = item.partner; // partner object
-        if (partner.userId === userId) {
+        console.log("➡️ Your investment item:", item);
+        if (partner.username === userName) {
           console.log("➡️ Your investment item:", item);
           setYourInvestment(item.yourInvestment);
           setLeftOver(item.leftOver);
         }
-      });
+      }); */
       // refresh investments list
+      await fetchBusinessDetails();
       fetchInvestments();
     } catch (error) {
       console.error(error);
@@ -334,6 +422,7 @@ export default function BusinessDetail() {
     const invested = inv?.invested ?? inv?.investable ?? 0;
     const investable = inv?.investable ?? 0;
     const withdrawn = inv?.withdrawn ?? 0;
+    const soldAmount = inv?.soldAmount ?? 0;
     const splitType = inv?.splitType ?? inv?.splittype ?? "-";
     const updatedBy = inv?.updatedBy || inv?.createdBy || "-";
     const shareAmount = inv?.share ?? inv?.soldAmount ?? inv?.soldAmount ?? 0;
@@ -383,8 +472,8 @@ export default function BusinessDetail() {
 
           {soldFlag === "Y" && withdrawFlag === "N" && (
             <>
-              <RowKV k="Share" v={`₹${formatAmount(shareAmount)}`} />
-              <RowKV k="Withdrawn" v={`₹${formatAmount(withdrawn)}`} />
+         {/*      <RowKV k="Share" v={`₹${formatAmount(shareAmount)}`} /> */}
+              <RowKV k="sold Amount" v={`₹${formatAmount(soldAmount)}`} />
               <RowKV k="Split" v={splitType} />
               <RowKV k="Updated" v={updatedBy} />
             </>
@@ -405,6 +494,10 @@ export default function BusinessDetail() {
         </View>
       </View>
     );
+  };
+  const handleSelect = (val: string) => {
+    setSelectedFilter(val);
+    setOpen(false); // ✅ closes the dropdown when selected
   };
 
   return (
@@ -504,18 +597,67 @@ export default function BusinessDetail() {
             </ScrollView>
           </View>
         )} */}
-        {/* --- New section: list of investment cards --- */}
-        <View style={{ marginTop: 12 }}>
-          <Text style={{ fontSize: 16, fontWeight: "700", marginBottom: 8 }}>
-            All Investments
-          </Text>
 
-          {investments.length === 0 ? (
-            <View style={{ padding: 12 }}>
-              <Text style={{ color: "#666" }}>No investments found.</Text>
-            </View>
+        {/* --- FILTER SECTION --- */}
+        <View style={{ marginVertical: 12, zIndex: 1000 }}>
+          {/* Row with text + filter icon */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: "600" }}>
+              {currentLabel}
+            </Text>
+
+            <TouchableOpacity onPress={() => setOpen((prev) => !prev)}>
+              <Ionicons
+                name={open ? "filter-circle" : "filter"}
+                size={24}
+                color="#333"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Dropdown - only visible when open */}
+          {open && (
+            <DropDownPicker
+              open={open}
+              value={selectedFilter}
+              items={items}
+              setOpen={setOpen}
+              setItems={setItems}
+              setValue={() => {}}
+              onSelectItem={(item) => handleSelect(item.value ?? "")} // ✅ Works now
+              placeholder="Select Filter"
+              listMode="SCROLLVIEW"
+              style={{
+                marginTop: 8,
+                backgroundColor: "#fff",
+                borderColor: "#ccc",
+                borderRadius: 8,
+              }}
+              dropDownContainerStyle={{
+                backgroundColor: "#fff",
+                borderColor: "#ccc",
+              }}
+            />
+          )}
+        </View>
+
+        {/* --- New section: list of investment cards --- */}
+        {/* Investment Cards */}
+        <View style={{ marginTop: 12 }}>
+          {filteredInvestments.length === 0 ? (
+            <Text style={{ color: "#666", padding: 12 }}>
+              No investments found.
+            </Text>
           ) : (
-            investments.map((inv, idx) => renderInvestmentCard(inv, idx))
+            filteredInvestments.map((inv, idx) =>
+              renderInvestmentCard(inv, idx)
+            )
           )}
         </View>
       </ScrollView>

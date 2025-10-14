@@ -472,7 +472,7 @@ export default function BusinessDetail() {
 
           {soldFlag === "Y" && withdrawFlag === "N" && (
             <>
-         {/*      <RowKV k="Share" v={`₹${formatAmount(shareAmount)}`} /> */}
+              {/*      <RowKV k="Share" v={`₹${formatAmount(shareAmount)}`} /> */}
               <RowKV k="sold Amount" v={`₹${formatAmount(soldAmount)}`} />
               <RowKV k="Split" v={splitType} />
               <RowKV k="Updated" v={updatedBy} />

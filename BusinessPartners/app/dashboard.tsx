@@ -186,6 +186,9 @@ export default function Dashboard() {
           <Ionicons name="notifications-outline" size={28} color="#fff" />
         </TouchableOpacity>
       </View>
+          <View style={{ padding: 16,backgroundColor: '#fff'}}>
+        <Text>Your Businesses</Text>
+      </View>
 
       {/* BUSINESS LIST */}
       <FlatList

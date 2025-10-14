@@ -3,9 +3,13 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { } from "react-native";
+
 import {
   Alert,
   Image,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
   PanResponder,
   Platform,
@@ -15,6 +19,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import {
@@ -91,6 +96,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
     };
     loadData();
   }, []);
+
 
   const createdBy = userName;
 
@@ -193,15 +199,19 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
       </View>
     );
   }
+const openSheet = () => {
+  if (!totalAmount || Number(totalAmount) <= 0) {
+    Alert.alert("Error", "Please enter a valid amount first");
+    return;
+  }
+  setSheetTempMode(splitMode);
+  setShareValues((prev) => {
+    if (prev.length === partners.length) return prev;
+    return partners.map((p) => p.share ?? 0);
+  });
+  setSheetVisible(true);
+};
 
-  const openSheet = () => {
-    setSheetTempMode(splitMode);
-    setShareValues((prev) => {
-      if (prev.length === partners.length) return prev;
-      return partners.map((p) => p.share ?? 0);
-    });
-    setSheetVisible(true);
-  };
 
   const applySheet = () => {
     setSplitMode(sheetTempMode);
@@ -480,99 +490,101 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
         {/* Split Sheet */}
         <Modal visible={sheetVisible} animationType="slide" transparent>
-          <View style={styles.sheetOverlay}>
-            <View style={styles.sheet}>
-              <View style={styles.sheetHeader}>
-                <Text style={{ fontWeight: "700", fontSize: 16 }}>
-                  Split Options
-                </Text>
-                <TouchableOpacity onPress={applySheet}>
-                  <Text style={{ fontWeight: "700", color: "#007bff" }}>
-                    Done
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={{ paddingHorizontal: 12 }}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    marginVertical: 8,
-                  }}
-                >
-                  {(["share", "equal", "manual"] as const).map((m) => (
-                    <TouchableOpacity
-                      key={m}
-                      onPress={() => setSheetTempMode(m)}
-                      style={[
-                        styles.sheetModeBtn,
-                        sheetTempMode === m && styles.sheetModeBtnActive,
-                      ]}
-                    >
-                      <Text
-                        style={{
-                          color: sheetTempMode === m ? "#fff" : "#333",
-                          fontWeight: "700",
-                        }}
-                      >
-                        {m.toUpperCase()}
-                      </Text>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.sheetOverlay}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={{ flex: 1, justifyContent: "flex-end" }}
+              >
+                <View style={styles.sheetContainer}>
+                  {/* Header */}
+                  <View style={styles.sheetHeader}>
+                    <Text style={styles.sheetHeaderTitle}>Split Options</Text>
+                    <TouchableOpacity onPress={applySheet}>
+                      <Text style={styles.sheetDone}>Done</Text>
                     </TouchableOpacity>
-                  ))}
-                </View>
+                  </View>
 
-                {sheetTempMode === "share" &&
-                  partners.map((p, idx) => {
-                    const percent = shareValues[idx] ?? 0;
-                    const computed = ((percent / 100) * expected).toFixed(2);
-                    return (
-                      <View key={p.id} style={{ marginBottom: 12 }}>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            justifyContent: "space-between",
-                            alignItems: "center",
+                  {/* Body */}
+                  <ScrollView
+                    style={{ maxHeight: "70%", paddingHorizontal: 12 }}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={{ paddingBottom: 40 }}
+                  >
+                    {/* Mode Buttons */}
+                    <View style={styles.splitModeRow}>
+                      {(["share", "equal", "manual"] as const).map((m) => (
+                        <TouchableOpacity
+                          key={m}
+                          onPress={() => {
+                            setSheetTempMode(m);
+                            if (m === "equal") {
+                              const per = expected / partners.length;
+                              setShareValues(partners.map(() => per));
+                            } else if (m === "share") {
+                              const shareBased = partners.map(
+                                (p, i) =>
+                                  ((p.share ?? 100 / partners.length) / 100) *
+                                  expected
+                              );
+                              setShareValues(shareBased);
+                            } else {
+                              setShareValues(partners.map(() => 0));
+                            }
                           }}
+                          style={[
+                            styles.splitModeButton,
+                            sheetTempMode === m && styles.splitModeButtonActive,
+                          ]}
                         >
-                          <Text style={{ fontWeight: "600" }}>
-                            {p.username}
+                          <Text
+                            style={[
+                              styles.splitModeText,
+                              sheetTempMode === m && styles.splitModeTextActive,
+                            ]}
+                          >
+                            {m.toUpperCase()}
                           </Text>
-                          <Text style={{ fontWeight: "700" }}>{percent}%</Text>
-                        </View>
-                        <Slider
-                          value={percent}
-                          onChange={(v) =>
-                            setShareValues((prev) => {
-                              const copy = [
-                                ...(prev.length
-                                  ? prev
-                                  : partners.map((pt) => pt.share ?? 0)),
-                              ];
-                              copy[idx] = v;
-                              return copy;
-                            })
-                          }
-                        />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    {/* Partner List */}
+                    {partners.map((p, idx) => {
+                      const val = shareValues[idx] ?? 0;
+                      return (
                         <View
-                          style={{
-                            flexDirection: "row",
-                            justifyContent: "space-between",
-                            marginTop: 6,
-                          }}
+                          key={p.id}
+                          style={[
+                            styles.partnerRow,
+                            {
+                              backgroundColor:
+                                idx % 2 === 0 ? "#f8f9ff" : "#fff",
+                            },
+                          ]}
                         >
-                          <Text style={{ fontSize: 12, color: "#666" }}>
-                            Assigned: {computed}
-                          </Text>
-                          <Text style={{ fontSize: 12, color: "#666" }}>
-                            Tap/drag to change
-                          </Text>
+                          <Text style={styles.partnerName}>{p.username}</Text>
+                          <TextInput
+                            style={styles.partnerAmountInput}
+                            keyboardType="numeric"
+                            value={val.toString()}
+                            onChangeText={(txt) => {
+                              const num = Number(txt) || 0;
+                              setShareValues((prev) => {
+                                const copy = [...prev];
+                                copy[idx] = num;
+                                return copy;
+                              });
+                            }}
+                          />
                         </View>
-                      </View>
-                    );
-                  })}
-              </ScrollView>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              </KeyboardAvoidingView>
             </View>
-          </View>
+          </TouchableWithoutFeedback>
         </Modal>
 
         {/* Type Modal */}
@@ -691,7 +703,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  partnerName: { fontWeight: "600", fontSize: 14 },
   partnerPercent: { fontSize: 12, color: "#666", marginTop: 4 },
   partnerAmount: { fontSize: 16, fontWeight: "700", color: "#111" },
   smallNote: { fontSize: 10, color: "#666", marginTop: 4 },
@@ -752,11 +763,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
   },
-  sheetOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.35)",
-  },
+
   sheet: {
     maxHeight: "70%",
     backgroundColor: "#fff",
@@ -764,7 +771,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 14,
     paddingVertical: 12,
   },
-  sheetHeader: {
+  /*   sheetHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 12,
@@ -772,7 +779,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: "#eee",
     paddingBottom: 10,
-  },
+  }, */
   sheetModeBtn: {
     paddingVertical: 8,
     paddingHorizontal: 14,
@@ -831,5 +838,107 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderColor: "#f0f0f0",
+  },
+  /* splitModeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    backgroundColor: "#fff",
+  },
+  splitModeButtonActive: {
+    backgroundColor: "#007bff",
+    borderColor: "#007bff",
+  },
+  sheetContainer: {
+  backgroundColor: "#fff",
+  borderTopLeftRadius: 16,
+  borderTopRightRadius: 16,
+  paddingTop: 12,
+  paddingBottom: Platform.OS === "ios" ? 20 : 10,
+  shadowColor: "#000",
+  shadowOpacity: 0.1,
+  shadowOffset: { width: 0, height: -2 },
+  shadowRadius: 5,
+  elevation: 10,
+}, */
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  sheetHeaderTitle: {
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  sheetDone: {
+    fontWeight: "700",
+    color: "#007bff",
+  },
+  splitModeRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginVertical: 12,
+  },
+  splitModeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    backgroundColor: "#fff",
+  },
+  splitModeButtonActive: {
+    backgroundColor: "#007bff",
+    borderColor: "#007bff",
+  },
+  splitModeText: {
+    fontWeight: "700",
+    color: "#333",
+  },
+  splitModeTextActive: {
+    color: "#fff",
+  },
+  partnerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#eee",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  partnerName: {
+    flex: 1,
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  partnerAmountInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    padding: 6,
+    width: 100,
+    textAlign: "right",
+    fontWeight: "600",
+    backgroundColor: "#fafafa",
+  },
+  sheetContainer: {
+    backgroundColor: "#f5f5f8ff",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 40,
+    minHeight: 300,
   },
 });

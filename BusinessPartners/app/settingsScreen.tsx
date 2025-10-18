@@ -1,22 +1,59 @@
 import React, { useState } from "react";
 import {
-    Alert,
-    Platform,
-    StatusBar,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as LocalAuthentication from "expo-local-authentication";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function SettingsScreen() {
   const router = useRouter();
   const [appLockEnabled, setAppLockEnabled] = useState(false);
+  const { t, i18n } = useTranslation();
+  const [isTelugu, setIsTelugu] = useState(false);
+  const [isLangLoaded, setIsLangLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedLang = await AsyncStorage.getItem("appLanguage");
+        const langToUse = savedLang || "en";
+
+        await i18n.changeLanguage(langToUse);
+        setIsTelugu(langToUse === "te");
+        setIsLangLoaded(true);
+      } catch (e) {
+        console.log("Language load error:", e);
+      }
+    })();
+  }, []);
+
+  const setLanguage = async (lang: "en" | "te") => {
+    try {
+      await AsyncStorage.setItem("appLanguage", lang);
+      await i18n.changeLanguage(lang);
+      setIsTelugu(lang === "te");
+    } catch (e) {
+      console.log("Language change error:", e);
+    }
+  };
+
+  const toggleLanguage = () => {
+    const newLang = isTelugu ? "en" : "te";
+    i18n.changeLanguage(newLang);
+    setIsTelugu(!isTelugu);
+  };
 
   // Check device support for biometrics
   const checkBiometricSupport = async () => {
@@ -24,12 +61,18 @@ export default function SettingsScreen() {
     const enrolled = await LocalAuthentication.isEnrolledAsync();
 
     if (!compatible) {
-      Alert.alert("Not Supported", "Biometric authentication is not supported on this device.");
+      Alert.alert(
+        "Not Supported",
+        "Biometric authentication is not supported on this device."
+      );
       return false;
     }
 
     if (!enrolled) {
-      Alert.alert("Not Set Up", "Please set up Face ID or Fingerprint on your device first.");
+      Alert.alert(
+        "Not Set Up",
+        "Please set up Face ID or Fingerprint on your device first."
+      );
       return false;
     }
 
@@ -101,6 +144,56 @@ export default function SettingsScreen() {
           />
         </View>
       </View>
+
+      {/* Language Toggle */}
+
+      <View style={styles.card}>
+        <View style={styles.optionRow}>
+          <View style={styles.optionLeft}>
+            <Ionicons name="language-outline" size={22} color="#333" />
+            <Text style={styles.optionText}>Language</Text>
+          </View>
+
+          {/* Segmented Toggle */}
+          <View style={styles.languageToggleContainer}>
+            <TouchableOpacity
+              disabled={!isLangLoaded}
+              onPress={() => setLanguage("en")}
+              style={[
+                styles.languageOption,
+                !isTelugu && styles.languageSelected,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.languageText,
+                  !isTelugu && styles.languageTextSelected,
+                ]}
+              >
+                English
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              disabled={!isLangLoaded}
+              onPress={() => setLanguage("te")}
+              style={[
+                styles.languageOption,
+                isTelugu && styles.languageSelected,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.languageText,
+                  isTelugu && styles.languageTextSelected,
+                ]}
+              >
+                తెలుగు
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
@@ -152,13 +245,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-
   optionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 12,
+    paddingHorizontal: 5, // ✅ keeps toggle inside card
   },
+
   optionLeft: {
     flexDirection: "row",
     alignItems: "center",
@@ -167,5 +261,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     marginLeft: 10,
+  },
+  languageToggleContainer: {
+    flexDirection: "row",
+    backgroundColor: "#e0e0e0",
+    borderRadius: 10,
+    overflow: "hidden",
+    width: 130, // ✅ fixed width for proper fit
+    height: 35,
+    marginRight: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#d0d0d0",
+  },
+
+  languageOption: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100%",
+  },
+
+  languageSelected: {
+    backgroundColor: "#4f93ff",
+    borderRadius: 8,
+  },
+
+  languageText: {
+    color: "#333",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+
+  languageTextSelected: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 13,
   },
 });

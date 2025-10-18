@@ -9,14 +9,16 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const [userName, setUserName] = React.useState<string | null>(null);
 
+  AsyncStorage.getItem("userName").then((name) => setUserName(name));
 
-    // Logout
+  // Logout
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem("token");
@@ -29,77 +31,81 @@ export default function ProfileScreen() {
   };
 
   const options = [
-    { icon: "star", text: "Rate Us" },
-    { icon: "diamond", text: "Business Money Pro", color: "#c9a46a" },
+    { icon: "diamond", text: "Business Money Pro", color: "#ab429bd0" },
+    {
+      icon: "settings-outline",
+      text: "Settings",
+      action: () => router.push("/settingsScreen"),
+    },
     { icon: "share-social-outline", text: "Share" },
-    { icon: "settings-outline", text: "Settings", action: () => router.push("/settingsScreen") },
+    { icon: "star", text: "Rate Us" },
     { icon: "help-circle-outline", text: "Help & Support" },
     { icon: "log-out-outline", text: "Logout", action: handleLogout },
   ];
 
   return (
     <View style={styles.screen}>
-    <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Profile</Text>
-        <TouchableOpacity>
-          <Feather name="edit" size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      <View style={styles.container}>
+        {/* HEADER */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Profile</Text>
+          <TouchableOpacity>
+            <Feather name="edit" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
 
-      {/* PROFILE INFO */}
+        {/* PROFILE INFO */}
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flexGrow: 1,paddingBottom: 40 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         >
-        <View style={styles.profileSection}>
-           <Image
+          <View style={styles.profileSection}>
+            <Image
               source={{
                 uri: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
               }}
-          style={styles.avatar}
-        />
-          <Text style={styles.name}>Goli Rajesh</Text>
+              style={styles.avatar}
+            />
+            <Text style={styles.name}>{userName}</Text>
 
-          <View style={styles.infoRow}>
-            <Ionicons name="mail-outline" size={18} color="#fff" />
-            <Text style={styles.infoText}>golirajesh2021@gmail.com</Text>
+            <View style={styles.infoRow}>
+              <Ionicons name="mail-outline" size={18} color="#fff" />
+              <Text style={styles.infoText}>{userName}@gmail.com</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Ionicons name="call-outline" size={18} color="#fff" />
+              <Text style={styles.infoText}>+91 91544 32738</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Ionicons name="cash-outline" size={18} color="#fff" />
+              <Text style={styles.infoText}>₹ (INR)</Text>
+            </View>
           </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="call-outline" size={18} color="#fff" />
-            <Text style={styles.infoText}>+91 91544 32738</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="cash-outline" size={18} color="#fff" />
-            <Text style={styles.infoText}>₹ (INR)</Text>
-          </View>
-        </View>
 
-        {/* OPTIONS */}
-        <View style={styles.cardContainer}>
+          {/* OPTIONS */}
+          <View style={styles.cardContainer}>
             {options.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.option,
-                item.color ? { backgroundColor: item.color } : null,
-              ]}
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.option,
+                  item.color ? { backgroundColor: item.color } : null,
+                ]}
                 onPress={item.action}
-            >
-              <View style={styles.optionLeft}>
-                <Ionicons name={item.icon as any} size={18} color="#000" />
-                <Text style={styles.optionText}>{item.text}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#000" />
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
+              >
+                <View style={styles.optionLeft}>
+                  <Ionicons name={item.icon as any} size={18} color="#000" />
+                  <Text style={styles.optionText}>{item.text}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#000" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -114,8 +120,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    paddingBottom: 12,
+    backgroundColor: "#4f93ff",
+    elevation: 4,
   },
   title: { color: "#fff", fontSize: 20, fontWeight: "bold" },
   profileSection: { alignItems: "center", marginTop: 20 },

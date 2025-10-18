@@ -6,12 +6,11 @@ import {
   LayoutAnimation,
   Platform,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   UIManager,
-  View,
+  View
 } from "react-native";
 
 import DropDownPicker from "react-native-dropdown-picker";
@@ -458,7 +457,7 @@ export default function BusinessDetail() {
               <RowKV k="Invested" v={`₹${formatAmount(invested)}`} />
               <RowKV k="Investable" v={`₹${formatAmount(investable)}`} />
               <RowKV k="Split Type" v={splitType} />
-              <RowKV k="Updated" v={updatedBy} />
+              {/* <RowKV k="Updated" v={updatedBy} /> */}
             </>
           )}
 
@@ -466,7 +465,7 @@ export default function BusinessDetail() {
             <>
               <RowKV k="Withdrawn" v={`₹${formatAmount(withdrawn)}`} />
               <RowKV k="Split" v={splitType} />
-              <RowKV k="Updated" v={updatedBy} />
+             {/*  <RowKV k="Updated" v={updatedBy} /> */}
             </>
           )}
 
@@ -475,14 +474,14 @@ export default function BusinessDetail() {
               {/*      <RowKV k="Share" v={`₹${formatAmount(shareAmount)}`} /> */}
               <RowKV k="sold Amount" v={`₹${formatAmount(soldAmount)}`} />
               <RowKV k="Split" v={splitType} />
-              <RowKV k="Updated" v={updatedBy} />
+              {/* <RowKV k="Updated" v={updatedBy} /> */}
             </>
           )}
         </View>
 
         <View style={styles.cardFooter}>
+          <Text style={styles.createdAtText}>created by : {formatDateTime(updatedBy)}</Text>
           <Text style={styles.createdAtText}>{formatDateTime(createdAt)}</Text>
-
           {/*   <TouchableOpacity
             onPress={() => {
               // light action: maybe open audit or navigate to detailed view later
@@ -868,7 +867,7 @@ const styles = StyleSheet.create({
   },
 
   // -------- Header --------
-  header: {
+/*   header: {
     height:
       Platform.OS === "android" ? 80 + (StatusBar.currentHeight || 0) : 100,
     flexDirection: "row",
@@ -884,6 +883,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     zIndex: 100,
+  }, */
+    header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    paddingBottom: 12,
+    backgroundColor: "#4f93ff",
+    elevation: 4,
   },
   headerLeft: { width: 40, justifyContent: "center", alignItems: "flex-start" },
   headerRight: { width: 40, justifyContent: "center", alignItems: "flex-end" },

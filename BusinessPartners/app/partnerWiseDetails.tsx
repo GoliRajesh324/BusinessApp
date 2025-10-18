@@ -3,13 +3,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Platform,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import BASE_URL from "../src/config/config";
 
@@ -142,7 +140,7 @@ export default function PartnerWiseDetails() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f7f8fc" },
 
-  header: {
+/*   header: {
     height:
       Platform.OS === "android" ? 80 + (StatusBar.currentHeight || 0) : 100,
     flexDirection: "row",
@@ -153,6 +151,16 @@ const styles = StyleSheet.create({
       Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
     backgroundColor: "#4f93ff",
     elevation: 3,
+  }, */
+    header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    paddingBottom: 12,
+    backgroundColor: "#4f93ff",
+    elevation: 4,
   },
   headerTitle: {
     flex: 1,

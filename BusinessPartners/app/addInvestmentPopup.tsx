@@ -14,7 +14,6 @@ import {
   PanResponder,
   Platform,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -97,7 +96,6 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
     loadData();
   }, []);
 
-
   const createdBy = userName;
 
   // Initialize rows for partners
@@ -124,26 +122,29 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
         if (!totalAmount) return { ...prevRow, actual: "", investing: "" };
 
         if (splitMode === "share") {
-          const percent = shareValues[idx] ?? p.share ?? 0;
+          const percent = p.share ?? 0;
           const actual = ((percent / 100) * expected).toFixed(2);
           return { ...prevRow, actual, investing: actual, share: percent };
         }
 
         if (splitMode === "equal") {
           const per = (expected / partners.length).toFixed(2);
+          console.log({ per, expected, len: partners.length, rows });
           return {
             ...prevRow,
             actual: per,
             investing: per,
-            share: Math.round((1 / partners.length) * 100),
+            /* share: Math.round((1 / partners.length) * 100), */
           };
         }
-
-        return {
+        if (splitMode === "manual") {
+          console.log({ prevRow });
+           return {
           ...prevRow,
           actual: prevRow.investing || "",
           investing: prevRow.investing || "",
-        };
+        }; 
+        }
       })
     );
   }, [splitMode, totalAmount, partners, shareValues]);
@@ -199,46 +200,71 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
       </View>
     );
   }
-const openSheet = () => {
-  if (!totalAmount || Number(totalAmount) <= 0) {
-    Alert.alert("Error", "Please enter a valid amount first");
-    return;
-  }
-  setSheetTempMode(splitMode);
-  setShareValues((prev) => {
-    if (prev.length === partners.length) return prev;
-    return partners.map((p) => p.share ?? 0);
-  });
-  setSheetVisible(true);
-};
+  // Inside AddInvestmentPopup.tsx, only update split options logic
 
+  const openSheet = () => {
+    if (!totalAmount || Number(totalAmount) <= 0) {
+      Alert.alert("Error", "Please enter a valid amount first");
+      return;
+    }
+    setSheetTempMode(splitMode);
+
+    // Prepare temp share values based on current split mode
+    if (splitMode === "share") {
+      // Actual invested amounts for partners in share mode
+      setShareValues(
+        rows.map((r) => parseFloat(r.investing || r.actual || "0"))
+      );
+    } else if (splitMode === "equal") {
+      const per = expected / partners.length;
+      setShareValues(partners.map(() => per));
+    } else {
+      setShareValues(rows.map((r) => parseFloat(r.investing || "0")));
+    }
+
+    setSheetVisible(true);
+  };
 
   const applySheet = () => {
+    // Apply split values based on sheetTempMode
     setSplitMode(sheetTempMode);
+
     if (sheetTempMode === "share") {
       setRows((prev) =>
         prev.map((r, idx) => {
-          const percent = shareValues[idx] ?? 0;
-          const actual = ((percent / 100) * expected).toFixed(2);
-          return { ...r, share: percent, actual, investing: actual };
+          const actualAmount = shareValues[idx] ?? 0;
+          return {
+            ...r,
+            actual: actualAmount.toFixed(2), // investable amount
+            investing: r.investing ? r.investing : actualAmount.toFixed(2),
+            // Do NOT touch share %
+          };
         })
       );
     } else if (sheetTempMode === "equal") {
-      const per =
-        expected && partners.length
-          ? (expected / partners.length).toFixed(2)
-          : "";
+      const per = expected / partners.length;
+      //console.log({ per, expected, len: partners.length, rows });
       setRows((prev) =>
         prev.map((r) => ({
           ...r,
-          share: Math.round((1 / partners.length) * 100),
-          actual: per,
-          investing: per,
+          actual: per.toFixed(2),
+          investing: r.investing ? r.investing : per.toFixed(2),
+          // share percentage can remain null
         }))
       );
+      //console.log({ per, expected, len: partners.length, rows });
     } else {
-      setRows((prev) => prev.map((r) => ({ ...r, actual: r.investing || "" })));
+      // Manual: keep the entered investing amounts
+      console.log({ expected, len: partners.length, rows });
+      setRows((prev) =>
+        prev.map((r, idx) => ({
+          ...r,
+          actual: r.actual, // keep actual as-is
+          investing: r.investing, // keep user-entered investing
+        }))
+      );
     }
+
     setSheetVisible(false);
   };
 
@@ -258,9 +284,10 @@ const openSheet = () => {
 
   const handleSave = () => {
     const totalEntered = rows.reduce(
-      (sum, r) => sum + (parseFloat(r.investing) || 0),
+      (sum, r) => sum + (parseFloat(r.actual) || 0),
       0
     );
+    console.log({ totalEntered, expected });
     if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
       Alert.alert("Error", "Total entered does not match expected amount");
       return;
@@ -274,8 +301,8 @@ const openSheet = () => {
           description: description || "",
           comments: description || "",
           totalAmount: expected,
-          investable: parseFloat(r.actual || 0),
-          invested: parseFloat(r.investing || 0),
+          investable: parseFloat(r.investing || 0),
+          invested: parseFloat(r.actual || 0),
           soldAmount: 0,
           withdrawn: 0,
           soldFlag: "N",
@@ -325,10 +352,10 @@ const openSheet = () => {
   const extraText = (r: any) => {
     const actualNum = parseFloat(r.actual) || 0;
     const investNum = parseFloat(r.investing) || 0;
-    const diff = Math.round((investNum - actualNum) * 100) / 100;
+    const diff = Math.round((actualNum - investNum) * 100) / 100;
     if (!actualNum && !investNum) return "";
     if (diff > 0) return `Extra +${diff.toFixed(2)}`;
-    if (diff < 0) return `Pending ${Math.abs(diff).toFixed(2)}`;
+    if (diff < 0) return `Pending -${Math.abs(diff).toFixed(2)}`;
     return "Settled";
   };
 
@@ -417,7 +444,7 @@ const openSheet = () => {
                     }}
                   >
                     <Text style={styles.partnerAmount}>
-                      {r.investing || r.actual || "0.00"}
+                      {r.actual || "0.00"}
                     </Text>
                     <Text style={styles.smallNote}>{extraText(r)}</Text>
                   </View>
@@ -624,7 +651,7 @@ export default AddInvestmentPopup;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-  header: {
+  /*   header: {
     height:
       Platform.OS === "android" ? 90 + (StatusBar.currentHeight || 0) : 110,
     paddingTop:
@@ -634,6 +661,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
+  }, */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    paddingBottom: 12,
+    backgroundColor: "#4f93ff",
+    elevation: 4,
   },
   headerLeft: { width: 40, justifyContent: "center", alignItems: "flex-start" },
   headerRight: { width: 60, justifyContent: "center", alignItems: "flex-end" },

@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const [confirmStart, setConfirmStart] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("User");
+  const { t, i18n } = useTranslation();
 
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
@@ -187,7 +189,7 @@ export default function Dashboard() {
         </TouchableOpacity>
       </View>
           <View style={{ padding: 16,backgroundColor: '#fff'}}>
-        <Text>Your Businesses</Text>
+        <Text>{t("YourBusinesses")}</Text>
       </View>
 
       {/* BUSINESS LIST */}

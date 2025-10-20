@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import BASE_URL from "../src/config/config";
 
@@ -16,10 +16,10 @@ export default function PartnerWiseDetails() {
   const { businessId, businessName } = useLocalSearchParams();
   const [partners, setPartners] = useState<any[]>([]);
   const [token, setToken] = useState<string | null>(null);
-    const [investmentDetails, setInvestmentDetails] = useState<any[]>([]);
-    const [investments, setInvestments] = useState<any[]>([]); // <-- new
-    const [totalInvestment, setTotalInvestment] = useState(0);
-    const [totalSoldAmount, setTotalSoldAmount] = useState(0);  
+  const [investmentDetails, setInvestmentDetails] = useState<any[]>([]);
+  const [investments, setInvestments] = useState<any[]>([]); // <-- new
+  const [totalInvestment, setTotalInvestment] = useState(0);
+  const [totalSoldAmount, setTotalSoldAmount] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,8 +51,7 @@ export default function PartnerWiseDetails() {
     fetchPartners();
   }, [token, businessId]);
 
-
-    // Fetch business info
+  // Fetch business info
   useEffect(() => {
     if (!token || !businessId) return;
     const fetchBusinessInfo = async () => {
@@ -69,7 +68,7 @@ export default function PartnerWiseDetails() {
         setTotalSoldAmount(data.totalSoldAmount || 0);
         setInvestmentDetails(data.investmentDetails || []);
 
-       /*  if (data.crop) {
+        /*  if (data.crop) {
           setCropDetails({
             id: data.crop.id,
             cropNumber: data.crop.cropNumber,
@@ -140,7 +139,7 @@ export default function PartnerWiseDetails() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f7f8fc" },
 
-/*   header: {
+  /*   header: {
     height:
       Platform.OS === "android" ? 80 + (StatusBar.currentHeight || 0) : 100,
     flexDirection: "row",
@@ -152,7 +151,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#4f93ff",
     elevation: 3,
   }, */
-    header: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",

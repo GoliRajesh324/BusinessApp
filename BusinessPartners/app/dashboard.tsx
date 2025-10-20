@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useRouter } from "expo-router";
@@ -271,23 +271,23 @@ export default function Dashboard() {
           style={styles.bottomButtonIcon}
           // onPress={()=>router.push("/dashboard")}
         >
-          <Ionicons name="home" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>Home</Text>
+          <MaterialCommunityIcons name="alpha-b-box" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>Business</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.bottomButtonIcon}
           onPress={() => alert("Charts Feature coming soon")}
         >
-          <Ionicons name="bar-chart" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>Charts</Text>
+          <MaterialCommunityIcons name="alpha-i-box" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>Interest</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.bottomButtonIcon}
           onPress={() => alert("Inventory Feature coming soon")}
         >
-          <Ionicons name="cube" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>Inventory</Text>
+          <MaterialCommunityIcons name="alpha-s-box" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>SplitMoney</Text>
         </TouchableOpacity>
 
         {/*  <TouchableOpacity
@@ -302,8 +302,8 @@ export default function Dashboard() {
           style={styles.bottomButtonIcon}
           onPress={() => alert("History Feature coming soon")}
         >
-          <Ionicons name="time" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>History</Text>
+          <Ionicons name="settings" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>Settings</Text>
         </TouchableOpacity>
       </View>
 

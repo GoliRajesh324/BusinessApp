@@ -360,39 +360,34 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   };
 
   const handleSave = () => {
-  if (!transactionType) {
-    setErrorVisible(true);
-
-    Animated.parallel([
-      Animated.sequence([
-        Animated.timing(shakeAnim, {
-          toValue: 1.1,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shakeAnim, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]),
+    if (!transactionType) {
+      setErrorVisible(true);
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
         useNativeDriver: true,
-      }),
-    ]).start();
+      }).start();
 
-    setTimeout(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }).start(() => setErrorVisible(false));
-    }, 3000);
+      setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }).start(() => setErrorVisible(false));
+      }, 2000);
 
-    return;
-  }
+      return;
+    }
+
+    const totalEntered = rows.reduce(
+      (sum, r) => sum + (parseFloat(r.actual) || 0),
+      0
+    );
+    console.log({ totalEntered, expected });
+    if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
+      Alert.alert("Error", "Total entered does not match expected amount");
+      return;
+    }
 
     const investmentData = rows.map((r) => {
       const reduceLeftOverValue =
@@ -658,43 +653,90 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
         </ScrollView>
 
         {/* Footer */}
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.footerOutlineBtn}>
-            <Text style={{ color: "#333" }}>{businessName}</Text>
+        <View
+          style={[
+            styles.footer,
+            { flexDirection: "row", justifyContent: "space-evenly" },
+          ]}
+        >
+          <TouchableOpacity
+            style={[
+              styles.footerOutlineBtn,
+              {
+                flex: 1,
+                marginRight: 8,
+                alignItems: "center",
+                justifyContent: "center",
+                height: 40,
+              },
+            ]}
+          >
+            <Text style={{ color: "#333", fontWeight: "500" }}>
+              {businessName}
+            </Text>
           </TouchableOpacity>
 
-          <Animated.View style={{ transform: [{ scale: shakeAnim }] }}>
+          <Animated.View
+            style={{
+              flex: 1,
+              marginLeft: 8,
+              alignItems: "center",
+              justifyContent: "center",
+              height: 40,
+              transform: [{ scale: shakeAnim }],
+            }}
+          >
             <TouchableOpacity
               style={[
                 styles.footerOutlineBtn,
+                {
+                  width: "100%",
+                  height: "100%",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                },
                 errorVisible && { borderColor: "red", borderWidth: 2 },
               ]}
               onPress={() => setTypeModalVisible(true)}
             >
-              <Text style={{ color: errorVisible ? "red" : "#333" }}>
+              <Text
+                style={{
+                  color: errorVisible ? "red" : "#333",
+                  fontWeight: "500",
+                }}
+              >
                 {transactionType ?? "Select Type"}
               </Text>
               <Ionicons
                 name="chevron-down"
                 size={16}
                 color={errorVisible ? "red" : "#333"}
+                style={{ marginLeft: 4 }}
               />
             </TouchableOpacity>
           </Animated.View>
         </View>
 
         {errorVisible && (
-          <Animated.Text
+          <Animated.View
             style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: [{ translateX: -100 }, { translateY: -20 }],
+              backgroundColor: "rgba(0,0,0,0.8)",
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              borderRadius: 10,
               opacity: fadeAnim,
-              color: "red",
-              textAlign: "center",
-              marginBottom: 6,
-              fontWeight: "600",
+              zIndex: 999,
             }}
           >
-            Select type
-          </Animated.Text>
+            <Text style={{ color: "white", fontWeight: "600", fontSize: 14 }}>
+              Please select a type
+            </Text>
+          </Animated.View>
         )}
 
         {/* Image Preview */}

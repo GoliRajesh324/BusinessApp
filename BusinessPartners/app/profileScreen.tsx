@@ -1,20 +1,23 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Image,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { RateUsModal } from "./components/RateUsModal";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [userName, setUserName] = React.useState<string | null>(null);
+  const [rateModalVisible, setRateModalVisible] = useState(false);
 
   AsyncStorage.getItem("userName").then((name) => setUserName(name));
 
@@ -30,16 +33,55 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleShareApp = async () => {
+    try {
+      const result = await Share.share({
+        title: "Check out this awesome app!",
+        message:
+          "Hey! Check out this awesome app I’ve been using. Download it here:\nhttps://play.google.com/store/apps/details?id=com.BusinessMoney",
+      });
+
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          console.log("Shared with activity:", result.activityType);
+        } else {
+          console.log("App shared successfully");
+        }
+      } else if (result.action === Share.dismissedAction) {
+        console.log("Share dismissed");
+      }
+    } catch (error) {
+      console.error("Error sharing app:", error);
+    }
+  };
+
   const options = [
-    { icon: "diamond", text: "Business Money Pro", color: "#ab429bd0" },
+    {
+      icon: "diamond",
+      text: "Business Money Pro",
+      action: () => alert("Business Money Pro Feature Coming Soon"),
+      color: "#ab429bd0",
+    },
     {
       icon: "settings-outline",
       text: "Settings",
       action: () => router.push("/settingsScreen"),
     },
-    { icon: "share-social-outline", text: "Share" },
-    { icon: "star", text: "Rate Us" },
-    { icon: "help-circle-outline", text: "Help & Support" },
+    {
+      icon: "share-social-outline",
+      text: "Share",
+      action: () => handleShareApp(),
+    },
+    {
+      icon: "star",
+      text: "Rate Us",
+      action: () => setRateModalVisible(true), // <-- Open Rate Us modal
+    },
+    {
+      icon: "help-circle-outline",
+      text: "Help & Support",
+      action: () => alert("Help & Support Coming Soon"),
+    },
     { icon: "log-out-outline", text: "Logout", action: handleLogout },
   ];
 
@@ -106,6 +148,11 @@ export default function ProfileScreen() {
           </View>
         </ScrollView>
       </View>
+       {/* Rate Us Modal */}
+    <RateUsModal
+      visible={rateModalVisible}
+      onClose={() => setRateModalVisible(false)}
+    />
     </View>
   );
 }

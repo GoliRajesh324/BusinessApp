@@ -184,11 +184,13 @@ export default function Dashboard() {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => alert("Notifications feature coming soon")}>
+        <TouchableOpacity
+          onPress={() => alert("Notifications feature coming soon")}
+        >
           <Ionicons name="notifications-outline" size={28} color="#fff" />
         </TouchableOpacity>
       </View>
-          <View style={{ padding: 16,backgroundColor: '#fff'}}>
+      <View style={{ padding: 16, backgroundColor: "#fff" }}>
         <Text>{t("YourBusinesses")}</Text>
       </View>
 
@@ -197,7 +199,17 @@ export default function Dashboard() {
         data={businesses}
         keyExtractor={(item) => item.id.toString()}
         ListEmptyComponent={
-          <Text style={styles.emptyMessage}>No Businesses Added yet.</Text>
+          <View style={styles.emptyContainer}>
+            <Image
+              source={require("../assets/stickers/business-idea.png")}
+              style={styles.emptySticker}
+            />
+
+            <Text style={styles.emptyMessage}>No Businesses Added Yet</Text>
+            <Text style={styles.emptySubText}>
+              Tap the “+ Add Business” button below to start
+            </Text>
+          </View>
         }
         renderItem={({ item }) => (
           <View style={styles.businessCard}>
@@ -231,8 +243,6 @@ export default function Dashboard() {
         )}
       />
 
-     
-
       {/* FOOTER BAR */}
       {/*   <View style={styles.footer}>
         <TouchableOpacity style={styles.footerItem}>
@@ -258,27 +268,35 @@ export default function Dashboard() {
 
       {/* Bottom Footer Buttons */}
       <View style={styles.bottomButtonsContainer}>
-         <TouchableOpacity
-        style={styles.floatingButton}
-        onPress={() => {
-          setEditingBusiness(null);
-          setShowPopup(true);
-        }}
-      >
-        <Text style={styles.floatingButtonText}>+ Add business</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={() => {
+            setEditingBusiness(null);
+            setShowPopup(true);
+          }}
+        >
+          <Text style={styles.floatingButtonText}>+ Add business</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.bottomButtonIcon}
           // onPress={()=>router.push("/dashboard")}
         >
-          <MaterialCommunityIcons name="alpha-b-box" size={28} color="#4f93ff" />
+          <MaterialCommunityIcons
+            name="alpha-b-box"
+            size={28}
+            color="#4f93ff"
+          />
           <Text style={styles.bottomButtonText}>Business</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.bottomButtonIcon}
           onPress={() => alert("Charts Feature coming soon")}
         >
-          <MaterialCommunityIcons name="alpha-i-box" size={28} color="#4f93ff" />
+          <MaterialCommunityIcons
+            name="alpha-i-box"
+            size={28}
+            color="#4f93ff"
+          />
           <Text style={styles.bottomButtonText}>Interest</Text>
         </TouchableOpacity>
 
@@ -286,7 +304,11 @@ export default function Dashboard() {
           style={styles.bottomButtonIcon}
           onPress={() => alert("Inventory Feature coming soon")}
         >
-          <MaterialCommunityIcons name="alpha-s-box" size={28} color="#4f93ff" />
+          <MaterialCommunityIcons
+            name="alpha-s-box"
+            size={28}
+            color="#4f93ff"
+          />
           <Text style={styles.bottomButtonText}>SplitMoney</Text>
         </TouchableOpacity>
 
@@ -322,8 +344,8 @@ export default function Dashboard() {
         <View style={styles.modalOverlay}>
           <View style={styles.popupBox}>
             <Text style={styles.popupTitle}>
-              Start a new crop for{" "}
-              <Text style={styles.bold}>{confirmStart?.name}</Text>?
+              Start 
+              <Text style={styles.bold}> {confirmStart?.name}</Text> Business ?
             </Text>
             <View style={styles.popupButtons}>
               <TouchableOpacity
@@ -559,26 +581,46 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 100,
+  },
+  emptySticker: {
+    width: 300,
+    height: 300,
+    marginBottom: 16,
+    opacity: 0.9,
+    resizeMode: "contain",
+  },
+  emptySubText: {
+    color: "#777",
+    fontSize: 14,
+    marginTop: 4,
+    textAlign: "center",
+  },
+
   // ------------------------------Floating Add business button ------------------------------
-floatingButton: {
-  position: 'absolute',
-  bottom: 110, // above bottom buttons
-  right: 15,
-  paddingHorizontal: 16,
-  paddingVertical: 12,
-  borderRadius: 30,
-  backgroundColor: '#1E90FF',
-  justifyContent: 'center',
-  alignItems: 'center',
-  elevation: 5,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.3,
-  shadowRadius: 4,
-},
-floatingButtonText: {
-  fontSize: 16,
-  color: '#fff',
-  fontWeight: '600',
-},
+  floatingButton: {
+    position: "absolute",
+    bottom: 110, // above bottom buttons
+    right: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 30,
+    backgroundColor: "#1E90FF",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  floatingButtonText: {
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "600",
+  },
 });

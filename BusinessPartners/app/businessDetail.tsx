@@ -10,7 +10,7 @@ import {
   Text,
   TouchableOpacity,
   UIManager,
-  View
+  View,
 } from "react-native";
 
 import DropDownPicker from "react-native-dropdown-picker";
@@ -465,7 +465,7 @@ export default function BusinessDetail() {
             <>
               <RowKV k="Withdrawn" v={`₹${formatAmount(withdrawn)}`} />
               <RowKV k="Split" v={splitType} />
-             {/*  <RowKV k="Updated" v={updatedBy} /> */}
+              {/*  <RowKV k="Updated" v={updatedBy} /> */}
             </>
           )}
 
@@ -480,7 +480,9 @@ export default function BusinessDetail() {
         </View>
 
         <View style={styles.cardFooter}>
-          <Text style={styles.createdAtText}>created by : {formatDateTime(updatedBy)}</Text>
+          <Text style={styles.createdAtText}>
+            created by : {formatDateTime(updatedBy)}
+          </Text>
           <Text style={styles.createdAtText}>{formatDateTime(createdAt)}</Text>
           {/*   <TouchableOpacity
             onPress={() => {
@@ -650,9 +652,15 @@ export default function BusinessDetail() {
         {/* Investment Cards */}
         <View style={{ marginTop: 12 }}>
           {filteredInvestments.length === 0 ? (
-            <Text style={{ color: "#666", padding: 12 }}>
-              No investments found.
-            </Text>
+            <View style={styles.noDataContainer}>
+              <Image
+                source={require("../assets/stickers/no-transaction.png")}
+                style={styles.sticker}
+                resizeMode="contain"
+              />
+              <Text style={styles.noDataText}>No Transaction's found</Text>
+              <Text style={styles.noDataText}>Tap the “+ Add” button below to add Transaction</Text>
+            </View>
           ) : (
             filteredInvestments.map((inv, idx) =>
               renderInvestmentCard(inv, idx)
@@ -867,7 +875,7 @@ const styles = StyleSheet.create({
   },
 
   // -------- Header --------
-/*   header: {
+  /*   header: {
     height:
       Platform.OS === "android" ? 80 + (StatusBar.currentHeight || 0) : 100,
     flexDirection: "row",
@@ -884,7 +892,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     zIndex: 100,
   }, */
-    header: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -1237,5 +1245,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+  },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  sticker: {
+    width: 300,
+    height: 300,
+    marginBottom: 20,
+  },
+  noDataText: {
+    fontSize: 16,
+    color: "#555",
+    textAlign: "center",
   },
 });

@@ -21,12 +21,11 @@ export default function ProfileScreen() {
 
   AsyncStorage.getItem("userName").then((name) => setUserName(name));
 
-  // Logout
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem("token");
       await AsyncStorage.removeItem("userId");
-      router.replace("/login"); // Navigate to login page
+      router.replace("/login");
     } catch (err) {
       console.error("❌ Logout error:", err);
       Alert.alert("Error", "Failed to logout");
@@ -75,7 +74,7 @@ export default function ProfileScreen() {
     {
       icon: "star",
       text: "Rate Us",
-      action: () => setRateModalVisible(true), // <-- Open Rate Us modal
+      action: () => setRateModalVisible(true),
     },
     {
       icon: "help-circle-outline",
@@ -87,8 +86,8 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.container}>
-        {/* HEADER */}
+      {/* HEADER BLUE BACKGROUND WITH CURVE */}
+      <View style={styles.headerCurve}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -99,60 +98,61 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* PROFILE INFO */}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
-        >
-          <View style={styles.profileSection}>
-            <Image
-              source={{
-                uri: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-              }}
-              style={styles.avatar}
-            />
-            <Text style={styles.name}>{userName}</Text>
+        <View style={styles.profileSection}>
+          <Image
+            source={{
+              uri: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+            }}
+            style={styles.avatar}
+          />
+          <Text style={styles.name}>{userName}</Text>
 
-            <View style={styles.infoRow}>
-              <Ionicons name="mail-outline" size={18} color="#fff" />
-              <Text style={styles.infoText}>{userName}@gmail.com</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="call-outline" size={18} color="#fff" />
-              <Text style={styles.infoText}>+91 91544 32738</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="cash-outline" size={18} color="#fff" />
-              <Text style={styles.infoText}>₹ (INR)</Text>
-            </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="mail-outline" size={18} color="#fff" />
+            <Text style={styles.infoText}>{userName}@gmail.com</Text>
           </View>
-
-          {/* OPTIONS */}
-          <View style={styles.cardContainer}>
-            {options.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.option,
-                  item.color ? { backgroundColor: item.color } : null,
-                ]}
-                onPress={item.action}
-              >
-                <View style={styles.optionLeft}>
-                  <Ionicons name={item.icon as any} size={18} color="#000" />
-                  <Text style={styles.optionText}>{item.text}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#000" />
-              </TouchableOpacity>
-            ))}
+          <View style={styles.infoRow}>
+            <Ionicons name="call-outline" size={18} color="#fff" />
+            <Text style={styles.infoText}>+91 91544 32738</Text>
           </View>
-        </ScrollView>
+          <View style={styles.infoRow}>
+            <Ionicons name="cash-outline" size={18} color="#fff" />
+            <Text style={styles.infoText}>₹ (INR)</Text>
+          </View>
+        </View>
       </View>
-       {/* Rate Us Modal */}
-    <RateUsModal
-      visible={rateModalVisible}
-      onClose={() => setRateModalVisible(false)}
-    />
+
+      {/* OPTIONS BELOW */}
+      <ScrollView
+        style={styles.optionsScroll}
+        contentContainerStyle={{ paddingBottom: 50 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.cardContainer}>
+          {options.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.option,
+                item.color ? { backgroundColor: item.color } : null,
+              ]}
+              onPress={item.action}
+            >
+              <View style={styles.optionLeft}>
+                <Ionicons name={item.icon as any} size={18} color="#000" />
+                <Text style={styles.optionText}>{item.text}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#000" />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+
+      {/* Rate Us Modal */}
+      <RateUsModal
+        visible={rateModalVisible}
+        onClose={() => setRateModalVisible(false)}
+      />
     </View>
   );
 }
@@ -160,40 +160,51 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#e8eaf6", // soft background behind card
+    backgroundColor: "#fff",
   },
-  container: { flex: 1, backgroundColor: "#4f93ff" },
+  headerCurve: {
+    backgroundColor: "#4f93ff",
+    borderBottomLeftRadius: 50,
+    borderBottomRightRadius: 50,
+    paddingBottom: 40,
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 40,
+    paddingTop: 50,
     paddingBottom: 12,
-    backgroundColor: "#4f93ff",
-    elevation: 4,
   },
   title: { color: "#fff", fontSize: 20, fontWeight: "bold" },
-  profileSection: { alignItems: "center", marginTop: 20 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: "#fff" },
+  profileSection: {
+    alignItems: "center",
+    marginTop: 10,
+  },
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "#fff",
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
   name: { fontSize: 22, color: "#fff", marginVertical: 8, fontWeight: "bold" },
   infoRow: { flexDirection: "row", alignItems: "center", marginVertical: 2 },
   infoText: { color: "#fff", marginLeft: 8 },
-  cardContainer: {
+  optionsScroll: {
     flex: 1,
-    backgroundColor: "#f8f6fb",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    //marginTop: 20,
+    backgroundColor: "#fff",
+  },
+  cardContainer: {
+    backgroundColor: "#fff",
     paddingVertical: 20,
     paddingHorizontal: 15,
-
-    // shadow for elevation effect
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 6,
   },
   option: {
     backgroundColor: "#fff",
@@ -203,6 +214,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     marginVertical: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   optionLeft: { flexDirection: "row", alignItems: "center" },
   optionText: { marginLeft: 12, fontSize: 16, color: "#000" },

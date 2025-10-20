@@ -1,7 +1,6 @@
 // AddInvestmentPopup.tsx
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated } from "react-native";
 
@@ -76,8 +75,6 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   onSave,
   onClose,
 }) => {
-  const router = useRouter();
-  const [splitValues, setSplitValues] = useState([]);
   const [splitMode, setSplitMode] = useState<"share" | "equal" | "manual">(
     "share"
   );
@@ -100,7 +97,6 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   const [transactionType, setTransactionType] = useState<
     "Investment" | "Sold" | "Withdraw" | null
   >(null);
-  const [useAvailableMoney, setUseAvailableMoney] = useState(false);
   const [investmentDetails, setInvestmentDetails] = useState<any[]>([]);
   const [errorVisible, setErrorVisible] = useState(false);
   const shakeAnim = useRef(new Animated.Value(1)).current;
@@ -159,7 +155,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             reduceLeftOver: "",
           })
         );
-
+     console.log({ mappedRows });
         setRows(mappedRows);
       } catch (err) {
         console.error("❌ Error fetching business info:", err);
@@ -167,7 +163,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
     };
 
     fetchBusinessInfo();
-  }, [businessId, token]);
+  }, []);
 
   // Initialize rows for partners
   useEffect(() => {
@@ -468,7 +464,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
           <TouchableOpacity onPress={onClose} style={styles.headerLeft}>
             <Ionicons name="arrow-back" size={28} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Expense</Text>
+          <Text style={styles.headerTitle}>Add Transaction</Text>
           <TouchableOpacity
             onPress={handleSave}
             style={[
@@ -536,8 +532,9 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
                     {/* Column 1: Name + Share % */}
                     <View style={styles.col1}>
                       <Text style={styles.partnerName}>
-                        {r.name.toUpperCase()}
+                        {(r.name || "Unknown").toUpperCase()}
                       </Text>
+
                       <Text style={styles.partnerPercent}>
                         {(r.share ?? 0).toString()}%
                       </Text>

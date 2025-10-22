@@ -163,7 +163,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
     };
 
     fetchBusinessInfo();
-  }, []);
+  }, [businessId, token]);
 
   // Initialize rows for partners
   useEffect(() => {
@@ -567,9 +567,9 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
                           </TouchableOpacity>
                         ) : (
                           <View style={{ marginTop: 6 }}>
-                            {/*  <Text style={{ fontSize: 12, color: "#999" }}>
+                             <Text style={{ fontSize: 12, color: "#999" }}>
                               No leftover {r.leftOver}
-                            </Text> */}
+                            </Text>
                           </View>
                         )}
                       </View>

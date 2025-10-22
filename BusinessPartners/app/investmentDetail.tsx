@@ -1,32 +1,55 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
-import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import BASE_URL from "../src/config/config";
 
 export default function InvestmentDetail() {
+  const { investmentGroupId } = useLocalSearchParams<{ investmentGroupId?: string }>();
   const router = useRouter();
-  const { investment } = useLocalSearchParams();
-  const inv =
-    investment && typeof investment === "string"
-      ? JSON.parse(investment)
-      : Array.isArray(investment)
-      ? JSON.parse(investment[0])
-      : {};
 
-  const formatAmount = (v: string | number | null | undefined) => {
-    const num = parseFloat(String(v ?? "0"));
-    if (isNaN(num)) return "0.00";
-    return num.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+  const [token, setToken] = useState<string | null>(null);
+  const [investments, setInvestments] = useState<any[]>([]);
+
+  useEffect(() => {
+    AsyncStorage.getItem("token").then(setToken);
+  }, []);
+
+  useEffect(() => {
+    if (!token || !investmentGroupId) return;
+    fetchGroupInvestments();
+  }, [token, investmentGroupId]);
+
+  const fetchGroupInvestments = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/investment/all-group-investments/${investmentGroupId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch group investments");
+      const data = await res.json();
+      setInvestments(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Failed to fetch group investments");
+    }
+  };
+
+  const formatAmount = (v: any) =>
+    Number(v ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+
+  const formatDateTime = (iso: string) => {
+    if (!iso) return "-";
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString();
+    } catch {
+      return iso;
+    }
   };
 
   return (
-    <View style={styles.container}>
+  <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -49,32 +72,31 @@ export default function InvestmentDetail() {
         </View>
       </View>
 
-      {/* Content */}
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.detailCard}>
-          <Text style={styles.label}>Description:</Text>
-          <Text style={styles.value}>{inv.description || "-"}</Text>
-
-          <Text style={styles.label}>Partner:</Text>
-          <Text style={styles.value}>{inv.partnerName || "-"}</Text>
-
-          <Text style={styles.label}>Total Amount:</Text>
-          <Text style={styles.value}>₹{formatAmount(inv.totalAmount)}</Text>
-
-          <Text style={styles.label}>Invested:</Text>
-          <Text style={styles.value}>₹{formatAmount(inv.invested)}</Text>
-
-          <Text style={styles.label}>Split Type:</Text>
-          <Text style={styles.value}>{inv.splitType || "-"}</Text>
-
-          <Text style={styles.label}>Created At:</Text>
-          <Text style={styles.value}>
-            {new Date(inv.createdAt || "").toLocaleString()}
-          </Text>
-
-          <Text style={styles.label}>Updated By:</Text>
-          <Text style={styles.value}>{inv.updatedBy || "-"}</Text>
-        </View>
+      <ScrollView>
+        {investments.length === 0 ? (
+          <Text>No investments found for this group</Text>
+        ) : (
+          investments.map((inv, idx) => (
+            <View
+              key={idx}
+              style={{
+                padding: 12,
+                marginBottom: 12,
+                borderRadius: 10,
+                backgroundColor: "#f0f4f7",
+              }}
+            >
+              <Text style={{ fontWeight: "700", fontSize: 14 }}>
+                {inv.description ?? inv.comments ?? "-"}
+              </Text>
+              <Text>Partner: {inv.partnerName ?? inv.supplierName ?? "-"}</Text>
+              <Text>Total Amount: ₹{formatAmount(inv.totalAmount ?? inv.invested)}</Text>
+              <Text>Invested: ₹{formatAmount(inv.invested ?? 0)}</Text>
+              <Text>Split Type: {inv.splitType ?? "-"}</Text>
+              <Text>Created At: {formatDateTime(inv.createdAt)}</Text>
+            </View>
+          ))
+        )}
       </ScrollView>
     </View>
   );

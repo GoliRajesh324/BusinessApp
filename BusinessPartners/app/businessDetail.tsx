@@ -96,6 +96,7 @@ export default function BusinessDetail() {
 
   const tableMaxHeight = Math.round(Dimensions.get("window").height * 0.55); // adjust as needed
 
+  
   // Load token & userId
   useEffect(() => {
     const loadData = async () => {
@@ -435,7 +436,7 @@ export default function BusinessDetail() {
           router.push({
             pathname: "/investmentDetail",
             params: {
-              investment: JSON.stringify(inv),
+             investmentGroupId: inv.investmentGroupId,
             },
           })
         }

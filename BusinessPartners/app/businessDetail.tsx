@@ -429,8 +429,17 @@ export default function BusinessDetail() {
     const createdAt = inv?.createdAt || inv?.createdDate || null;
 
     return (
-      <View
+      <TouchableOpacity
         key={String(inv?.investmentId ?? idx)}
+        onPress={() =>
+          router.push({
+            pathname: "/investmentDetail",
+            params: {
+              investment: JSON.stringify(inv),
+            },
+          })
+        }
+        activeOpacity={0.9}
         style={[styles.investmentCard, { backgroundColor: bgColor }]}
       >
         <View style={styles.cardHeader}>
@@ -457,7 +466,6 @@ export default function BusinessDetail() {
               <RowKV k="Invested" v={`₹${formatAmount(invested)}`} />
               <RowKV k="Investable" v={`₹${formatAmount(investable)}`} />
               <RowKV k="Split Type" v={splitType} />
-              {/* <RowKV k="Updated" v={updatedBy} /> */}
             </>
           )}
 
@@ -465,35 +473,22 @@ export default function BusinessDetail() {
             <>
               <RowKV k="Withdrawn" v={`₹${formatAmount(withdrawn)}`} />
               <RowKV k="Split" v={splitType} />
-              {/*  <RowKV k="Updated" v={updatedBy} /> */}
             </>
           )}
 
           {soldFlag === "Y" && withdrawFlag === "N" && (
             <>
-              {/*      <RowKV k="Share" v={`₹${formatAmount(shareAmount)}`} /> */}
-              <RowKV k="sold Amount" v={`₹${formatAmount(soldAmount)}`} />
+              <RowKV k="Sold Amount" v={`₹${formatAmount(soldAmount)}`} />
               <RowKV k="Split" v={splitType} />
-              {/* <RowKV k="Updated" v={updatedBy} /> */}
             </>
           )}
         </View>
 
         <View style={styles.cardFooter}>
-          <Text style={styles.createdAtText}>
-            created by : {formatDateTime(updatedBy)}
-          </Text>
+          <Text style={styles.createdAtText}>created by : {updatedBy}</Text>
           <Text style={styles.createdAtText}>{formatDateTime(createdAt)}</Text>
-          {/*   <TouchableOpacity
-            onPress={() => {
-              // light action: maybe open audit or navigate to detailed view later
-              Alert.alert("Investment", `${description}\n\nID: ${inv?.investmentId}`);
-            }}
-          >
-            <Text style={styles.viewMore}>View</Text>
-          </TouchableOpacity> */}
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
   const handleSelect = (val: string) => {
@@ -516,7 +511,7 @@ export default function BusinessDetail() {
           <Entypo name="dots-three-vertical" size={24} color="#000" />
         </TouchableOpacity>
       </View>
-      
+
       {/* Scrollable content */}
       <ScrollView
         contentContainerStyle={{
@@ -526,8 +521,8 @@ export default function BusinessDetail() {
         }}
       >
         <View>
-        <Text style={styles.businessSummary}>  Business Summary</Text>
-      </View>
+          <Text style={styles.businessSummary}> Business Summary</Text>
+        </View>
         {/* Summary Card (tap to expand/collapse) */}
         <TouchableOpacity
           activeOpacity={0.95}
@@ -662,7 +657,9 @@ export default function BusinessDetail() {
                 resizeMode="contain"
               />
               <Text style={styles.noDataText}>No Transaction's found</Text>
-              <Text style={styles.noDataText}>Tap the “+ Add” button below to add Transaction</Text>
+              <Text style={styles.noDataText}>
+                Tap the “+ Add” button below to add Transaction
+              </Text>
             </View>
           ) : (
             filteredInvestments.map((inv, idx) =>
@@ -923,7 +920,7 @@ const styles = StyleSheet.create({
     marginVertical: 12,
     color: "#000",
   },
-    businessSummary: {
+  businessSummary: {
     fontSize: 15,
     fontWeight: "600",
     textAlign: "left",

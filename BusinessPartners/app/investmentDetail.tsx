@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import BASE_URL from "../src/config/config";
+import EditInvestmentPopup from "./EditInvestmentPopup";
 
 export default function InvestmentDetail() {
   const { investmentGroupId } = useLocalSearchParams<{ investmentGroupId?: string }>();
@@ -11,6 +12,7 @@ export default function InvestmentDetail() {
 
   const [token, setToken] = useState<string | null>(null);
   const [investments, setInvestments] = useState<any[]>([]);
+  const [editVisible, setEditVisible] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem("token").then(setToken);
@@ -48,31 +50,48 @@ export default function InvestmentDetail() {
     }
   };
 
+  // Prepare group-level investment data for EditInvestmentPopup
+  const getGroupInvestmentData = () => {
+    if (!investmentGroupId) throw new Error("Invalid groupId");
+    return {
+      groupId: investmentGroupId,
+      totalAmount: investments.reduce((sum, inv) => sum + (inv.totalAmount ?? inv.invested ?? 0), 0),
+      description: investments[0]?.description ?? "",
+      partners: investments.map((inv) => ({
+        id: inv.partnerId,
+        username: inv.partnerName,
+        share: inv.share, // optional
+      })),
+      images: investments[0]?.images ?? [],
+      transactionType: investments[0]?.transactionType ?? "Investment",
+    };
+  };
+
   return (
-  <View style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={26} color="#000" />
+          <Ionicons name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Transaction Details</Text>
         <View style={styles.headerIcons}>
+          {/* Header-level Edit/Delete */}
           <TouchableOpacity
-            onPress={() => alert("Edit feature coming soon")}
-            style={styles.iconBtn}
+            onPress={() => setEditVisible(true)}
+            style={{ marginRight: 16 }}
           >
-            <MaterialIcons name="edit" size={24} color="#000" />
+            <MaterialIcons name="edit" size={26} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => alert("Delete feature coming soon")}
-            style={styles.iconBtn}
+            onPress={() => Alert.alert("Delete feature coming soon")}
           >
-            <MaterialIcons name="delete" size={24} color="#000" />
+            <MaterialIcons name="delete" size={26} color="#fff" />
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView>
+      <ScrollView style={styles.content}>
         {investments.length === 0 ? (
           <Text>No investments found for this group</Text>
         ) : (
@@ -98,6 +117,16 @@ export default function InvestmentDetail() {
           ))
         )}
       </ScrollView>
+
+      {/* Edit Investment Popup */}
+      {editVisible && investmentGroupId && (
+        <EditInvestmentPopup
+          visible={editVisible}
+          investmentData={getGroupInvestmentData()}
+          onClose={() => setEditVisible(false)}
+          onUpdated={fetchGroupInvestments}
+        />
+      )}
     </View>
   );
 }
@@ -119,33 +148,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 20,
     fontWeight: "700",
-    color: "#000",
+    color: "#fff",
   },
   headerIcons: { flexDirection: "row" },
-
-  headerLeft: { width: 40, justifyContent: "center", alignItems: "flex-start" },
-  headerRight: { width: 40, justifyContent: "center", alignItems: "flex-end" },
-
-
-
-  iconBtn: { marginLeft: 16 },
   content: { padding: 16 },
-  detailCard: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
-    padding: 16,
-    elevation: 1,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#555",
-    marginTop: 8,
-  },
-  value: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111",
-    marginBottom: 4,
-  },
 });

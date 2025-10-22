@@ -290,7 +290,7 @@ export default function Dashboard() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() => alert("Charts Feature coming soon")}
+          onPress={() => alert("Interest Feature coming soon")}
         >
           <MaterialCommunityIcons
             name="alpha-i-box"
@@ -302,7 +302,7 @@ export default function Dashboard() {
 
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() => alert("Inventory Feature coming soon")}
+          onPress={() => alert("SplitMoney Feature coming soon")}
         >
           <MaterialCommunityIcons
             name="alpha-s-box"
@@ -312,17 +312,9 @@ export default function Dashboard() {
           <Text style={styles.bottomButtonText}>SplitMoney</Text>
         </TouchableOpacity>
 
-        {/*  <TouchableOpacity
-                style={styles.bottomButtonIcon}
-                onPress={() => alert("All Investments Feature coming soon")}
-              >
-                <Ionicons name="cash-outline" size={28} color="#4f93ff" />
-                <Text style={styles.bottomButtonText}>Investments</Text>
-              </TouchableOpacity> */}
-
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() => alert("History Feature coming soon")}
+          onPress={() => alert("Settings Feature coming soon")}
         >
           <Ionicons name="settings" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Settings</Text>

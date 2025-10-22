@@ -58,8 +58,8 @@ export default function ProfileScreen() {
     {
       icon: "diamond",
       text: "Business Money Pro",
-      action: () => alert("Business Money Pro Feature Coming Soon"),
-      color: "#ab429bd0",
+      action: () => alert("For Now Everything is Free"),
+      color: "#a59fa5d0",
     },
     {
       icon: "settings-outline",

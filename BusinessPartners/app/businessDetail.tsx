@@ -516,7 +516,7 @@ export default function BusinessDetail() {
           <Entypo name="dots-three-vertical" size={24} color="#000" />
         </TouchableOpacity>
       </View>
-
+      
       {/* Scrollable content */}
       <ScrollView
         contentContainerStyle={{
@@ -525,6 +525,9 @@ export default function BusinessDetail() {
           paddingTop: 16, // spacing from header
         }}
       >
+        <View>
+        <Text style={styles.businessSummary}>  Business Summary</Text>
+      </View>
         {/* Summary Card (tap to expand/collapse) */}
         <TouchableOpacity
           activeOpacity={0.95}
@@ -918,6 +921,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
     marginVertical: 12,
+    color: "#000",
+  },
+    businessSummary: {
+    fontSize: 15,
+    fontWeight: "600",
+    textAlign: "left",
+    marginVertical: 5,
     color: "#000",
   },
 

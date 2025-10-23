@@ -7,7 +7,7 @@ import BASE_URL from "../src/config/config";
 import EditInvestmentPopup from "./EditInvestmentPopup";
 
 export default function InvestmentDetail() {
-  const { investmentGroupId } = useLocalSearchParams<{ investmentGroupId?: string }>();
+  const { investmentGroupId, businessName } = useLocalSearchParams<{ investmentGroupId?: string, businessName?:string }>();
   const router = useRouter();
 
   const [token, setToken] = useState<string | null>(null);
@@ -28,9 +28,11 @@ export default function InvestmentDetail() {
       const res = await fetch(`${BASE_URL}/api/investment/all-group-investments/${investmentGroupId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+   //   console.log("Fetching business name:", businessName);
       if (!res.ok) throw new Error("Failed to fetch group investments");
       const data = await res.json();
       setInvestments(Array.isArray(data) ? data : []);
+      console.log("Fetched investments for group:", data);
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Failed to fetch group investments");
@@ -50,23 +52,33 @@ export default function InvestmentDetail() {
     }
   };
 
-  // Prepare group-level investment data for EditInvestmentPopup
-  const getGroupInvestmentData = () => {
-    if (!investmentGroupId) throw new Error("Invalid groupId");
-    return {
-      groupId: investmentGroupId,
-      totalAmount: investments.reduce((sum, inv) => sum + (inv.totalAmount ?? inv.invested ?? 0), 0),
-      description: investments[0]?.description ?? "",
-      partners: investments.map((inv) => ({
-        id: inv.partnerId,
-        username: inv.partnerName,
-        share: inv.share, // optional
-      })),
-      images: investments[0]?.images ?? [],
-      transactionType: investments[0]?.transactionType ?? "Investment",
-    };
-  };
+// Prepare group-level investment data for EditInvestmentPopup
+const getGroupInvestmentData = () => {
+  if (!investmentGroupId) throw new Error("Invalid groupId");
 
+  const first = investments[0];
+
+  return {
+    groupId: investmentGroupId,
+    totalAmount: first?.totalAmount ?? first?.invested ?? 0, // ✅ take from one record only
+    description: first?.description ?? "",
+    partners: investments.map((inv) => ({
+      id: inv.partnerId,
+      username: inv.partnerName,
+      share: inv.share ?? 0,
+      invested: inv.invested ?? 0,
+      investable: inv.investable ?? 0,
+    })),
+    images: first?.images ?? [],
+    transactionType: first?.transactionType ?? "Investment",
+  };
+};
+
+
+/*   useEffect(() => {
+    console.log("Fetched investments:", getGroupInvestmentData());
+  }, [investments]);
+ */
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -122,6 +134,7 @@ export default function InvestmentDetail() {
       {editVisible && investmentGroupId && (
         <EditInvestmentPopup
           visible={editVisible}
+          businessName={businessName || ""}
           investmentData={getGroupInvestmentData()}
           onClose={() => setEditVisible(false)}
           onUpdated={fetchGroupInvestments}

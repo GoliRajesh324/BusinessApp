@@ -447,6 +447,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   };
 
   const extraText = (r: any) => {
+    console.log("Calculating extraText for:", r.name, r.actual, r.investing);
     const actualNum = parseFloat(r.actual) || 0;
     const investNum = parseFloat(r.investing) || 0;
     const diff = Math.round((actualNum - investNum) * 100) / 100;

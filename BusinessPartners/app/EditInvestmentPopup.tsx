@@ -5,6 +5,8 @@ import {
   Alert,
   Animated,
   Image,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
@@ -12,6 +14,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import BASE_URL from "../src/config/config";
@@ -20,26 +23,8 @@ import {
   pickImageFromCamera,
   pickImageFromGallery,
 } from "./utils/ImagePickerService";
+import { numberToWords } from "./utils/numberToWords";
 
-interface Partner {
-  id: string;
-  username: string;
-  share?: number;
-  invested?: string;
-  investable?: string;
-}
-
-/* interface InvestmentRow {
-  id: string;
-  name: string;
-  share: number;
-  actual: string;
-  investable: string;
-  investing: string;
-  leftOver?: number;
-  checked?: boolean;
-  reduceLeftOver?: string;
-} */
 interface EditInvestmentScreenProps {
   visible: boolean;
   businessId: string;
@@ -48,20 +33,7 @@ interface EditInvestmentScreenProps {
   onClose: () => void;
   onUpdated: () => void | Promise<void>;
 }
-interface PartnerRow {
-  id: string;
-  name: string;
-  share: number;
-  actualInvestment: number;
-  yourInvestment: number;
-  actualSold: number;
-  withdrawn: number;
-  leftOver: number;
-  investing: string;
-  actual: string;
-  checked: boolean;
-  reduceLeftOver: string;
-}
+
 const SLIDER_THUMB_SIZE = 18;
 
 const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
@@ -73,6 +45,8 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   onUpdated,
 }) => {
   const first = investmentData?.[0] || {};
+  const [investmentDataState, setInvestmentDataState] =
+    useState(investmentData);
 
   // ✅ Extract group data safely
   const partners =
@@ -83,18 +57,22 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       invested: inv.invested?.toString() ?? "0",
       investable: inv.investable?.toString() ?? "0",
     })) ?? [];
+  const [rows, setRows] = useState<any[]>(partners);
 
   const [totalAmount, setTotalAmount] = useState<string>(
     first.totalAmount?.toString() ?? ""
   );
-  const [description, setDescription] = useState<string>();
+  const [description, setDescription] = useState<string>(
+    first.description ?? ""
+  );
   const [transactionType, setTransactionType] = useState<string>(
     first.transactionType ?? "Investment"
   );
   const [images, setImages] = useState<any[]>(first.images ?? []);
-  const [rows, setRows] = useState<any[]>(partners);
+
   const [token, setToken] = useState<string | null>(null);
-  const [investmentDetails, setInvestmentDetails] = useState<any[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+
   /*  const [transactionType, setTransactionType] = useState<
     "Investment" | "Sold" | "Withdraw" | null
   >(initialTransactionType || "Investment"); */
@@ -102,16 +80,38 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   const [errorVisible, setErrorVisible] = useState(false);
   const shakeAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
+  const [typeModalVisible, setTypeModalVisible] = useState(false);
   const expected = useMemo(() => parseFloat(totalAmount) || 0, [totalAmount]);
+
+  const [splitMode, setSplitMode] = useState<"share" | "equal" | "manual">(
+    "share"
+  );
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [sheetTempMode, setSheetTempMode] = useState<
+    "share" | "equal" | "manual"
+  >("share");
+  const [shareValues, setShareValues] = useState<number[]>([]);
+
+  // ✅ Restore saved split type when editing an existing investment
+  useEffect(() => {
+    if (first?.splitType) {
+      const type = first.splitType.toLowerCase();
+      if (type === "share" || type === "equal" || type === "manual") {
+        setSplitMode(type);
+      }
+    }
+  }, [first]);
 
   const handleSave = async () => {
     try {
-      const totalEntered = investmentData.reduce(
+      investmentData.map((inv) =>
+        console.log("Investment to update:", inv.invested)
+      );
+      const totalEntered = investmentDataState.reduce(
         (sum, r) => sum + (parseFloat((r.invested || "0").toString()) || 0),
         0
       );
-      console.log("handleSave called with: ",totalEntered, expected)
+      console.log("handleSave called with: ", totalEntered, expected);
       if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
         Alert.alert("Error", "Total entered does not match expected amount");
         return;
@@ -122,17 +122,22 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
         return;
       }
 
+      console.log(
+        "Preparing to send updated investments description...",
+        description
+      );
       // ✅ Prepare list of updated investments matching backend InvestmentDTO
-      const updatedInvestments = investmentData.map((inv) => {
-        const match = rows.find((r) => r.id === inv.partnerId?.toString());
+      const updatedInvestments = investmentDataState.map((inv) => {
+      
+        //const match = rows.find((r) => r.id === inv.partnerId?.toString());
         return {
           investmentId: inv.investmentId,
           createdAt: inv.createdAt,
           createdBy: inv.createdBy,
           cropId: inv.cropId,
           description: description || inv.description,
-          investable: Number(match?.actual || inv.investable || 0),
-          invested: Number(match?.investing || inv.invested || 0),
+          investable: Number(/* match?.actual ||  */ inv.investable || 0),
+          invested: Number(/* match?.investing ||  */ inv.invested || 0),
           partnerId: inv.partnerId,
           share: inv.share,
           soldAmount: inv.soldAmount,
@@ -144,17 +149,17 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
           investmentGroupId: inv.investmentGroupId,
           totalAmount: Number(totalAmount || inv.totalAmount || 0),
           imageUrl: inv.imageUrl,
-          splitType: inv.splitType,
+          splitType: inv.splitType?.toUpperCase(),
           supplierName: inv.supplierName,
           supplierId: inv.supplierId,
-          updatedBy: inv.updatedBy,
-          reduceLeftOver: Number(match?.reduceLeftOver || 0),
+          updatedBy: userId,
+          reduceLeftOver: Number(/* match?. */ inv.reduceLeftOver || 0),
         };
       });
 
       console.log("📤 Sending updated investments:", updatedInvestments);
 
-/*       const response = await fetch(
+      const response = await fetch(
         `${BASE_URL}/api/investment/edit-investment`,
         {
           method: "POST",
@@ -171,7 +176,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
         console.error("❌ Backend error:", text);
         Alert.alert("Error", "Failed to update investment");
         return;
-      } */
+      }
 
       Alert.alert("✅ Success", "Investment updated successfully");
       onUpdated();
@@ -182,59 +187,164 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     }
   };
 
-  // ✅ Fetch business info with leftover + partnerDTO
+  // Auto-update when totalAmount or splitMode changes
+  // ✅ To skip first recalculation when popup opens
+  const isInitialLoad = useRef(true);
+
   useEffect(() => {
-    if (!token || !businessId) return;
-    console.log("Fetching business info for businessId:", businessId);
-    const fetchBusinessInfo = async () => {
-      try {
-        const response = await fetch(
-          `${BASE_URL}/api/business/${businessId}/business-details-by-id`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+    if (isInitialLoad.current) {
+      console.log("Initial load - skipping recalculation");
+      isInitialLoad.current = false;
+      return;
+    }
 
-        const text = await response.text();
-        if (!response.ok || !text) {
-          console.warn("⚠️ No data returned from business-details-by-id");
+    console.log("Recalculating partner investments for totalAmount change");
+
+    if (
+      !totalAmount ||
+      Number(totalAmount) <= 0 ||
+      !investmentDataState?.length
+    )
           return;
-        }
 
-        const data = JSON.parse(text);
-        setInvestmentDetails(data.investmentDetails || []);
+    const total = parseFloat(totalAmount);
 
-        // ✅ Map backend structure correctly
-        const mappedRows: PartnerRow[] = (data.investmentDetails || []).map(
-          (inv: any) => ({
-            id: inv.partner?.partnerId?.toString() || "",
-            name: inv.partner?.username || "Unknown",
-            share: Number(inv.partner?.share || 0),
-            actualInvestment: Number(inv.actualInvestment || 0),
-            yourInvestment: Number(inv.yourInvestment || 0),
-            actualSold: Number(inv.actualSold || 0),
-            withdrawn: Number(inv.withdrawn || 0),
-            leftOver: Number(inv.leftOver || 0),
-            investing: "",
-            actual: "",
-            checked: false,
-            reduceLeftOver: "",
+    const updated = investmentDataState.map((r) => {
+      const share = Number(r.share) || 0;
+      let invested = 0;
+
+      if (splitMode === "share") {
+        invested = (total * share) / 100;
+      } else if (splitMode === "equal") {
+        invested = total / investmentDataState.length;
+      } else {
+        invested = Number(r.invested) || 0; // manual entry
+      }
+
+      return {
+        ...r,
+        invested: Number(invested.toFixed(2)),
+        investable: Number(invested.toFixed(2)),
+        actual: Number(invested.toFixed(2)),
+      };
+    });
+
+    setInvestmentDataState(updated);
+  }, [totalAmount, splitMode]);
+
+  const openSheet = () => {
+    if (!totalAmount || Number(totalAmount) <= 0) {
+      Alert.alert("Error", "Please enter a valid amount first");
+      return;
+    }
+    setSheetTempMode(splitMode);
+
+    // Prepare temp share values based on current split mode
+    if (splitMode === "share") {
+      // Actual invested amounts for partners in share mode
+      setShareValues(
+        investmentDataState.map((r) => parseFloat(String(r.invested ?? "0")))
+      );
+    } else if (splitMode === "equal") {
+      const per = expected / partners.length;
+      setShareValues(partners.map(() => per));
+    } else {
+      setShareValues(rows.map((r) => parseFloat("0")));
+    }
+    setSheetVisible(true);
+  };
+
+  /*   const applySheet = () => {
+    // Apply split values based on sheetTempMode
+    setSplitMode(sheetTempMode);
+
+    if (sheetTempMode === "share") {
+      // Use shareValues (which may have been edited by user)
+      setInvestmentDataState((prev) =>
+        prev.map((r, idx) => {
+          const actualAmount = shareValues[idx] ?? 0;
+      
+          return {
+            ...r,
+            actual: actualAmount.toFixed(2), // investable amount
+            investing: r.invested ? r.invested : actualAmount.toFixed(2),
+
+            // Do NOT touch share %
+          };
+        })
+      );
+    } else if (sheetTempMode === "equal") {
+      // Prefer shareValues (user may have edited the equal values).
+      const per = expected / partners.length;
+      setInvestmentDataState((prev) =>
+        prev.map((r, idx) => {
+          const val = shareValues[idx] ?? per;
+          const updated = {
+            ...r,
+            actual: Number(val).toFixed(2),
+            investing: r.invested ? r.invested : Number(val).toFixed(2),
+          };
+     
+          return updated;
+        })
+      );
+    } else {
+      // Manual: apply user-entered values from shareValues (don't overwrite with old share)
+      setInvestmentDataState((prev) =>
+        prev.map((r, idx) => {
+          const val = shareValues[idx] ?? parseFloat(String(r.invested || "0")) ?? 0;
+          return {
+            ...r,
+            actual: Number(val).toFixed(2),
+            investing: String(val),
+          };
           })
         );
-        console.log({ mappedRows });
-        setRows(mappedRows);
-      } catch (err) {
-        console.error("❌ Error fetching business info:", err);
-      }
-    };
+    }
 
-    fetchBusinessInfo();
-  }, [investmentData, token]);
+    setSheetVisible(false);
+  }; */
+
+  const applySheet = () => {
+    setSplitMode(sheetTempMode);
+
+    setInvestmentDataState((prev) =>
+      prev.map((r, idx) => {
+        const entered = shareValues[idx]; // user input
+        let val = 0;
+
+        if (!isNaN(Number(entered))) {
+          val = Number(entered);
+        } else if (sheetTempMode === "equal") {
+          val = expected / prev.length;
+        } else if (sheetTempMode === "share") {
+          const share = Number(r.share) || 0;
+          val = (expected * share) / 100;
+        } else {
+          val = Number(r.invested) || 0;
+        }
+
+        // ✅ Keep investable (expected) value as-is
+        // ✅ Update invested and actual only
+        return {
+          ...r,
+          invested: Number(val.toFixed(2)),
+          investable: Number(r.investable ?? expected / prev.length), // don’t overwrite
+          actual: Number(val.toFixed(2)),
+          splitType: sheetTempMode, // ✅ Save mode here
+        };
+      })
+    );
+    // 3️⃣ Close modal
+    setSheetVisible(false);
+  };
 
   useEffect(() => {
     const loadToken = async () => {
       const t = await AsyncStorage.getItem("token");
+      const u = await AsyncStorage.getItem("userName");
       setToken(t);
+      setUserId(u);
     };
     loadToken();
   }, []);
@@ -275,36 +385,8 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     updated.splice(index, 1);
     setImages(updated);
   };
-/* 
-  const handleSave = () => {
-    const totalEntered = rows.reduce(
-      (sum, r) => sum + (parseFloat(r.actual) || 0),
-      0
-    );
-    if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
-      Alert.alert("Error", "Total entered does not match expected amount");
-      return;
-    }
-
-    console.log("Updated investment:", {
-      rows,
-      totalAmount,
-      description,
-      images,
-      transactionType,
-    });
-
-    onUpdated();
-    onClose();
-  }; */
 
   const extraText = (r: InvestmentDTO) => {
-    console.log(
-      "Calculating extraText for:",
-      r.partnerName,
-      r.investable,
-      r.invested
-    );
     const investableNum = parseFloat((r.investable ?? "0").toString()) || 0;
     const investedNum = parseFloat((r.invested ?? "0").toString()) || 0;
     const diff = Math.round((investedNum - investableNum) * 100) / 100;
@@ -312,16 +394,35 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     if (diff < 0) return `Pending - ${Math.abs(diff).toFixed(2)}`;
     return "Settled";
   };
+  /* 
+  useEffect(() => {}, [investmentData]);
+ */
+  useEffect(() => {
+    if (visible) {
+      isInitialLoad.current = true; // Reset when popup opens again
+    }
+  }, [visible]);
 
-  /*   const extraText = (r: any) => {
-    const actualNum = parseFloat(r.actual) || 0;
-    const investNum = parseFloat(r.investing) || 0;
-    const diff = Math.round((actualNum - investNum) * 100) / 100;
-    if (!actualNum && !investNum) return "";
-    if (diff > 0) return `Extra +${diff.toFixed(2)}`;
-    if (diff < 0) return `Pending -${Math.abs(diff).toFixed(2)}`;
-    return "Settled";
-  }; */
+  useEffect(() => {
+    if (!totalAmount || !investmentData?.length) return;
+
+    const total = parseFloat(totalAmount);
+    if (isNaN(total) || total <= 0) return;
+
+    // Recalculate partner investments based on share
+    const updatedRows = investmentDataState.map((inv) => {
+      const share = parseFloat((inv.share ?? 0).toString());
+      const invested = (total * share) / 100;
+
+      return {
+        ...inv,
+        invested: invested.toFixed(2),
+        investable: invested.toFixed(2), // same as actual for now
+      };
+    });
+
+    setRows(updatedRows);
+  }, [totalAmount, investmentData]);
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -369,23 +470,22 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
               />
               <TouchableOpacity
                 style={styles.splitDropdownBtn}
-                onPress={() => alert("openSheet")}
-                /* onPress={openSheet} */
+                //onPress={() => alert("openSheet")}
+                onPress={openSheet}
               >
                 <Text style={styles.splitDropdownText}>
-                  SHARE
-                  {/*  {splitMode.toUpperCase()} */}
+                  {splitMode.toUpperCase()}
                 </Text>
                 <Ionicons name="chevron-down" size={18} color="#fff" />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/*   {!!totalAmount && (
+          {!!totalAmount && (
             <Text style={styles.amountWords}>
               {numberToWords(Number(totalAmount))}
             </Text>
-          )} */}
+          )}
 
           {/* Partner Cards */}
           <View style={{ marginTop: 12 }}>
@@ -394,8 +494,10 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingVertical: 8 }}
             >
-              {investmentData.map((r, i) => (
+              {investmentDataState
+                .map((r, i) => (
                 <View key={r.partnerId} style={{ marginBottom: 12 }}>
+
                   {/* Partner Card */}
                   <View style={styles.partnerCard}>
                     {/* Column 1: Name + Share % */}
@@ -563,7 +665,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                 },
                 errorVisible && { borderColor: "red", borderWidth: 2 },
               ]}
-              onPress={() => alert("setTypeModalVisible")} //setTypeModalVisible(true)}
+              onPress={() => setTypeModalVisible(true)}
             >
               <Text
                 style={{
@@ -618,9 +720,106 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
         </Modal> */}
 
         {/* Split Sheet */}
+        <Modal visible={sheetVisible} animationType="slide" transparent>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.sheetOverlay}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={{ flex: 1, justifyContent: "flex-end" }}
+              >
+                <View style={styles.sheetContainer}>
+                  {/* Header */}
+                  <View style={styles.sheetHeader}>
+                    <Text style={styles.sheetHeaderTitle}>Split Options</Text>
+                    <TouchableOpacity onPress={applySheet}>
+                      <Text style={styles.sheetDone}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
 
+                  {/* Body */}
+                  <ScrollView
+                    style={{ maxHeight: "70%", paddingHorizontal: 12 }}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={{ paddingBottom: 40 }}
+                  >
+                    {/* Mode Buttons */}
+                    <View style={styles.splitModeRow}>
+                      {(["share", "equal", "manual"] as const).map((m) => (
+                        <TouchableOpacity
+                          key={m}
+                          onPress={() => {
+                            setSheetTempMode(m);
+                            if (m === "equal") {
+                              const per = expected / partners.length;
+                              setShareValues(partners.map(() => per));
+                            } else if (m === "share") {
+                              const shareBased = partners.map(
+                                (p, i) =>
+                                  ((p.share ?? 100 / partners.length) / 100) *
+                                  expected
+                              );
+                              setShareValues(shareBased);
+                            } else {
+                              // When user chooses manual mode show current invested/investing values so user can edit them
+                              setShareValues(rows.map((r) => parseFloat("0")));
+                            }
+                          }}
+                          style={[
+                            styles.splitModeButton,
+                            sheetTempMode === m && styles.splitModeButtonActive,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.splitModeText,
+                              sheetTempMode === m && styles.splitModeTextActive,
+                            ]}
+                          >
+                            {m.toUpperCase()}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    {/* Partner List */}
+                    {partners.map((p, idx) => {
+                      const val = shareValues[idx] ?? 0;
+                      return (
+                        <View
+                          key={p.id}
+                          style={[
+                            styles.partnerRow,
+                            {
+                              backgroundColor:
+                                idx % 2 === 0 ? "#f8f9ff" : "#fff",
+                            },
+                          ]}
+                        >
+                          <Text style={styles.partnerName}>{p.username}</Text>
+                          <TextInput
+                            style={styles.partnerAmountInput}
+                            keyboardType="numeric"
+                            value={val.toString()}
+                            onChangeText={(txt) => {
+                              const num = Number(txt) || 0;
+                              setShareValues((prev) => {
+                                const copy = [...prev];
+                                copy[idx] = num;
+                                return copy;
+                              });
+                            }}
+                          />
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              </KeyboardAvoidingView>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
         {/* Type Modal */}
-        {/*  <Modal visible={typeModalVisible} transparent animationType="fade">
+        <Modal visible={typeModalVisible} transparent animationType="fade">
           <TouchableOpacity
             style={styles.typeModalOverlay}
             onPress={() => setTypeModalVisible(false)}
@@ -646,7 +845,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
               ))}
             </View>
           </TouchableOpacity>
-        </Modal> */}
+        </Modal>
       </View>
     </Modal>
   );

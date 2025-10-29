@@ -14,9 +14,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import BASE_URL from "../src/config/config";
-import { InvestmentDTO } from "./types";
 import {
+  ImageFile,
   pickImageFromCamera,
   pickImageFromGallery,
 } from "./utils/ImagePickerService";
@@ -29,7 +28,7 @@ interface Partner {
   investable?: string;
 }
 
-/* interface InvestmentRow {
+interface InvestmentRow {
   id: string;
   name: string;
   share: number;
@@ -39,197 +38,55 @@ interface Partner {
   leftOver?: number;
   checked?: boolean;
   reduceLeftOver?: string;
-} */
+}
+
 interface EditInvestmentScreenProps {
   visible: boolean;
-  businessId: string;
   businessName: string;
-  investmentData: InvestmentDTO[];
+  investmentData: {
+    groupId: string;
+    totalAmount: any;
+    description: any;
+    partners: Partner[];
+    images: any[];
+    transactionType: any;
+  };
   onClose: () => void;
   onUpdated: () => void | Promise<void>;
-}
-interface PartnerRow {
-  id: string;
-  name: string;
-  share: number;
-  actualInvestment: number;
-  yourInvestment: number;
-  actualSold: number;
-  withdrawn: number;
-  leftOver: number;
-  investing: string;
-  actual: string;
-  checked: boolean;
-  reduceLeftOver: string;
 }
 const SLIDER_THUMB_SIZE = 18;
 
 const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   visible,
-  businessId,
   businessName,
   investmentData,
   onClose,
   onUpdated,
 }) => {
-  const first = investmentData?.[0] || {};
+  const {
+    groupId,
+    totalAmount: initialAmount,
+    description: initialDesc,
+    partners,
+    images: initialImages,
+    transactionType: initialTransactionType,
+  } = investmentData;
 
-  // ✅ Extract group data safely
-  const partners =
-    investmentData?.map((inv) => ({
-      id: inv.partnerId?.toString() || "",
-      username: inv.partnerName || "",
-      share: inv.share ?? 0,
-      invested: inv.invested?.toString() ?? "0",
-      investable: inv.investable?.toString() ?? "0",
-    })) ?? [];
-
-  const [totalAmount, setTotalAmount] = useState<string>(
-    first.totalAmount?.toString() ?? ""
-  );
-  const [description, setDescription] = useState<string>();
-  const [transactionType, setTransactionType] = useState<string>(
-    first.transactionType ?? "Investment"
-  );
-  const [images, setImages] = useState<any[]>(first.images ?? []);
-  const [rows, setRows] = useState<any[]>(partners);
   const [token, setToken] = useState<string | null>(null);
-  const [investmentDetails, setInvestmentDetails] = useState<any[]>([]);
-  /*  const [transactionType, setTransactionType] = useState<
+  const [totalAmount, setTotalAmount] = useState<string>(
+    initialAmount?.toString() || ""
+  );
+  const [description, setDescription] = useState<string>(initialDesc || "");
+  const [rows, setRows] = useState<InvestmentRow[]>([]);
+  const [images, setImages] = useState<ImageFile[]>(initialImages || []);
+  const [transactionType, setTransactionType] = useState<
     "Investment" | "Sold" | "Withdraw" | null
-  >(initialTransactionType || "Investment"); */
-
+  >(initialTransactionType || "Investment");
   const [errorVisible, setErrorVisible] = useState(false);
   const shakeAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const expected = useMemo(() => parseFloat(totalAmount) || 0, [totalAmount]);
-
-  const handleSave = async () => {
-    try {
-      const totalEntered = investmentData.reduce(
-        (sum, r) => sum + (parseFloat((r.invested || "0").toString()) || 0),
-        0
-      );
-      console.log("handleSave called with: ",totalEntered, expected)
-      if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
-        Alert.alert("Error", "Total entered does not match expected amount");
-        return;
-      }
-
-      if (!token) {
-        Alert.alert("Error", "User not authenticated");
-        return;
-      }
-
-      // ✅ Prepare list of updated investments matching backend InvestmentDTO
-      const updatedInvestments = investmentData.map((inv) => {
-        const match = rows.find((r) => r.id === inv.partnerId?.toString());
-        return {
-          investmentId: inv.investmentId,
-          createdAt: inv.createdAt,
-          createdBy: inv.createdBy,
-          cropId: inv.cropId,
-          description: description || inv.description,
-          investable: Number(match?.actual || inv.investable || 0),
-          invested: Number(match?.investing || inv.invested || 0),
-          partnerId: inv.partnerId,
-          share: inv.share,
-          soldAmount: inv.soldAmount,
-          soldFlag: inv.soldFlag,
-          withdrawn: inv.withdrawn,
-          comments: inv.comments,
-          withdrawFlag: inv.withdrawFlag,
-          partnerName: inv.partnerName,
-          investmentGroupId: inv.investmentGroupId,
-          totalAmount: Number(totalAmount || inv.totalAmount || 0),
-          imageUrl: inv.imageUrl,
-          splitType: inv.splitType,
-          supplierName: inv.supplierName,
-          supplierId: inv.supplierId,
-          updatedBy: inv.updatedBy,
-          reduceLeftOver: Number(match?.reduceLeftOver || 0),
-        };
-      });
-
-      console.log("📤 Sending updated investments:", updatedInvestments);
-
-/*       const response = await fetch(
-        `${BASE_URL}/api/investment/edit-investment`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(updatedInvestments),
-        }
-      );
-
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("❌ Backend error:", text);
-        Alert.alert("Error", "Failed to update investment");
-        return;
-      } */
-
-      Alert.alert("✅ Success", "Investment updated successfully");
-      onUpdated();
-      onClose();
-    } catch (err) {
-      console.error("❌ handleSave error:", err);
-      Alert.alert("Error", "Unexpected error occurred");
-    }
-  };
-
-  // ✅ Fetch business info with leftover + partnerDTO
-  useEffect(() => {
-    if (!token || !businessId) return;
-    console.log("Fetching business info for businessId:", businessId);
-    const fetchBusinessInfo = async () => {
-      try {
-        const response = await fetch(
-          `${BASE_URL}/api/business/${businessId}/business-details-by-id`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        const text = await response.text();
-        if (!response.ok || !text) {
-          console.warn("⚠️ No data returned from business-details-by-id");
-          return;
-        }
-
-        const data = JSON.parse(text);
-        setInvestmentDetails(data.investmentDetails || []);
-
-        // ✅ Map backend structure correctly
-        const mappedRows: PartnerRow[] = (data.investmentDetails || []).map(
-          (inv: any) => ({
-            id: inv.partner?.partnerId?.toString() || "",
-            name: inv.partner?.username || "Unknown",
-            share: Number(inv.partner?.share || 0),
-            actualInvestment: Number(inv.actualInvestment || 0),
-            yourInvestment: Number(inv.yourInvestment || 0),
-            actualSold: Number(inv.actualSold || 0),
-            withdrawn: Number(inv.withdrawn || 0),
-            leftOver: Number(inv.leftOver || 0),
-            investing: "",
-            actual: "",
-            checked: false,
-            reduceLeftOver: "",
-          })
-        );
-        console.log({ mappedRows });
-        setRows(mappedRows);
-      } catch (err) {
-        console.error("❌ Error fetching business info:", err);
-      }
-    };
-
-    fetchBusinessInfo();
-  }, [investmentData, token]);
 
   useEffect(() => {
     const loadToken = async () => {
@@ -239,18 +96,34 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     loadToken();
   }, []);
 
-  /*     useEffect(() => {
-    if (!investmentData || investmentData.length === 0) return;
-    const freshRows =
-      investmentData?.map((inv) => ({
-        id: inv.partnerId?.toString() || "",
-        username: inv.partnerName || "",
-        share: inv.share ?? 0,
-        invested: inv.invested?.toString() ?? "0",
-        investable: inv.investable?.toString() ?? "0",
-      })) ?? [];
-    setRows(freshRows);
-  }, [investmentData]); */
+  
+  useEffect(() => {
+    if (!partners.length) return;
+
+    // Take totalAmount from the first investment object only
+    const baseAmount = Number(initialAmount) || 0;
+
+    const mappedRows: InvestmentRow[] = partners.map((p) => {
+      const share = p.share || 0;
+      const invested = Number(p.invested ?? 0);
+      const investable = Number(p.investable ?? 0);
+      //const value = ((share / 100) * baseAmount).toFixed(2);
+      return {
+        id: p.id,
+        name: p.username,
+        share,
+        actual: investable.toFixed(2),
+        invested: invested.toFixed(2),
+        investable: investable.toFixed(2),
+        investing: invested.toFixed(2), // <-- Add this line
+      };
+    });
+
+    setRows(mappedRows);
+    setTotalAmount(baseAmount.toString());
+    console.log("🧮 Rows prepared:", mappedRows);
+    console.log("📊 Total amount before setting:", baseAmount);
+  }, [partners, initialAmount]);
 
   /*   const handleInvestingChange = (index: number, value: string) => {
     setRows((prev) => {
@@ -275,7 +148,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     updated.splice(index, 1);
     setImages(updated);
   };
-/* 
+
   const handleSave = () => {
     const totalEntered = rows.reduce(
       (sum, r) => sum + (parseFloat(r.actual) || 0),
@@ -296,32 +169,15 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
 
     onUpdated();
     onClose();
-  }; */
-
-  const extraText = (r: InvestmentDTO) => {
-    console.log(
-      "Calculating extraText for:",
-      r.partnerName,
-      r.investable,
-      r.invested
-    );
-    const investableNum = parseFloat((r.investable ?? "0").toString()) || 0;
-    const investedNum = parseFloat((r.invested ?? "0").toString()) || 0;
-    const diff = Math.round((investedNum - investableNum) * 100) / 100;
-    if (diff > 0) return `Extra  + ${diff.toFixed(2)}`;
-    if (diff < 0) return `Pending - ${Math.abs(diff).toFixed(2)}`;
-    return "Settled";
   };
 
-  /*   const extraText = (r: any) => {
-    const actualNum = parseFloat(r.actual) || 0;
-    const investNum = parseFloat(r.investing) || 0;
-    const diff = Math.round((actualNum - investNum) * 100) / 100;
-    if (!actualNum && !investNum) return "";
-    if (diff > 0) return `Extra +${diff.toFixed(2)}`;
-    if (diff < 0) return `Pending -${Math.abs(diff).toFixed(2)}`;
+  const extraText = (r: InvestmentRow) => {
+    const diff =
+      Math.round((parseFloat(r.actual) - parseFloat(r.investing)) * 100) / 100;
+    if (diff > 0) return `Extra ${diff.toFixed(2)}`;
+    if (diff < 0) return `Pending ${Math.abs(diff).toFixed(2)}`;
     return "Settled";
-  }; */
+  };
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -394,14 +250,14 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingVertical: 8 }}
             >
-              {investmentData.map((r, i) => (
-                <View key={r.partnerId} style={{ marginBottom: 12 }}>
+              {rows.map((r, i) => (
+                <View key={r.id} style={{ marginBottom: 12 }}>
                   {/* Partner Card */}
                   <View style={styles.partnerCard}>
                     {/* Column 1: Name + Share % */}
                     <View style={styles.col1}>
                       <Text style={styles.partnerName}>
-                        {(r.partnerName || "Unknown").toUpperCase()}
+                        {(r.name || "Unknown").toUpperCase()}
                       </Text>
 
                       <Text style={styles.partnerPercent}>
@@ -410,7 +266,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                     </View>
 
                     {/* Column 2: Checkbox shown only in Investment */}
-                    {/*                     {transactionType === "Investment" ? (
+                    {transactionType === "Investment" ? (
                       <View style={styles.col2}>
                         {Number(r.leftOver) > 0 && (
                           <Text style={{ fontSize: 12, color: "#666" }}>
@@ -443,20 +299,21 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                         )}
                       </View>
                     ) : (
+                      // For Sold and Withdraw, keep this column empty to maintain layout
                       <View style={styles.col2} />
                     )}
- */}
+
                     {/* Column 3: Investing amount + Extra/Pending/Settled */}
                     <View style={styles.col3}>
                       <Text style={styles.partnerAmount}>
-                        {r.invested || "0.00"}
+                        {r.investing || "0.00"}
                       </Text>
                       <Text style={styles.smallNote}>{extraText(r)}</Text>
                     </View>
                   </View>
 
                   {/* Expanded Section only for Investment + when checked */}
-                  {/*   {transactionType === "Investment" && r.checked && (
+                  {transactionType === "Investment" && r.checked && (
                     <View style={styles.expandedSection}>
                       <Text style={styles.expandedLabel}>
                         Available Money to use: ₹{Number(r.leftOver).toFixed(2)}
@@ -476,7 +333,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                         }}
                       />
                     </View>
-                  )} */}
+                  )}
                 </View>
               ))}
             </ScrollView>

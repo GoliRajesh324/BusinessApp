@@ -437,7 +437,6 @@ export default function BusinessDetail() {
             pathname: "/investmentDetail",
             params: {
              investmentGroupId: inv.investmentGroupId,
-             businessId: safeBusinessId,
               businessName: safeBusinessName
             },
           })

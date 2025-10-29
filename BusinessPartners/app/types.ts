@@ -1,0 +1,28 @@
+// types.ts
+export interface InvestmentDTO {
+  investmentId?: number;
+  createdAt?: string;
+  createdBy?: string;
+  cropId?: number;
+  description?: string;
+  investable?: number;
+  invested?: number;
+  partnerId?: number;
+  partnerName?: string;
+  share?: number;
+  soldAmount?: number;
+  soldFlag?: string;
+  withdrawn?: number;
+  comments?: string;
+  withdrawFlag?: string;
+  investmentGroupId?: number;
+  totalAmount?: number;
+  imageUrl?: string;
+  splitType?: string;
+  supplierName?: string;
+  supplierId?: number;
+  updatedBy?: string;
+  reduceLeftOver?: number;
+  transactionType?: string;
+  images?: any[];
+}

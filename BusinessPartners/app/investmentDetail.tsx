@@ -5,13 +5,14 @@ import React, { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import BASE_URL from "../src/config/config";
 import EditInvestmentPopup from "./EditInvestmentPopup";
+import { InvestmentDTO } from "./types";
 
 export default function InvestmentDetail() {
-  const { investmentGroupId, businessName } = useLocalSearchParams<{ investmentGroupId?: string, businessName?:string }>();
+  const { investmentGroupId, businessId, businessName } = useLocalSearchParams<{ investmentGroupId?: string, businessId?: string, businessName?: string }>();
   const router = useRouter();
 
   const [token, setToken] = useState<string | null>(null);
-  const [investments, setInvestments] = useState<any[]>([]);
+  const [investments, setInvestments] = useState<InvestmentDTO[]>([]);
   const [editVisible, setEditVisible] = useState(false);
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function InvestmentDetail() {
     }
   };
 
+  
 // Prepare group-level investment data for EditInvestmentPopup
 const getGroupInvestmentData = () => {
   if (!investmentGroupId) throw new Error("Invalid groupId");
@@ -59,6 +61,7 @@ const getGroupInvestmentData = () => {
   const first = investments[0];
 
   return {
+
     groupId: investmentGroupId,
     totalAmount: first?.totalAmount ?? first?.invested ?? 0, // ✅ take from one record only
     description: first?.description ?? "",
@@ -124,7 +127,7 @@ const getGroupInvestmentData = () => {
               <Text>Total Amount: ₹{formatAmount(inv.totalAmount ?? inv.invested)}</Text>
               <Text>Invested: ₹{formatAmount(inv.invested ?? 0)}</Text>
               <Text>Split Type: {inv.splitType ?? "-"}</Text>
-              <Text>Created At: {formatDateTime(inv.createdAt)}</Text>
+              <Text>Created At: {formatDateTime(inv.createdAt ?? "")}</Text>
             </View>
           ))
         )}
@@ -134,8 +137,9 @@ const getGroupInvestmentData = () => {
       {editVisible && investmentGroupId && (
         <EditInvestmentPopup
           visible={editVisible}
+          businessId={investmentGroupId || ""}
           businessName={businessName || ""}
-          investmentData={getGroupInvestmentData()}
+          investmentData={investments}
           onClose={() => setEditVisible(false)}
           onUpdated={fetchGroupInvestments}
         />

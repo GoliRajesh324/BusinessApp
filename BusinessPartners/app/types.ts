@@ -23,6 +23,7 @@ export interface InvestmentDTO {
   supplierId?: number;
   updatedBy?: string;
   reduceLeftOver?: number;
+  reduceLeftOverFlag?: string;
   transactionType?: string;
   images?: any[];
 }

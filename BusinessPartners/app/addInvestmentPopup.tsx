@@ -390,6 +390,9 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
         transactionType === "Investment"
           ? parseFloat(r.reduceLeftOver || "0") || 0
           : 0;
+          console.log(" New reduceLeftOverValue ",{ reduceLeftOverValue });
+      const reduceLeftOverFlag =
+        r.reduceLeftOver && Number(r.reduceLeftOver) > 0 ? "Y" : "N";
       if (transactionType === "Investment")
         return {
           partnerId: r.id,
@@ -405,6 +408,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
           withdrawFlag: "N",
           splitType: splitMode.toUpperCase(),
           reduceLeftOver: reduceLeftOverValue, // 👈 only for investment
+          reduceLeftOverFlag: reduceLeftOverFlag,
           createdBy,
         };
       if (transactionType === "Sold")
@@ -421,6 +425,8 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
           soldFlag: "Y",
           withdrawFlag: "N",
           splitType: splitMode.toUpperCase(),
+          reduceLeftOver: 0, // 👈 only for investment
+          reduceLeftOverFlag: "N",
           createdBy,
         };
       if (transactionType === "Withdraw")
@@ -437,6 +443,8 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
           soldFlag: "N",
           withdrawFlag: "Y",
           splitType: splitMode.toUpperCase(),
+          reduceLeftOver: 0, // 👈 only for investment
+          reduceLeftOverFlag: "N",
           createdBy,
         };
       return {};
@@ -568,7 +576,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
                           </TouchableOpacity>
                         ) : (
                           <View style={{ marginTop: 6 }}>
-                             <Text style={{ fontSize: 12, color: "#999" }}>
+                            <Text style={{ fontSize: 12, color: "#999" }}>
                               No leftover {r.leftOver}
                             </Text>
                           </View>

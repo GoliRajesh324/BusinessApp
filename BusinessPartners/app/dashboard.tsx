@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     borderColor: "#e0e0e0",
     backgroundColor: "#fff",
     position: "absolute",
-    bottom: Platform.OS === "ios" ? 10 : 0, // ⬅️ lifts bar a bit upward
+    bottom: Platform.OS === "ios" ? 0 : 0, // ⬅️ lifts bar a bit upward
     left: 0,
     right: 0,
     elevation: 10, // Android shadow

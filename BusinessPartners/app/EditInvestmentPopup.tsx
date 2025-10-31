@@ -47,6 +47,19 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   const first = investmentData?.[0] || {};
   const [investmentDataState, setInvestmentDataState] =
     useState(investmentData);
+  const [checkedState, setCheckedState] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    if (investmentDataState?.length) {
+      const initialState: Record<number, boolean> = {};
+
+      investmentDataState.forEach((item, index) => {
+        initialState[index] = Number(item.reduceLeftOver) > 0; // default: checked if > 0
+      });
+
+      setCheckedState(initialState);
+    }
+  }, [investmentDataState]);
 
   // ✅ Extract group data safely
   const partners =
@@ -128,7 +141,6 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       );
       // ✅ Prepare list of updated investments matching backend InvestmentDTO
       const updatedInvestments = investmentDataState.map((inv) => {
-      
         //const match = rows.find((r) => r.id === inv.partnerId?.toString());
         return {
           investmentId: inv.investmentId,
@@ -195,6 +207,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     if (isInitialLoad.current) {
       console.log("Initial load - skipping recalculation");
       isInitialLoad.current = false;
+      console.log(" Check this ", investmentDataState);
       return;
     }
 
@@ -205,7 +218,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       Number(totalAmount) <= 0 ||
       !investmentDataState?.length
     )
-          return;
+      return;
 
     const total = parseFloat(totalAmount);
 
@@ -495,92 +508,102 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
               contentContainerStyle={{ paddingVertical: 8 }}
             >
               {investmentDataState
+                .filter(
+                  (r) => r.withdrawFlag !== "Y" || r.reduceLeftOverFlag !== "Y"
+                )
                 .map((r, i) => (
-                <View key={r.partnerId} style={{ marginBottom: 12 }}>
+                  <View key={r.partnerId} style={{ marginBottom: 12 }}>
+                    {/* Partner Card */}
+                    <View style={styles.partnerCard}>
+                      {/* Column 1: Name + Share % */}
+                      <View style={styles.col1}>
+                        <Text style={styles.partnerName}>
+                          {(r.partnerName || "Unknown").toUpperCase()}
+                        </Text>
 
-                  {/* Partner Card */}
-                  <View style={styles.partnerCard}>
-                    {/* Column 1: Name + Share % */}
-                    <View style={styles.col1}>
-                      <Text style={styles.partnerName}>
-                        {(r.partnerName || "Unknown").toUpperCase()}
-                      </Text>
-
-                      <Text style={styles.partnerPercent}>
-                        {(r.share ?? 0).toString()}%
-                      </Text>
-                    </View>
-
-                    {/* Column 2: Checkbox shown only in Investment */}
-                    {/*                     {transactionType === "Investment" ? (
-                      <View style={styles.col2}>
-                        {Number(r.leftOver) > 0 && (
-                          <Text style={{ fontSize: 12, color: "#666" }}>
-                            Use Available Money
-                          </Text>
-                        )}
-                        {Number(r.leftOver) > 0 ? (
-                          <TouchableOpacity
-                            onPress={() =>
-                              setRows((prev) => {
-                                const next = [...prev];
-                                next[i].checked = !next[i].checked;
-                                return next;
-                              })
-                            }
-                            style={{ marginTop: 4 }}
-                          >
-                            <Ionicons
-                              name={r.checked ? "checkbox" : "square-outline"}
-                              size={22}
-                              color="#007bff"
-                            />
-                          </TouchableOpacity>
-                        ) : (
-                          <View style={{ marginTop: 6 }}>
-                            <Text style={{ fontSize: 12, color: "#999" }}>
-                              No leftover {r.leftOver}
-                            </Text>
-                          </View>
-                        )}
+                        <Text style={styles.partnerPercent}>
+                          {(r.share ?? 0).toString()}%
+                        </Text>
                       </View>
-                    ) : (
-                      <View style={styles.col2} />
-                    )}
- */}
-                    {/* Column 3: Investing amount + Extra/Pending/Settled */}
-                    <View style={styles.col3}>
-                      <Text style={styles.partnerAmount}>
-                        {r.invested || "0.00"}
-                      </Text>
-                      <Text style={styles.smallNote}>{extraText(r)}</Text>
+
+                      {/* Column 2: Checkbox shown only in Investment */}
+                      {transactionType === "Investment" ? (
+                        <View style={styles.col2}>
+                          {Number(r.reduceLeftOver) > 0 && (
+                            <Text style={{ fontSize: 12, color: "#666" }}>
+                              Use Available Money
+                            </Text>
+                          )}
+                          {Number(r.reduceLeftOver) > 0 ? (
+                            <TouchableOpacity
+                              onPress={() => {
+                                setCheckedState((prev) => ({
+                                  ...prev,
+                                  [i]: !prev[i], // toggle
+                                }));
+                              }}
+                              style={{ marginTop: 4 }}
+                            >
+                              <Ionicons
+                                name={
+                                  checkedState[i]
+                                    ? "checkbox"
+                                    : "square-outline"
+                                }
+                                size={22}
+                                color="#007bff"
+                              />
+                            </TouchableOpacity>
+                          ) : (
+                            <View style={{ marginTop: 6 }}>
+                              <Text style={{ fontSize: 12, color: "#999" }}>
+                                No leftover {r.reduceLeftOver}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      ) : (
+                        <View style={styles.col2} />
+                      )}
+
+                      {/* Column 3: Investing amount + Extra/Pending/Settled */}
+                      <View style={styles.col3}>
+                        <Text style={styles.partnerAmount}>
+                          {r.invested || r.withdrawn || r.soldAmount || "0.00"}
+                        </Text>
+                        <Text style={styles.smallNote}>{extraText(r)}</Text>
+                      </View>
                     </View>
+
+                    {/* Expanded Section only for Investment + when checked */}
+                    {transactionType === "Investment" &&
+                      checkedState && (
+                        <View style={styles.expandedSection}>
+                          <Text style={styles.expandedLabel}>
+                            Available Money to use: ₹
+                            {Number(r.reduceLeftOver).toFixed(2)}
+                          </Text>
+
+                          <TextInput
+                            style={styles.expandedInput}
+                            keyboardType="numeric"
+                            placeholder="Enter amount to use (≤ Available Money)"
+                            value={String(r.reduceLeftOver ?? "")}
+                            onChangeText={(val) => {
+                              setInvestmentDataState((prev) => {
+                                const next = [...prev];
+                                next[i] = {
+                                  ...next[i],
+                                  reduceLeftOver: Number(val),
+                                }; // store exactly what user types
+                                return next;
+                              });
+                            }}
+                          />
+                        </View>
+                      )}
                   </View>
-
-                  {/* Expanded Section only for Investment + when checked */}
-                  {/*   {transactionType === "Investment" && r.checked && (
-                    <View style={styles.expandedSection}>
-                      <Text style={styles.expandedLabel}>
-                        Available Money to use: ₹{Number(r.leftOver).toFixed(2)}
-                      </Text>
-
-                      <TextInput
-                        style={styles.expandedInput}
-                        keyboardType="numeric"
-                        placeholder="Enter amount to use (≤ Available Money)"
-                        value={r.reduceLeftOver ?? ""}
-                        onChangeText={(val) => {
-                          setRows((prev) => {
-                            const next = [...prev];
-                            next[i] = { ...next[i], reduceLeftOver: val }; // store exactly what user types
-                            return next;
-                          });
-                        }}
-                      />
-                    </View>
-                  )} */}
-                </View>
-              ))}
+                ))}
             </ScrollView>
           </View>
 

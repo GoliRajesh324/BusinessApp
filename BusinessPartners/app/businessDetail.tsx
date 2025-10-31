@@ -1263,8 +1263,8 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   sticker: {
-    width: 300,
-    height: 300,
+    width: 150,
+    height: 150,
     marginBottom: 20,
   },
   noDataText: {

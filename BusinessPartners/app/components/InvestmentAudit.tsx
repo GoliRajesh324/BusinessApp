@@ -6,12 +6,11 @@ import {
   FlatList,
   Modal,
   Platform,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import BASE_URL from "../../src/config/config";
 
@@ -80,21 +79,25 @@ export default function InvestmentAudit({
   }));
 
   const renderRow = ({ item }: { item: AuditLog }) => (
-    <View style={styles.row}>
-      <Text style={[styles.cell, styles.investmentCol]}>
-        {item.investmentId}
+    <View style={styles.card}>
+      <Text style={styles.fieldName}>{item.fieldName}</Text>
+
+      <View style={styles.valueWrapper}>
+        <Text style={styles.oldValue}>{item.oldValue ?? "-"}</Text>
+        <Text style={styles.arrow}>→</Text>
+        <Text style={styles.newValue}>{item.newValue ?? "-"}</Text>
+      </View>
+
+      <Text style={styles.investmentId}>
+        Investment ID: {item.investmentId}
       </Text>
-      <Text style={[styles.cell, styles.fieldCol]}>{item.fieldName}</Text>
-      <Text style={[styles.cell, styles.valueCol, styles.oldValue]}>
-        {item.oldValue ?? "-"}
-      </Text>
-      <Text style={[styles.cell, styles.valueCol, styles.newValue]}>
-        {item.newValue ?? "-"}
-      </Text>
-      <Text style={[styles.cell, styles.userCol]}>{item.modifiedBy}</Text>
-      <Text style={[styles.cell, styles.dateCol]}>
-        {new Date(item.modifiedAt).toLocaleString()}
-      </Text>
+
+      <View style={styles.footer}>
+        <Text style={styles.modifiedBy}>By: {item.modifiedBy}</Text>
+        <Text style={styles.modifiedAt}>
+          {new Date(item.modifiedAt).toLocaleString()}
+        </Text>
+      </View>
     </View>
   );
 
@@ -121,40 +124,12 @@ export default function InvestmentAudit({
             No changes found for this business.
           </Text>
         ) : (
-          <ScrollView horizontal style={styles.tableWrapper}>
-            <View>
-              {/* Table Header */}
-              <View style={[styles.row, styles.headerRow]}>
-                <Text
-                  style={[styles.cell, styles.headerCell, styles.investmentCol]}
-                >
-                  Investment ID
-                </Text>
-                <Text style={[styles.cell, styles.headerCell, styles.fieldCol]}>
-                  Field
-                </Text>
-                <Text style={[styles.cell, styles.headerCell, styles.valueCol]}>
-                  Old Value
-                </Text>
-                <Text style={[styles.cell, styles.headerCell, styles.valueCol]}>
-                  New Value
-                </Text>
-                <Text style={[styles.cell, styles.headerCell, styles.userCol]}>
-                  User
-                </Text>
-                <Text style={[styles.cell, styles.headerCell, styles.dateCol]}>
-                  Date
-                </Text>
-              </View>
-
-              {/* Table Rows */}
-              <FlatList
-                data={flatLogs}
-                renderItem={renderRow}
-                keyExtractor={(item) => item.id} // use id, must be unique
-              />
-            </View>
-          </ScrollView>
+          <FlatList
+            data={flatLogs}
+            renderItem={renderRow}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ padding: 16 }}
+          />
         )}
       </View>
     </Modal>
@@ -224,14 +199,84 @@ const styles = StyleSheet.create({
   valueCol: { width: 140 },
   userCol: { width: 120 },
   dateCol: { width: 180 },
-
+  /* 
   oldValue: { color: "#d9534f", fontWeight: "600" },
-  newValue: { color: "#28a745", fontWeight: "600" },
+  newValue: { color: "#28a745", fontWeight: "600" }, */
 
   noDataText: {
     textAlign: "center",
     marginTop: 20,
     fontSize: 16,
     color: "#666",
+  },
+
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  fieldName: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 6,
+    color: "#333",
+  },
+
+  valueWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+    flexWrap: "wrap",
+  },
+
+  oldValue: {
+    color: "#d9534f",
+    textDecorationLine: "line-through",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+
+  arrow: {
+    marginHorizontal: 6,
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
+  newValue: {
+    color: "#28a745",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+
+  investmentId: {
+    fontSize: 13,
+    color: "#555",
+    marginTop: 4,
+    marginBottom: 4,
+    fontStyle: "italic",
+  },
+
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 4,
+  },
+
+  modifiedBy: {
+    fontSize: 12,
+    color: "#777",
+  },
+
+  modifiedAt: {
+    fontSize: 12,
+    color: "#999",
   },
 });

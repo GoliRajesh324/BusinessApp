@@ -155,7 +155,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             reduceLeftOver: "",
           })
         );
-     console.log({ mappedRows });
+        console.log({ mappedRows });
         setRows(mappedRows);
       } catch (err) {
         console.error("❌ Error fetching business info:", err);
@@ -390,7 +390,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
         transactionType === "Investment"
           ? parseFloat(r.reduceLeftOver || "0") || 0
           : 0;
-          console.log(" New reduceLeftOverValue ",{ reduceLeftOverValue });
+      console.log(" New reduceLeftOverValue ", { reduceLeftOverValue });
       const reduceLeftOverFlag =
         r.reduceLeftOver && Number(r.reduceLeftOver) > 0 ? "Y" : "N";
       if (transactionType === "Investment")
@@ -536,28 +536,67 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             >
               {rows.map((r, i) => (
                 <View key={r.id} style={{ marginBottom: 12 }}>
-                  {/* Partner Card */}
                   <View style={styles.partnerCard}>
-                    {/* Column 1: Name + Share % */}
-                    <View style={styles.col1}>
-                      <Text style={styles.partnerName}>
-                        {(r.name || "Unknown").toUpperCase()}
-                      </Text>
+                    {/* Top Row = Partner Left + Partner Right */}
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <View style={styles.partnerLeftBox}>
+                        <Text style={styles.partnerName}>
+                          {(r.name || "Unknown").toUpperCase()}
+                        </Text>
+                        <Text style={styles.partnerShareText}>
+                          {r.share ?? 0}%
+                        </Text>
+                      </View>
 
-                      <Text style={styles.partnerPercent}>
-                        {(r.share ?? 0).toString()}%
-                      </Text>
+                      <View style={styles.partnerRightBox}>
+                        <Text style={styles.partnerInvestedText}>
+                          {r.actual || "0.00"}
+                        </Text>
+                        <Text style={styles.partnerStatusText}>
+                          {extraText(r)}
+                        </Text>
+                      </View>
                     </View>
 
-                    {/* Column 2: Checkbox shown only in Investment */}
-                    {transactionType === "Investment" ? (
-                      <View style={styles.col2}>
-                        {Number(r.leftOver) > 0 && (
-                          <Text style={{ fontSize: 12, color: "#666" }}>
-                            Use Available Money
+                    {transactionType === "Withdraw" &&
+                      Number(r.leftOver) > 0 && (
+                        <View
+                          style={{
+                            marginTop: 10,
+                            borderTopWidth: 0.6,
+                            borderTopColor: "#ccc",
+                            paddingTop: 8,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              marginLeft: 8,
+                              fontSize: 14,
+                              fontWeight: "500",
+                            }}
+                          >
+                            Available Money to use: ₹
+                            {Number(r.leftOver).toFixed(2)}
                           </Text>
-                        )}
-                        {Number(r.leftOver) > 0 ? (
+                        </View>
+                      )}
+                    {/* ✅ Leftover section full width below */}
+                    {transactionType === "Investment" &&
+                      Number(r.leftOver) > 0 && (
+                        <View
+                          style={{
+                            marginTop: 10,
+                            borderTopWidth: 0.6,
+                            borderTopColor: "#ccc",
+                            paddingTop: 8,
+                          }}
+                        >
                           <TouchableOpacity
                             onPress={() =>
                               setRows((prev) => {
@@ -566,58 +605,48 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
                                 return next;
                               })
                             }
-                            style={{ marginTop: 4 }}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                            }}
                           >
                             <Ionicons
                               name={r.checked ? "checkbox" : "square-outline"}
                               size={22}
-                              color="#007bff"
+                              color="#007AFF"
                             />
-                          </TouchableOpacity>
-                        ) : (
-                          <View style={{ marginTop: 6 }}>
-                            <Text style={{ fontSize: 12, color: "#999" }}>
-                              No leftover {r.leftOver}
+
+                            <Text
+                              style={{
+                                marginLeft: 8,
+                                fontSize: 14,
+                                fontWeight: "500",
+                              }}
+                            >
+                              Available Money to use: ₹
+                              {Number(r.leftOver).toFixed(2)}
                             </Text>
-                          </View>
-                        )}
-                      </View>
-                    ) : (
-                      // For Sold and Withdraw, keep this column empty to maintain layout
-                      <View style={styles.col2} />
-                    )}
+                          </TouchableOpacity>
 
-                    {/* Column 3: Investing amount + Extra/Pending/Settled */}
-                    <View style={styles.col3}>
-                      <Text style={styles.partnerAmount}>
-                        {r.actual || "0.00"}
-                      </Text>
-                      <Text style={styles.smallNote}>{extraText(r)}</Text>
-                    </View>
+                          {r.checked && (
+                            <TextInput
+                              style={styles.leftOverInput}
+                              keyboardType="numeric"
+                              placeholder="Enter amount to use..."
+                              placeholderTextColor="#888"
+                              value={r.reduceLeftOver ?? ""}
+                              onChangeText={(val) => {
+                                setRows((prev) => {
+                                  const next = [...prev];
+                                  next[i] = { ...next[i], reduceLeftOver: val };
+                                  return next;
+                                });
+                              }}
+                            />
+                          )}
+                        </View>
+                      )}
                   </View>
-
-                  {/* Expanded Section only for Investment + when checked */}
-                  {transactionType === "Investment" && r.checked && (
-                    <View style={styles.expandedSection}>
-                      <Text style={styles.expandedLabel}>
-                        Available Money to use: ₹{Number(r.leftOver).toFixed(2)}
-                      </Text>
-
-                      <TextInput
-                        style={styles.expandedInput}
-                        keyboardType="numeric"
-                        placeholder="Enter amount to use (≤ Available Money)"
-                        value={r.reduceLeftOver ?? ""}
-                        onChangeText={(val) => {
-                          setRows((prev) => {
-                            const next = [...prev];
-                            next[i] = { ...next[i], reduceLeftOver: val }; // store exactly what user types
-                            return next;
-                          });
-                        }}
-                      />
-                    </View>
-                  )}
                 </View>
               ))}
             </ScrollView>
@@ -968,7 +997,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
   },
-  partnerCard: {
+  /*   partnerCard: {
     width: "100%",
     padding: 12,
     borderRadius: 10,
@@ -983,7 +1012,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-  },
+  }, */
   partnerPercent: { fontSize: 12, color: "#666", marginTop: 4 },
   partnerAmount: { fontSize: 16, fontWeight: "700", color: "#111" },
   smallNote: { fontSize: 10, color: "#666", marginTop: 4 },
@@ -1198,11 +1227,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
   },
-  partnerName: {
+  /*   partnerName: {
     flex: 1,
     fontWeight: "600",
     fontSize: 14,
-  },
+  }, */
   partnerAmountInput: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -1315,6 +1344,82 @@ smallNote: { fontSize: 10, color: "#666", marginTop: 4 },
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: 14,
+    backgroundColor: "#fff",
+  },
+  partnerCard: {
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    marginBottom: 8,
+    elevation: 2,
+    paddingBottom: 10, // ✅ important to avoid overlap
+  },
+
+  partnerLeftBox: {
+    flex: 1,
+  },
+
+  partnerName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000",
+  },
+
+  partnerShareText: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 2,
+  },
+
+  partnerRightBox: {
+    alignItems: "flex-end",
+    minWidth: 80,
+  },
+
+  partnerInvestedText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000",
+  },
+
+  partnerStatusText: {
+    fontSize: 12,
+    color: "green",
+    marginTop: 2,
+  },
+
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  availableMoneyText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#1cd134ff",
+  },
+
+  leftOverArea: {
+    marginTop: 10,
+    borderTopWidth: 0.7,
+    borderTopColor: "#ccc",
+    paddingTop: 8,
+    // ✅ allow expanding and avoid clipping
+    flexDirection: "column",
+  },
+
+  leftOverInput: {
+    marginTop: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderRadius: 8,
+    borderColor: "#007AFF",
+    fontSize: 14,
+    width: "100%", // ✅ full width inside card
     backgroundColor: "#fff",
   },
 });

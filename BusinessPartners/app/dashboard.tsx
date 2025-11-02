@@ -4,6 +4,8 @@ import axios from "axios";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Animated, Pressable } from "react-native";
+
 import {
   ActivityIndicator,
   Alert,
@@ -28,6 +30,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("User");
   const { t, i18n } = useTranslation();
+  const [showPlusOnly, setShowPlusOnly] = useState(false);
 
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
@@ -198,6 +201,15 @@ export default function Dashboard() {
       <FlatList
         data={businesses}
         keyExtractor={(item) => item.id.toString()}
+        onScroll={(e) => {
+          const position = e.nativeEvent.contentOffset.y;
+          if (position > 50) {
+            setShowPlusOnly(true);
+          } else {
+            setShowPlusOnly(false);
+          }
+        }}
+        scrollEventThrottle={16} // smooth performance
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Image
@@ -211,7 +223,7 @@ export default function Dashboard() {
             </Text>
           </View>
         }
-        renderItem={({ item }) => (
+        /*  renderItem={({ item }) => (
           <View style={styles.businessCard}>
             <Text style={styles.bizName}>{item.name}</Text>
             <View style={styles.bizActions}>
@@ -240,7 +252,82 @@ export default function Dashboard() {
               )}
             </View>
           </View>
-        )}
+        )} */
+
+        renderItem={({ item }) => {
+          const scale = new Animated.Value(1);
+
+          const onPressIn = () => {
+            Animated.spring(scale, {
+              toValue: 0.97,
+              useNativeDriver: true,
+              speed: 50,
+              bounciness: 0,
+            }).start();
+          };
+
+          const onPressOut = () => {
+            Animated.spring(scale, {
+              toValue: 1,
+              useNativeDriver: true,
+              speed: 50,
+              bounciness: 0,
+            }).start();
+          };
+
+          return (
+            <Pressable
+              onPressIn={onPressIn}
+              onPressOut={onPressOut}
+              android_ripple={{ color: "#dbeafe" }} // light blue ripple
+              onPress={() => {
+                if (item.cropInProgress) {
+                  router.push({
+                    pathname: "/businessDetail",
+                    params: {
+                      businessId: item.id.toString(),
+                      businessName: item.name,
+                    },
+                  });
+                } else {
+                  setConfirmStart(item);
+                }
+              }}
+            >
+              <Animated.View
+                style={[styles.businessCard, { transform: [{ scale }] }]}
+              >
+                <Text style={styles.bizName}>{item.name}</Text>
+
+                <View style={styles.bizActions}>
+                  {item.cropInProgress ? (
+                    <TouchableOpacity
+                      style={styles.inprogressBtn}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/businessDetail",
+                          params: {
+                            businessId: item.id.toString(),
+                            businessName: item.name,
+                          },
+                        })
+                      }
+                    >
+                      <Text style={styles.btnText}>In Progress</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.startBtn}
+                      onPress={() => setConfirmStart(item)}
+                    >
+                      <Text style={styles.btnText}>Start</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </Animated.View>
+            </Pressable>
+          );
+        }}
       />
 
       {/* FOOTER BAR */}
@@ -275,7 +362,9 @@ export default function Dashboard() {
             setShowPopup(true);
           }}
         >
-          <Text style={styles.floatingButtonText}>+ Add business</Text>
+          <Text style={styles.floatingButtonText}>
+            {showPlusOnly ? "+" : "+ Add business"}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.bottomButtonIcon}
@@ -336,7 +425,7 @@ export default function Dashboard() {
         <View style={styles.modalOverlay}>
           <View style={styles.popupBox}>
             <Text style={styles.popupTitle}>
-              Start 
+              Start
               <Text style={styles.bold}> {confirmStart?.name}</Text> Business ?
             </Text>
             <View style={styles.popupButtons}>
@@ -580,8 +669,8 @@ const styles = StyleSheet.create({
     marginTop: 100,
   },
   emptySticker: {
-    width: 300,
-    height: 300,
+    width: 150,
+    height: 150,
     marginBottom: 16,
     opacity: 0.9,
     resizeMode: "contain",

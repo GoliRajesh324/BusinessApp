@@ -13,7 +13,7 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
+  View,
 } from "react-native";
 import BASE_URL from "../../src/config/config";
 
@@ -264,9 +264,22 @@ export default function AddBusinessPopup({
             <Text style={styles.title}>
               {editingBusiness ? "Edit Business" : "Add Business"}
             </Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Text style={styles.closeText}>✕</Text>
-            </TouchableOpacity>
+
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <TouchableOpacity
+                onPress={handleSave}
+                disabled={saveDisabled}
+                style={[styles.headerSaveBtn, saveDisabled && { opacity: 0.5 }]}
+              >
+                <Text style={styles.headerSaveText}>
+                  {loading ? "..." : "Save"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                <Text style={styles.closeText}>✕</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <ScrollView
@@ -277,7 +290,7 @@ export default function AddBusinessPopup({
             <TextInput
               style={styles.input}
               placeholder="Enter Business Name"
-              placeholderTextColor="#888"   // Add this line
+              placeholderTextColor="#888" // Add this line
               value={businessName}
               onChangeText={setBusinessName}
             />
@@ -286,7 +299,7 @@ export default function AddBusinessPopup({
             <TextInput
               style={styles.input}
               placeholder="Enter Partner Name"
-              placeholderTextColor="#888"   // Add this line
+              placeholderTextColor="#888" // Add this line
               value={partnerName}
               onChangeText={setPartnerName}
             />
@@ -295,7 +308,7 @@ export default function AddBusinessPopup({
               <TextInput
                 style={[styles.input, styles.shareInput]}
                 placeholder="Enter Share %"
-                placeholderTextColor="#888"   // Add this line
+                placeholderTextColor="#888" // Add this line
                 keyboardType="numeric"
                 value={share}
                 onChangeText={setShare}
@@ -346,7 +359,7 @@ export default function AddBusinessPopup({
               ))
             )}
 
-            <TouchableOpacity
+         {/*    <TouchableOpacity
               style={[styles.saveBtn, saveDisabled && styles.disabledBtn]}
               onPress={handleSave}
               disabled={saveDisabled}
@@ -356,7 +369,7 @@ export default function AddBusinessPopup({
               ) : (
                 <Text style={styles.saveBtnText}>Save Business</Text>
               )}
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </ScrollView>
         </KeyboardAvoidingView>
       </Animated.View>
@@ -365,6 +378,19 @@ export default function AddBusinessPopup({
 }
 
 const styles = StyleSheet.create({
+  headerSaveBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#2563eb",
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  headerSaveText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -385,7 +411,11 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 10,
   },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   title: { fontSize: 20, fontWeight: "bold" },
   closeBtn: { padding: 5 },
   closeText: { fontSize: 18 },
@@ -415,7 +445,12 @@ const styles = StyleSheet.create({
   partnerName: { fontWeight: "bold", fontSize: 16 },
   partnerShare: { color: "#555" },
   partnerActions: { flexDirection: "row", gap: 5 },
-  smallBtn: { padding: 5, backgroundColor: "#2563eb", borderRadius: 5, marginLeft: 5 },
+  smallBtn: {
+    padding: 5,
+    backgroundColor: "#2563eb",
+    borderRadius: 5,
+    marginLeft: 5,
+  },
   deleteBtn: { backgroundColor: "#dc2626" },
   smallBtnText: { color: "#fff" },
   emptyPartners: { textAlign: "center", color: "#888", marginVertical: 10 },

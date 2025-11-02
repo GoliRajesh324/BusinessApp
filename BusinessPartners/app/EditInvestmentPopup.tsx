@@ -47,6 +47,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   const first = investmentData?.[0] || {};
   const [investmentDataState, setInvestmentDataState] =
     useState(investmentData);
+  const [supplierName, setSupplierName] = useState(first.supplierName ?? "");
   /* const [checkedState, setCheckedState] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
@@ -109,7 +110,8 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     "share" | "equal" | "manual"
   >("share");
   const [shareValues, setShareValues] = useState<number[]>([]);
-
+/*   const [remaining, setRemaining] = useState<number>(0);
+  const [showSupplierPopup, setShowSupplierPopup] = useState(false); */
   // ✅ Restore saved split type when editing an existing investment
   useEffect(() => {
     if (first?.splitType) {
@@ -130,7 +132,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
         0
       );
       console.log("handleSave called with: ", totalEntered, expected);
-      if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
+      if (first.supplierId == null && Math.round((totalEntered - expected) * 100) / 100 !== 0) {
         Alert.alert("Error", "Total entered does not match expected amount");
         return;
       }
@@ -514,6 +516,31 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
               {numberToWords(Number(totalAmount))}
             </Text>
           )}
+
+          {/* Supplier Name */}
+          <TextInput
+            style={{
+              borderWidth: 1,
+              borderColor: "#ccc",
+              padding: 8,
+              borderRadius: 6,
+              fontSize: 14,
+              backgroundColor: "#fff",
+            }}
+            value={supplierName}
+            placeholder="Enter supplier name"
+            onChangeText={(val) => {
+              setSupplierName(val);
+
+              // ✅ Update inside investmentDataState as well
+              setInvestmentDataState((prev) =>
+                prev.map((inv) => ({
+                  ...inv,
+                  supplierName: val,
+                }))
+              );
+            }}
+          />
 
           {/* Partner Cards */}
           <View style={{ marginTop: 12 }}>
@@ -977,6 +1004,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: "italic",
     marginTop: 4,
+    // paddingHorizontal: 12,
+    paddingVertical: 5,
     color: "#666",
   },
   sectionTitle: {

@@ -1,16 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Dimensions,
   Image,
-  LayoutAnimation,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   UIManager,
-  View,
+  View
 } from "react-native";
 
 import DropDownPicker from "react-native-dropdown-picker";
@@ -24,7 +22,25 @@ import BASE_URL from "../src/config/config";
 import AddInvestmentPopup from "./addInvestmentPopup";
 import InvestmentAudit from "./components/InvestmentAudit";
 
+type Partner = {
+  partnerId: number;
+  username: string;
+  paidAmount: number;
+  pendingAmount: number;
+};
+
+type Supplier = {
+  supplierId: number;
+  supplierName: string;
+  pendingAmount: number;
+  partners: Partner[];
+};
 export default function BusinessDetail() {
+  // ✅ define types before using state
+
+  // ✅ fix state type
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+
   const { businessId, businessName } = useLocalSearchParams<{
     businessId?: string;
     businessName?: string;
@@ -37,7 +53,6 @@ export default function BusinessDetail() {
   const safeBusinessId = businessId ? String(businessId) : "";
   const safeBusinessName = businessName ? String(businessName) : "";
   // AsyncStorage.setItem("businessName", safeBusinessName);
-
   const [partners, setPartners] = useState<any[]>([]);
   const [showPopup, setShowPopup] = useState(false);
   const [leftOver, setLeftOver] = useState(0);
@@ -63,12 +78,16 @@ export default function BusinessDetail() {
   const [open, setOpen] = useState(false);
 
   const [items, setItems] = useState([
-    { label: "Your Records", value: "byLoggedInUser" },
+    { label: "Your Transactions", value: "byLoggedInUser" },
     { label: "Your Investments", value: "byInvestment" },
     { label: "Your Withdraws", value: "byWithdraw" },
     { label: "Your Sold", value: "bySold" },
-    { label: "All Records", value: "allInvestments" },
+    { label: "Everyone's Transactions", value: "allInvestments" },
   ]);
+
+  useEffect(() => {
+    AsyncStorage.getItem("token").then(setToken);
+  }, []);
 
   // 🏷 Get label text dynamically based on selected value
   const currentLabel =
@@ -89,14 +108,54 @@ export default function BusinessDetail() {
     fetchBusinessDetails();
   }, [safeBusinessId, token]);
 
-  const toggleExpanded = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpanded((v) => !v);
+  const fetchSuppliers = async () => {
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/supplier/${businessId}/contributions`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch suppliers");
+      const data = await res.json();
+
+      // ✅ type accumulator and final cast
+      const grouped: Supplier[] = Object.values(
+        data.reduce((acc: Record<number, Supplier>, item: any) => {
+          if (!acc[item.supplierId]) {
+            acc[item.supplierId] = {
+              supplierId: item.supplierId,
+              supplierName: item.supplierName,
+              pendingAmount: item.pendingAmount || 0,
+              partners: [],
+            };
+          }
+
+          acc[item.supplierId].partners.push({
+            partnerId: item.partnerId,
+            username: item.partnerName,
+            paidAmount: item.amountPaid || 0,
+            pendingAmount: item.amountPending || 0,
+          });
+
+          return acc;
+        }, {})
+      );
+
+      setSuppliers(grouped); // ✅ now works
+    } catch (err) {
+      console.error(err);
+      alert("Error fetching suppliers");
+    }
   };
 
-  const tableMaxHeight = Math.round(Dimensions.get("window").height * 0.55); // adjust as needed
+  useEffect(() => {
+    if (!businessId || !token) return;
+    fetchSuppliers();
+  }, [businessId, token, investmentDetails]);
 
-  
   // Load token & userId
   useEffect(() => {
     const loadData = async () => {
@@ -345,6 +404,48 @@ export default function BusinessDetail() {
     setConfirmRestart([]);
   };
 
+  const renderSupplierCard = (supplier: Supplier) => {
+    return (
+      <View
+        key={supplier.supplierId}
+        style={{
+          backgroundColor: "#fff",
+          padding: 14,
+          borderRadius: 10,
+          marginVertical: 10,
+          borderWidth: 1,
+          borderColor: "#ddd",
+        }}
+      >
+        <Text style={{ fontSize: 18, fontWeight: "600", color: "#333" }}>
+          {supplier.supplierName}
+        </Text>
+
+        <Text style={{ marginTop: 6, fontSize: 14, color: "#777" }}>
+          Pending: ₹{supplier.pendingAmount.toLocaleString("en-IN")}
+        </Text>
+
+        <View style={{ marginTop: 8 }}>
+          {supplier.partners.map((p, idx) => (
+            <View
+              key={idx}
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginBottom: 4,
+              }}
+            >
+              <Text style={{ fontSize: 14 }}>{p.username}</Text>
+              <Text style={{ fontSize: 14 }}>
+                Paid: ₹{p.paidAmount.toLocaleString("en-IN")}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
   const handlePopupSave = async ({ investmentData, images }: any) => {
     console.log("➡️ Popup images :", images);
     try {
@@ -436,9 +537,9 @@ export default function BusinessDetail() {
           router.push({
             pathname: "/investmentDetail",
             params: {
-             investmentGroupId: inv.investmentGroupId,
-             businessId: safeBusinessId,
-              businessName: safeBusinessName
+              investmentGroupId: inv.investmentGroupId,
+              businessId: safeBusinessId,
+              businessName: safeBusinessName,
             },
           })
         }
@@ -590,6 +691,25 @@ export default function BusinessDetail() {
             </View>
           )} */}
         </TouchableOpacity>
+
+        {/* SUPPLIER CONTRIBUTIONS SECTION */}
+        {/* ✅ Suppliers Section */}
+        {suppliers.length > 0 && (
+          <View style={{ marginTop: 20 }}>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "700",
+                marginBottom: 10,
+                color: "#000",
+              }}
+            >
+              Suppliers
+            </Text>
+
+            {suppliers.map((s) => renderSupplierCard(s))}
+          </View>
+        )}
 
         {/* Expanded table area */}
         {/* {expanded && (

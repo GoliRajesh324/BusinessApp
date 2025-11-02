@@ -10,7 +10,6 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Modal,
-  PanResponder,
   Platform,
   ScrollView,
   StyleSheet,
@@ -18,9 +17,10 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View,
+  View
 } from "react-native";
 import BASE_URL from "../src/config/config";
+import SupplierPopup from "./SupplierPopup";
 import {
   ImageFile,
   pickImageFromCamera,
@@ -78,12 +78,14 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   const [splitMode, setSplitMode] = useState<"share" | "equal" | "manual">(
     "share"
   );
+
+  const [showSupplierPopup, setShowSupplierPopup] = useState(false);
   const [totalAmount, setTotalAmount] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [rows, setRows] = useState<any[]>([]);
   const [images, setImages] = useState<ImageFile[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-
+  const [remaining, setRemaining] = useState<number>(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -175,6 +177,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
       investing: "",
     }));
     setRows(initial);
+    console.log("Initialized rows for partners:", rows);
     setShareValues(partners.map((p) => p.share ?? 0));
   }, [partners]);
 
@@ -182,7 +185,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
   useEffect(() => {
     if (!partners.length) return;
-
+    console.log("Before updating rows for splitMode:", rows);
     setRows((prev) =>
       partners.map((p, idx) => {
         const prevRow = prev[idx] || {};
@@ -214,62 +217,13 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
         }
       })
     );
+    console.log("Updated rows for splitMode:", rows);
   }, [splitMode, totalAmount, partners, shareValues]);
 
-  const handleInvestingChange = (index: number, value: string) => {
-    setRows((prev) => {
-      const next = [...prev];
-      const sanitized = value.replace(/^0+(?=\d)/, "");
-      next[index] = { ...next[index], investing: sanitized };
-      if (splitMode === "manual") next[index].actual = sanitized;
-      return next;
-    });
-  };
-
-  function Slider({
-    value,
-    onChange,
-  }: {
-    value: number;
-    onChange: (v: number) => void;
-  }) {
-    const [width, setWidth] = useState(0);
-    const updateFromX = (x: number) => {
-      if (!width) return;
-      let v = Math.round((x / width) * 100);
-      if (v < 0) v = 0;
-      if (v > 100) v = 100;
-      onChange(v);
-    };
-    const panResponder = useRef(
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onPanResponderGrant: (e) => updateFromX(e.nativeEvent.locationX),
-        onPanResponderMove: (e) => updateFromX(e.nativeEvent.locationX),
-        onPanResponderRelease: () => {},
-      })
-    ).current;
-
-    return (
-      <View
-        style={styles.sliderContainer}
-        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-        {...panResponder.panHandlers}
-      >
-        <View style={styles.sliderTrack} />
-        <View style={[styles.sliderFill, { width: `${value}%` }]} />
-        <View
-          style={[
-            styles.sliderThumb,
-            { left: `${value}%`, marginLeft: -SLIDER_THUMB_SIZE / 2 },
-          ]}
-        />
-      </View>
-    );
-  }
   // Inside AddInvestmentPopup.tsx, only update split options logic
 
   const openSheet = () => {
+    console.log("Opening split options sheet with mode:");
     if (!totalAmount || Number(totalAmount) <= 0) {
       Alert.alert("Error", "Please enter a valid amount first");
       return;
@@ -288,14 +242,15 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
     } else {
       setShareValues(rows.map((r) => parseFloat(r.investing || "0")));
     }
-
+    console.log("End of Opening split options sheet with mode:", shareValues);
     setSheetVisible(true);
   };
 
   const applySheet = () => {
     // Apply split values based on sheetTempMode
     setSplitMode(sheetTempMode);
-
+    console.log("Applying split options sheet with mode:", shareValues);
+    console.log("rows", rows);
     if (sheetTempMode === "share") {
       // Use shareValues (which may have been edited by user)
       setRows((prev) =>
@@ -338,6 +293,8 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
       );
     }
 
+    console.log("End of Applying split options sheet with mode:", shareValues);
+     console.log("rows", rows);
     setSheetVisible(false);
   };
 
@@ -374,18 +331,29 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
       return;
     }
-
     const totalEntered = rows.reduce(
       (sum, r) => sum + (parseFloat(r.actual) || 0),
       0
     );
     console.log({ totalEntered, expected });
-    if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
+    /* if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
       Alert.alert("Error", "Total entered does not match expected amount");
       return;
-    }
+    } */
 
-    const investmentData = rows.map((r) => {
+    if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
+      console.log("Need supplier popup, diff:", expected - totalEntered);
+      console.log(rows);
+      setRemaining(expected - totalEntered);
+      setShowSupplierPopup(true);
+      return;
+    }
+    // ✅ If perfect match (no supplier needed)
+    if (Math.round((totalEntered - expected) * 100) / 100 === 0) {
+      saveInvestment(null);
+      return;
+    }
+    /*  const investmentData = rows.map((r) => {
       const reduceLeftOverValue =
         transactionType === "Investment"
           ? parseFloat(r.reduceLeftOver || "0") || 0
@@ -452,10 +420,90 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
     onSave({ investmentData, images });
     onClose();
+ */
+  };
+
+  const saveInvestment = (supplierName: string | null) => {
+    const investmentData = rows.map((r) => {
+      const reduceLeftOverValue =
+        transactionType === "Investment"
+          ? parseFloat(r.reduceLeftOver || "0") || 0
+          : 0;
+
+      const reduceLeftOverFlag =
+        r.reduceLeftOver && Number(r.reduceLeftOver) > 0 ? "Y" : "N";
+
+      if (transactionType === "Investment")
+        return {
+          partnerId: r.id,
+          cropId: cropDetails?.id,
+          description: description || "",
+          comments: description || "",
+          totalAmount: expected,
+          investable: parseFloat(r.investing || 0),
+          invested: parseFloat(r.actual || 0),
+          soldAmount: 0,
+          withdrawn: 0,
+          soldFlag: "N",
+          withdrawFlag: "N",
+          splitType: splitMode.toUpperCase(),
+          reduceLeftOver: reduceLeftOverValue,
+          reduceLeftOverFlag: reduceLeftOverFlag,
+          supplierName, // ✅ add
+          createdBy,
+        };
+
+      if (transactionType === "Sold")
+        return {
+          partnerId: r.id,
+          cropId: cropDetails?.id,
+          description: description || "",
+          comments: description || "",
+          totalAmount: expected,
+          investable: 0,
+          invested: 0,
+          soldAmount: parseFloat(r.investing || 0),
+          withdrawn: 0,
+          soldFlag: "Y",
+          withdrawFlag: "N",
+          splitType: splitMode.toUpperCase(),
+          reduceLeftOver: 0,
+          reduceLeftOverFlag: "N",
+          supplierName,
+          createdBy,
+        };
+
+      if (transactionType === "Withdraw")
+        return {
+          partnerId: r.id,
+          cropId: cropDetails?.id,
+          description: description || "",
+          comments: description || "",
+          totalAmount: expected,
+          investable: 0,
+          invested: 0,
+          soldAmount: 0,
+          withdrawn: parseFloat(r.investing || 0),
+          soldFlag: "N",
+          withdrawFlag: "Y",
+          splitType: splitMode.toUpperCase(),
+          reduceLeftOver: 0,
+          reduceLeftOverFlag: "N",
+          supplierName,
+          createdBy,
+        };
+
+      return {};
+    });
+
+    onSave({ investmentData, images });
+    onClose();
   };
 
   const extraText = (r: any) => {
-    console.log("Calculating extraText for:", r.name, r.actual, r.investing);
+    console.log("Calculating extraText for Name:", r.name, r.actual, r.investing);  
+    console.log("Calculating extraText for actual:", r.actual);
+    console.log("Calculating extraText for investing:", r.investing);
     const actualNum = parseFloat(r.actual) || 0;
     const investNum = parseFloat(r.investing) || 0;
     const diff = Math.round((actualNum - investNum) * 100) / 100;
@@ -772,6 +820,19 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
               Please select a type
             </Text>
           </Animated.View>
+        )}
+        {showSupplierPopup && (
+          <SupplierPopup
+            visible={showSupplierPopup}
+            totalAmount={expected}
+            rows={rows}
+            remaining={remaining}
+            onClose={() => setShowSupplierPopup(false)}
+            onConfirm={(supplierName) => {
+              setShowSupplierPopup(false);
+              saveInvestment(supplierName); // ✅ call final save with name
+            }}
+          />
         )}
 
         {/* Image Preview */}

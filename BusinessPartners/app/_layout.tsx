@@ -87,6 +87,12 @@ export default function RootLayout() {
             headerShown: false, // or false if you don’t want a header at all
           }}
         />
+          <Stack.Screen
+          name="simpleInterest"
+          options={{
+            headerShown: false, // or false if you don’t want a header at all
+          }}
+        />
        {/*   <Stack.Screen
           name="SimpleInterestScreen"
           options={{

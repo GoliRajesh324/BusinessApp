@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -20,46 +21,36 @@ export default function ConsumeStock() {
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [quantity, setQuantity] = useState("");
 
+  /* ---------------- Load categories ---------------- */
   useEffect(() => {
-    loadCategories();
-  }, []);
+    (async () => {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
 
-  const loadCategories = async () => {
-    const token = await AsyncStorage.getItem("token");
-
-    if (!token) return;
-
-    try {
       const data = await fetchCategories(Number(businessId), token);
       setCategories(data);
-    } catch (e) {
-      console.log("Error loading categories:", e);
-    }
-  };
+    })();
+  }, [businessId]);
 
+  /* ---------------- Save stock consumption ---------------- */
   const saveConsumption = async () => {
-    if (!selectedCategory) {
+    if (!selectedCategory)
       return Alert.alert("Validation", "Please select a category");
-    }
 
-    if (!quantity.trim()) {
-      return Alert.alert("Validation", "Enter quantity");
-    }
+    if (!quantity.trim()) return Alert.alert("Validation", "Enter quantity");
 
-    const numQty = Number(quantity);
+    const qty = Number(quantity);
+    if (qty <= 0) return Alert.alert("Error", "Quantity must be > 0");
 
-    if (numQty <= 0) {
-      return Alert.alert("Validation", "Quantity must be greater than 0");
-    }
-
-    if (numQty > selectedCategory.availableQuantity) {
+    if (qty > selectedCategory.availableQuantity) {
       return Alert.alert(
         "Not Enough Stock",
-        `You only have ${selectedCategory.availableQuantity} ${selectedCategory.quantityType} available.`
+        `Only ${selectedCategory.availableQuantity} ${selectedCategory.quantityType} available.`
       );
     }
 
     const token = await AsyncStorage.getItem("token");
+    if (!token) return;
 
     try {
       await changeStock(
@@ -67,37 +58,63 @@ export default function ConsumeStock() {
           businessId: Number(businessId),
           categoryId: selectedCategory.id,
           changeType: "CONSUME",
-          quantity: numQty,
+          quantity: qty,
           note: "",
         },
-        token ?? ""
+        token
       );
 
-      Alert.alert("Success", "Stock Consumed");
+      Alert.alert("Success", "Stock consumed successfully");
       router.back();
-    } catch (e) {
-      console.log("Consumption error:", e);
-      Alert.alert("Error", "Failed to consume stock");
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to consume stock");
     }
   };
-
   return (
-    <View style={styles.container}>
-      {/* Header */}
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+      {/* ─────────────────────────────────────────── */}
+      {/* HEADER */}
+      {/* ─────────────────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>&lt; Back</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.headerLeft}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
+          <Ionicons name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Consume Stock</Text>
-        <View style={{ width: 60 }} />
+
+        <Text style={styles.headerTitle}>Consume Stock</Text>
+
+        <TouchableOpacity onPress={saveConsumption}>
+          <Text style={styles.headerRightText}>Save</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Select Category */}
+      {/* ─────────────────────────────────────────── */}
+      {/* BODY */}
+      {/* ─────────────────────────────────────────── */}
+      {/* Quantity Input */}
+      {selectedCategory && (
+        <>
+          <Text style={styles.label}>
+            Quantity to Consume ({selectedCategory.quantityType})
+          </Text>
+
+          <TextInput
+            style={styles.input}
+            value={quantity}
+            onChangeText={setQuantity}
+            keyboardType="numeric"
+            placeholder="Enter quantity"
+          />
+        </>
+      )}
       <Text style={styles.label}>Select Category</Text>
 
       <FlatList
         data={categories}
-        keyExtractor={(item: any) => String(item.id)}
+        keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[
@@ -106,87 +123,101 @@ export default function ConsumeStock() {
             ]}
             onPress={() => setSelectedCategory(item)}
           >
-            <Text style={styles.categoryText}>{item.name}</Text>
+            <Text
+              style={[
+                styles.categoryText,
+                selectedCategory?.id === item.id && { color: "#fff" },
+              ]}
+            >
+              {item.name}
+            </Text>
 
-            <Text style={styles.stockText}>
+            <Text
+              style={[
+                styles.stockText,
+                selectedCategory?.id === item.id && { color: "#fff" },
+              ]}
+            >
               Available: {item.availableQuantity} {item.quantityType}
             </Text>
           </TouchableOpacity>
         )}
       />
-
-      {/* Quantity Input */}
-      {selectedCategory && (
-        <>
-          <Text style={styles.label}>
-            Consume Quantity ({selectedCategory.quantityType})
-          </Text>
-
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={quantity}
-            onChangeText={setQuantity}
-            placeholder="Enter Quantity"
-          />
-
-          <TouchableOpacity style={styles.saveBtn} onPress={saveConsumption}>
-            <Text style={styles.saveText}>Consume</Text>
-          </TouchableOpacity>
-        </>
-      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 16 },
+/* ─────────────────────────────────────────── */
+/* STYLES */
+/* ─────────────────────────────────────────── */
 
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#fff" },
+
+  /* Header */
   header: {
+    backgroundColor: "#4f93ff",
+    paddingTop: 45,
+    paddingBottom: 14,
+    paddingHorizontal: 16,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingBottom: 12,
+    justifyContent: "space-between",
+    zIndex: 9999, // <-- added
+    elevation: 6, // <-- added
+    position: "relative", // <-- added
   },
 
-  back: { color: "#007bff", fontSize: 16 },
+  headerLeft: { width: 40 },
 
-  title: { fontSize: 20, fontWeight: "700" },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#fff",
+    marginLeft: -40,
+  },
 
-  label: { marginTop: 20, fontWeight: "700", fontSize: 15 },
+  headerRightText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+
+  /* Body */
+  label: {
+    marginTop: 20,
+    marginLeft: 10,
+    fontWeight: "700",
+    fontSize: 15,
+  },
 
   categoryItem: {
-    padding: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 8,
-    marginTop: 8,
+    borderRadius: 10,
+    marginTop: 10,
+    marginHorizontal: 10,
   },
 
   categoryActive: {
-    borderColor: "#ff5555",
-    backgroundColor: "#ffecec",
+    backgroundColor: "#ff6b6b",
+    borderColor: "#ff6b6b",
   },
 
-  categoryText: { fontSize: 16, fontWeight: "600" },
+  categoryText: { fontSize: 16, fontWeight: "600", color: "#333" },
 
-  stockText: { marginTop: 4, color: "#555" },
+  stockText: { marginTop: 4, color: "#666" },
 
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-
-  saveBtn: {
-    marginTop: 20,
-    backgroundColor: "#ff4444",
+    borderColor: "#ccc",
     padding: 14,
+    marginTop: 10,
+    marginHorizontal: 10,
     borderRadius: 10,
-    alignItems: "center",
+    fontSize: 16,
   },
-
-  saveText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });

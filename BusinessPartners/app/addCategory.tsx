@@ -1,12 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
     Alert,
+    Image,
     Keyboard,
-    KeyboardAvoidingView,
-    Platform,
+    Modal,
     StyleSheet,
     Text,
     TextInput,
@@ -23,140 +24,194 @@ export default function AddCategory() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [quantityType, setQuantityType] = useState<"KG" | "LITRES">("KG");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+
+  /* ------------------ IMAGE PICKERS ------------------ */
+
+  const pickFromGallery = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return Alert.alert("Permission required");
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const pickFromCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) return Alert.alert("Camera permission required");
+
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const removeImage = () => setImageUri(null);
+
+  /* ------------------ SAVE CATEGORY ------------------ */
 
   const saveCategory = async () => {
-    if (!name.trim()) {
-      return Alert.alert("Validation", "Enter category name");
-    }
+    if (!name.trim()) return Alert.alert("Enter category name");
 
     const token = await AsyncStorage.getItem("token");
-    if (!token) return Alert.alert("Error", "User token missing");
+    if (!token) return Alert.alert("Token missing");
 
     const payload = {
       businessId: Number(businessId),
       name,
       description,
       quantityType,
-      imageUrl,
+      imageUrl: imageUri, // send image (or null)
       createdBy: 1,
     };
 
     try {
       await createCategory(payload, token);
-      Alert.alert("Success", "Category added successfully");
+      Alert.alert("Success", "Category saved");
       router.back();
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to save category");
+      Alert.alert("Error", err.message);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#fff" }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <View style={{ flex: 1 }}>
+      {/* ================================================================== */}
+      {/* CUSTOM HEADER (same as inventory) */}
+      {/* ================================================================== */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
+          <Ionicons name="arrow-back" size={28} color="#fff" />
+        </TouchableOpacity>
+
+        <Text style={styles.headerTitle}>Add Category</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      {/* ================================================================== */}
+      {/* BODY */}
+      {/* ================================================================== */}
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={{ flex: 1 }}>
-          {/* ------------------------------------- */}
-          {/* ✅ FIXED HEADER (matches InventoryScreen) */}
-          {/* ------------------------------------- */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={styles.backButton}
-            >
-              <Ionicons name="arrow-back" size={28} color="#fff" />
-            </TouchableOpacity>
+        <View style={styles.container}>
+          {/* Name */}
+          <Text style={styles.label}>Category Name</Text>
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Enter category name"
+          />
 
-            <Text style={styles.headerTitle}>Add Category</Text>
+          {/* Description */}
+          <Text style={styles.label}>Description</Text>
+          <TextInput
+            style={[styles.input, { height: 80 }]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Enter description"
+            multiline
+          />
 
-            {/* Placeholder right to keep title centered */}
-            <View style={styles.rightPlaceholder} />
-          </View>
-
-          {/* BODY */}
-          <View style={styles.container}>
-            <Text style={styles.label}>Category Name</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="Enter category name"
-            />
-
-            <Text style={styles.label}>Description</Text>
-            <TextInput
-              style={[styles.input, { height: 80 }]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Enter description"
-              multiline
-            />
-
-            <Text style={styles.label}>Quantity Type</Text>
-            <View style={styles.qtyRow}>
-              {["KG", "LITRES"].map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  onPress={() => setQuantityType(type as any)}
-                  style={[
-                    styles.qtyChip,
-                    quantityType === type && styles.qtyChipActive,
-                  ]}
+          {/* Quantity Type */}
+          <Text style={styles.label}>Quantity Type</Text>
+          <View style={styles.qtyRow}>
+            {["KG", "LITRES"].map((v) => (
+              <TouchableOpacity
+                key={v}
+                onPress={() => setQuantityType(v as "KG" | "LITRES")}
+                style={[
+                  styles.qtyOption,
+                  quantityType === v && styles.qtySelected,
+                ]}
+              >
+                <Text
+                  style={{
+                    color: quantityType === v ? "#fff" : "#333",
+                    fontWeight: "700",
+                  }}
                 >
-                  <Text
-                    style={{
-                      fontWeight: "700",
-                      color: quantityType === type ? "#fff" : "#000",
-                    }}
-                  >
-                    {type}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={styles.label}>Image</Text>
-
-            <View style={styles.imageRow}>
-              {/* Gallery */}
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={() => alert("Image picking pending")}
-              >
-                <Ionicons name="image-outline" size={28} color="#4f93ff" />
+                  {v}
+                </Text>
               </TouchableOpacity>
+            ))}
+          </View>
 
-              {/* Camera */}
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={() => alert("Camera pending")}
-              >
-                <Ionicons name="camera-outline" size={28} color="#4f93ff" />
-              </TouchableOpacity>
-            </View>
+          {/* Image Section */}
+          <Text style={styles.label}>Image</Text>
 
-            <TouchableOpacity style={styles.saveBtn} onPress={saveCategory}>
-              <Text style={{ color: "#fff", fontWeight: "700" }}>Save</Text>
+          <View style={styles.imageRow}>
+            <TouchableOpacity style={styles.imageButton} onPress={pickFromGallery}>
+              <Ionicons name="image" size={28} color="#4f93ff" />
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.cancelBtn}
-              onPress={() => router.back()}
-            >
-              <Text style={{ color: "#333", fontWeight: "600" }}>Cancel</Text>
+            <TouchableOpacity style={styles.imageButton} onPress={pickFromCamera}>
+              <Ionicons name="camera" size={28} color="#4f93ff" />
             </TouchableOpacity>
           </View>
+
+          {/* Image Preview Thumbnail */}
+          {imageUri && (
+            <View style={{ marginTop: 12, position: "relative" }}>
+              <TouchableOpacity onPress={() => setPreviewVisible(true)}>
+                <Image source={{ uri: imageUri }} style={styles.thumbnail} />
+              </TouchableOpacity>
+
+              {/* Remove Image Button */}
+              <TouchableOpacity onPress={removeImage} style={styles.removeImageBtn}>
+                <Ionicons name="close-circle" size={28} color="red" />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Save */}
+          <TouchableOpacity style={styles.saveBtn} onPress={saveCategory}>
+            <Text style={{ color: "#fff", fontWeight: "700" }}>Save</Text>
+          </TouchableOpacity>
+
+          {/* Cancel */}
+          <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
+            <Text style={{ color: "#333", fontWeight: "600" }}>Cancel</Text>
+          </TouchableOpacity>
         </View>
       </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+
+      {/* FULL IMAGE PREVIEW */}
+      <Modal visible={previewVisible} transparent>
+        <View style={styles.previewModal}>
+          <Image source={{ uri: imageUri ?? "" }} style={styles.previewImage} />
+
+          <TouchableOpacity
+            style={styles.previewClose}
+            onPress={() => setPreviewVisible(false)}
+          >
+            <Ionicons name="close" size={32} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
-/* ---------------- STYLES ---------------- */
+/* ---------------------------------------------------------------------- */
+/* STYLES */
+/* ---------------------------------------------------------------------- */
 
 const styles = StyleSheet.create({
+  /* Header */
   header: {
     backgroundColor: "#4f93ff",
     paddingTop: 45,
@@ -165,90 +220,86 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    zIndex: 999,
   },
-
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "flex-start",
-  },
-
+  backButton: { width: 40, height: 40, justifyContent: "center" },
   headerTitle: {
     flex: 1,
     textAlign: "center",
     fontSize: 20,
     fontWeight: "700",
     color: "#fff",
-    marginLeft: -40, // keep title visually center
+    marginLeft: -40,
   },
 
-  rightPlaceholder: {
-    width: 40, // matches back button size
-  },
-
-  /* BODY */
-  container: {
-    padding: 20,
-  },
-
-  label: {
-    fontWeight: "700",
-    marginTop: 16,
-  },
-
+  /* Body */
+  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  label: { fontWeight: "600", marginTop: 16 },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
-    padding: 12,
     marginTop: 6,
+    padding: 10,
   },
 
+  /* Quantity */
   qtyRow: { flexDirection: "row", marginTop: 10 },
-  qtyChip: {
+  qtyOption: {
+    padding: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: "#aaa",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginRight: 10,
+    marginRight: 12,
   },
-
-  qtyChipActive: {
+  qtySelected: {
     backgroundColor: "#4f93ff",
     borderColor: "#4f93ff",
   },
 
-  imageRow: {
-    flexDirection: "row",
-    marginTop: 12,
-  },
-
-  iconBtn: {
-    width: 55,
-    height: 55,
-    borderRadius: 10,
-    backgroundColor: "#e8f0ff",
-    justifyContent: "center",
-    alignItems: "center",
+  /* Image */
+  imageRow: { flexDirection: "row", marginTop: 10 },
+  imageButton: {
+    padding: 16,
+    backgroundColor: "#eef4ff",
+    borderRadius: 12,
     marginRight: 12,
   },
+  thumbnail: {
+    width: 120,
+    height: 90,
+    borderRadius: 10,
+  },
+  removeImageBtn: {
+    position: "absolute",
+    top: -10,
+    right: -10,
+  },
 
+  /* Buttons */
   saveBtn: {
+    marginTop: 28,
     backgroundColor: "#4f93ff",
     padding: 14,
     borderRadius: 8,
     alignItems: "center",
-    marginTop: 28,
   },
-
   cancelBtn: {
+    marginTop: 12,
     padding: 14,
     borderRadius: 8,
     alignItems: "center",
     borderColor: "#ccc",
     borderWidth: 1,
-    marginTop: 12,
   },
+
+  /* Preview Modal */
+  previewModal: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  previewImage: { width: "90%", height: "70%" },
+  previewClose: { position: "absolute", top: 50, right: 30 },
 });

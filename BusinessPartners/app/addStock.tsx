@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -14,160 +15,187 @@ import { changeStock, fetchCategories } from "./inventory";
 
 export default function AddStock() {
   const router = useRouter();
-
   const { businessId } = useLocalSearchParams();
+
   const [categories, setCategories] = useState<any[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
   const [quantity, setQuantity] = useState("");
 
+  /* ---------------- Load categories ---------------- */
   useEffect(() => {
-    loadCategories();
-  }, []);
+    (async () => {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
 
-  const loadCategories = async () => {
-    const token = await AsyncStorage.getItem("token");
-
-    if (!token) return;
-
-    try {
       const data = await fetchCategories(Number(businessId), token);
       setCategories(data);
-    } catch (e) {
-      console.log("Error loading categories:", e);
-    }
-  };
 
+      // Auto-select first category
+      if (data.length > 0) setSelectedCategoryId(data[0].id);
+    })();
+  }, [businessId]);
+
+  /* ---------------- Save Stock ---------------- */
   const saveStock = async () => {
-    if (!selectedCategory) {
-      return Alert.alert("Validation", "Please select a category");
-    }
-
-    if (!quantity.trim()) {
-      return Alert.alert("Validation", "Enter quantity");
-    }
+    if (!selectedCategoryId) return Alert.alert("Select a category");
+    if (!quantity.trim()) return Alert.alert("Enter quantity");
 
     const token = await AsyncStorage.getItem("token");
+    if (!token) return;
 
     try {
       await changeStock(
         {
           businessId: Number(businessId),
-          categoryId: selectedCategory.id,
+          categoryId: selectedCategoryId,
           changeType: "ADD",
-          quantity: Number(quantity),
+          quantity: quantity,
           note: "",
         },
-        token ?? ""
+        token
       );
 
-      Alert.alert("Success", "Stock Added");
+      Alert.alert("Success", "Stock added successfully");
       router.back();
-    } catch (e) {
-      console.log("Stock save error:", e);
-      Alert.alert("Error", "Unable to save stock");
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Could not add stock");
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* ─────────────────────────────────────────── */}
+      {/* HEADER */}
+      {/* ─────────────────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>&lt; Back</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.headerLeft}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
+          <Ionicons name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Add Stock</Text>
-        <View style={{ width: 60 }} />
+
+        <Text style={styles.headerTitle}>Add Stock</Text>
+
+        <TouchableOpacity onPress={saveStock}>
+          <Text style={styles.headerRightText}>Save</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Select Category */}
-      <Text style={styles.label}>Select Category</Text>
+      {/* ─────────────────────────────────────────── */}
+      {/* BODY */}
+      {/* ─────────────────────────────────────────── */}
+      <View style={styles.body}>
+        <Text style={styles.label}>Quantity</Text>
+        <TextInput
+          style={styles.input}
+          value={quantity}
+          onChangeText={setQuantity}
+          keyboardType="numeric"
+          placeholder="Enter quantity"
+        />
+        <Text style={styles.label}>Select Category</Text>
 
-      <FlatList
-        data={categories}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.categoryItem,
-              selectedCategory?.id === item.id && styles.categoryActive,
-            ]}
-            onPress={() => setSelectedCategory(item)}
-          >
-            <Text style={styles.categoryText}>{item.name}</Text>
-          </TouchableOpacity>
-        )}
-      />
-
-      {/* Quantity Input */}
-      {selectedCategory && (
-        <>
-          <Text style={styles.label}>
-            Enter Quantity ({selectedCategory.quantityType})
-          </Text>
-
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={quantity}
-            onChangeText={setQuantity}
-            placeholder="Enter Quantity"
-          />
-
-          <TouchableOpacity style={styles.saveBtn} onPress={saveStock}>
-            <Text style={styles.saveText}>Save</Text>
-          </TouchableOpacity>
-        </>
-      )}
+        <FlatList
+          data={categories}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => setSelectedCategoryId(item.id)}
+              style={[
+                styles.categoryItem,
+                selectedCategoryId === item.id && styles.categorySelected,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.categoryText,
+                  selectedCategoryId === item.id && { color: "#fff" },
+                ]}
+              >
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 16 },
+/* ─────────────────────────────────────────── */
+/* STYLES */
+/* ─────────────────────────────────────────── */
 
-  header: {
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#fff" },
+
+  /* Header */
+header: {
+    backgroundColor: "#4f93ff",
+    paddingTop: 45,
+    paddingBottom: 14,
+    paddingHorizontal: 16,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingBottom: 12,
+    justifyContent: "space-between",
+    zIndex: 9999,           // <-- added
+    elevation: 6,           // <-- added
+    position: "relative",   // <-- added
+},
+
+
+  headerLeft: { width: 40 },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#fff",
+    marginLeft: -40,
+  },
+  headerRightText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
   },
 
-  back: { color: "#007bff", fontSize: 16 },
+  /* Body */
+  body: {
+    flex: 1,
+    padding: 20,
+    paddingTop: 10, // <-- prevents overlap
+  },
 
-  title: { fontSize: 20, fontWeight: "700" },
-
-  label: { marginTop: 20, fontWeight: "700", fontSize: 15 },
+  label: { fontSize: 15, fontWeight: "600", marginBottom: 8 },
 
   categoryItem: {
-    padding: 12,
+    padding: 14,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 8,
-    marginTop: 8,
+    marginBottom: 8,
   },
 
-  categoryActive: {
-    borderColor: "#007bff",
-    backgroundColor: "#e8f0ff",
+  categorySelected: {
+    backgroundColor: "#4f93ff",
+    borderColor: "#4f93ff",
   },
 
-  categoryText: { fontSize: 16 },
+  categoryText: {
+    fontSize: 16,
+    color: "#333",
+  },
 
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-
-  saveBtn: {
-    marginTop: 20,
-    backgroundColor: "#007bff",
-    padding: 14,
+    borderColor: "#ccc",
     borderRadius: 10,
-    alignItems: "center",
+    padding: 12,
+    marginTop: 6,
+    fontSize: 16,
   },
-
-  saveText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });

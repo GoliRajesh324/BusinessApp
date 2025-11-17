@@ -379,7 +379,8 @@ export default function Dashboard() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() => alert("Interest Feature coming soon")}
+          onPress={() => router.push("/simpleInterest")}
+          //onPress={() => alert("Interest Feature coming soon")}
         >
           <MaterialCommunityIcons
             name="alpha-i-box"

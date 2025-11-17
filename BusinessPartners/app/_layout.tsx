@@ -57,6 +57,36 @@ export default function RootLayout() {
             headerShown: false, // or false if you don’t want a header at all
           }}
         />
+        <Stack.Screen
+          name="inventoryScreen"
+          options={{
+            headerShown: false, // or false if you don’t want a header at all
+          }}
+        />
+           <Stack.Screen
+          name="addCategory"
+          options={{
+            headerShown: false, // or false if you don’t want a header at all
+          }}
+        />
+          <Stack.Screen
+          name="categoryDetails"
+          options={{
+            headerShown: false, // or false if you don’t want a header at all
+          }}
+        />
+         <Stack.Screen
+          name="addStock"
+          options={{
+            headerShown: false, // or false if you don’t want a header at all
+          }}
+        />
+         <Stack.Screen
+          name="consumeStock"
+          options={{
+            headerShown: false, // or false if you don’t want a header at all
+          }}
+        />
        {/*   <Stack.Screen
           name="SimpleInterestScreen"
           options={{

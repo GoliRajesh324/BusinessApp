@@ -8,7 +8,7 @@ import {
   Text,
   TouchableOpacity,
   UIManager,
-  View
+  View,
 } from "react-native";
 
 import DropDownPicker from "react-native-dropdown-picker";
@@ -867,7 +867,16 @@ export default function BusinessDetail() {
 
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() => alert("Inventory Feature coming soon")}
+          onPress={() =>
+            router.push({
+              pathname: "/inventoryScreen",
+              params: {
+                businessId: safeBusinessId,
+                businessName: safeBusinessName,
+              },
+            })
+          }
+          // onPress={() => alert("Inventory Feature coming soon")}
         >
           <Ionicons name="cube" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Inventory</Text>

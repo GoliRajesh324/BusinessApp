@@ -1,27 +1,29 @@
 // SimpleInterestPage.tsx
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import DateTimePicker, {
-    DateTimePickerEvent,
+  DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
+import * as Print from "expo-print"; // ✅ ADD THIS
 import { useRouter } from "expo-router";
+import * as Sharing from "expo-sharing";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import {
-    addInterest,
-    getAllInterests,
-    updateInterest,
+  addInterest,
+  getAllInterests,
+  updateInterest,
 } from "./interestService";
 
 type Interest = {
@@ -225,12 +227,62 @@ export default function SimpleInterestPage() {
     setDatePickerField(null);
   };
 
-  // PDF placeholder (not implemented here)
-  const handleDownloadPDF = () =>
-    Alert.alert(
-      "PDF Export",
-      "PDF export requires native libs (use expo-print / react-native-html-to-pdf)."
-    );
+  const handleDownloadPDF = async () => {
+    try {
+      let html = `
+      <html>
+      <body style="font-family: Arial; padding: 12px;">
+        <h2>Interest Money Summary</h2>
+
+        <table style="width:100%; font-size:14px; border-collapse: collapse;">
+          <tr><td><b>Your Remaining Money</b></td><td style="text-align:right">₹ ${formatAmountIndian(
+            totalAmount
+          )}</td></tr>
+          <tr><td><b>Money Taken By You</b></td><td style="text-align:right;color:red">₹ ${formatAmountIndian(
+            totalTakenByYou
+          )}</td></tr>
+          <tr><td><b>Money Given By You</b></td><td style="text-align:right;color:green">₹ ${formatAmountIndian(
+            totalGivenByYou
+          )}</td></tr>
+        </table>
+
+        <hr/>
+
+        <h3>Records (${showActive ? "Active" : "Inactive"})</h3>
+    `;
+
+      Object.keys(grouped).forEach((name) => {
+        html += `<h4>${name}</h4>`;
+        html += `<table style="width:100%; border-collapse: collapse;">`;
+
+        grouped[name].forEach((r) => {
+          html += `
+          <tr>
+            <td>${r.type === "given" ? "Money Taken" : "Money Given"}</td>
+            <td style="text-align:right">₹ ${formatAmountIndian(r.amount)}</td>
+            <td style="text-align:center">${r.rate ?? 0}%</td>
+            <td style="text-align:center">${formatDateForDisplay(
+              r.startDate
+            )}</td>
+            <td>${r.comment ?? ""}</td>
+          </tr>`;
+        });
+
+        html += `</table>`;
+      });
+
+      const { uri } = await Print.printToFileAsync({ html });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri);
+      } else {
+        Alert.alert("Saved", uri);
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", "PDF failed");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>

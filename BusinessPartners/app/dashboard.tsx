@@ -201,6 +201,7 @@ export default function Dashboard() {
       <FlatList
         data={businesses}
         keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ paddingBottom: 180 }}   // ✅ add this
         onScroll={(e) => {
           const position = e.nativeEvent.contentOffset.y;
           if (position > 50) {

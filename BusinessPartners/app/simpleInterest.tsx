@@ -1,9 +1,6 @@
-// SimpleInterestPage.tsx
+// SimpleInterestPage.tsx 
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
-import * as Print from "expo-print"; // ✅ ADD THIS
+import * as Print from "expo-print";
 import { useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import React, { useEffect, useState } from "react";
@@ -69,6 +66,7 @@ const formatAmountIndian = (amount?: number) => {
   return Number(amount).toLocaleString("en-IN");
 };
 
+
 export default function SimpleInterestPage() {
   const router = useRouter();
   const [persons, setPersons] = useState<Interest[]>([]);
@@ -80,16 +78,26 @@ export default function SimpleInterestPage() {
   const [showActive, setShowActive] = useState(true);
   const [formData, setFormData] = useState<Partial<Interest>>(emptyForm());
 
-  // Date picker state
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [datePickerField, setDatePickerField] = useState<
-    "startDate" | "endDate" | null
-  >(null);
-  const [tempDate, setTempDate] = useState<Date>(new Date());
-
   useEffect(() => {
     fetchAll();
   }, [showActive]);
+
+  // ADD/EDIT default date behavior
+  useEffect(() => {
+    if (editingId) {
+      setFormData((p) => ({
+        ...p,
+        startDate: p.startDate, // keep old
+        endDate: new Date().toISOString().split("T")[0], // today
+      }));
+    } else {
+      setFormData((p) => ({
+        ...p,
+        startDate: new Date().toISOString().split("T")[0],
+        endDate: "",
+      }));
+    }
+  }, [editingId]);
 
   async function fetchAll() {
     setLoading(true);
@@ -104,23 +112,26 @@ export default function SimpleInterestPage() {
     }
   }
 
-  // Filter active/inactive
-  const filteredPersons = persons.filter((p) =>
-    showActive
-      ? !p.endDate || p.endDate === ""
-      : !!p.endDate && p.endDate !== ""
-  );
-
-  // Totals
-  const totalTakenByYou = filteredPersons
+  /* ************************************
+     ALWAYS SHOW TOTALS FROM ALL RECORDS
+     ************************************ */
+  const totalTakenAll = persons
     .filter((p) => p.type === "given")
     .reduce((s, p) => s + (p.amount || 0), 0);
-  const totalGivenByYou = filteredPersons
+
+  const totalGivenAll = persons
     .filter((p) => p.type === "taken")
     .reduce((s, p) => s + (p.amount || 0), 0);
-  const totalAmount = totalGivenByYou - totalTakenByYou;
 
-  // grouped by name
+  const totalAmountAll = totalGivenAll - totalTakenAll;
+
+  /* ************************************
+     FILTER ONLY FOR DISPLAY (LIST)
+     ************************************ */
+  const filteredPersons = persons.filter((p) =>
+    showActive ? !p.endDate || p.endDate === "" : !!p.endDate
+  );
+
   const grouped = filteredPersons.reduce<Record<string, Interest[]>>(
     (acc, p) => {
       if (!acc[p.name]) acc[p.name] = [];
@@ -150,23 +161,116 @@ export default function SimpleInterestPage() {
     setShowModal(true);
   };
 
+ const handleDownloadPDF = async () => {
+  try {
+    let html = `
+    <html>
+      <body style="font-family: Arial; padding: 20px;">
+
+        <h2 style="margin-bottom:10px;">Interest Money Details</h2>
+
+        <!-- SUMMARY TABLE -->
+        <table style="width:100%; font-size:14px; border-collapse: collapse; margin-bottom: 25px;">
+          <tr>
+            <td style="padding:8px; border:1px solid #ccc;"><b>Your Remaining Money</b></td>
+            <td style="padding:8px; text-align:right; border:1px solid #ccc;">
+              ₹ ${formatAmountIndian(totalAmountAll)}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:8px; border:1px solid #ccc;"><b>Money Taken By You</b></td>
+            <td style="padding:8px; text-align:right; color:red; border:1px solid #ccc;">
+              ₹ ${formatAmountIndian(totalTakenAll)}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:8px; border:1px solid #ccc;"><b>Money Given By You</b></td>
+            <td style="padding:8px; text-align:right; color:green; border:1px solid #ccc;">
+              ₹ ${formatAmountIndian(totalGivenAll)}
+            </td>
+          </tr>
+        </table>
+    `;
+
+    // PERSON WISE DETAILS
+    Object.keys(grouped).forEach((name) => {
+      html += `
+        <h3 style="margin-top:25px; margin-bottom:6px;">${name.toUpperCase()}</h3>
+
+        <table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:20px;">
+          <tr style="background:#1e88e5; color:white;">
+            <th style="padding:8px; border:1px solid #ccc;">Type</th>
+            <th style="padding:8px; border:1px solid #ccc;">Amount</th>
+            <th style="padding:8px; border:1px solid #ccc;">Interest %</th>
+            <th style="padding:8px; border:1px solid #ccc;">Start Date</th>
+            <th style="padding:8px; border:1px solid #ccc;">Comment</th>
+          </tr>
+      `;
+
+      grouped[name].forEach((r) => {
+        html += `
+          <tr>
+            <td style="padding:8px; border:1px solid #ccc;">
+              ${r.type === "given" ? "Money Taken By You" : "Money Given By You"}
+            </td>
+
+            <td style="padding:8px; border:1px solid #ccc;">
+              Rs. ${formatAmountIndian(r.amount)}
+            </td>
+
+            <td style="padding:8px; border:1px solid #ccc; text-align:center;">
+              ${r.rate ?? 0} %
+            </td>
+
+            <td style="padding:8px; border:1px solid #ccc; text-align:center;">
+              ${formatDateForDisplay(r.startDate)}
+            </td>
+
+            <td style="padding:8px; border:1px solid #ccc;">
+              ${r.comment ?? ""}
+            </td>
+          </tr>
+        `;
+      });
+
+      html += `</table>`;
+    });
+
+    html += `
+      </body>
+    </html>
+    `;
+
+    const { uri } = await Print.printToFileAsync({ html });
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri);
+    } else {
+      Alert.alert("File Saved", uri);
+    }
+  } catch (e) {
+    console.error(e);
+    Alert.alert("Error", "PDF generation failed");
+  }
+};
+
+
   const handleSave = async () => {
-    if (
-      !formData.name ||
-      formData.amount === undefined ||
-      formData.amount === null
-    ) {
+    if (!formData.name || formData.amount == null) {
       Alert.alert("Validation", "Name and Amount are required");
       return;
     }
     setSaving(true);
+
     const dto: any = {
       name: toTitleCase(String(formData.name)),
       type: formData.type,
       amount: Number(formData.amount),
       rate: formData.rate ? Number(formData.rate) : 0,
       startDate: formData.startDate,
-      endDate: formData.endDate || null,
+      endDate: editingId ? new Date().toISOString().split("T")[0] : null,
       comment: formData.comment,
     };
 
@@ -180,10 +284,9 @@ export default function SimpleInterestPage() {
         }
       } else {
         const saved = await addInterest(dto);
-        if (saved) {
-          setPersons((prev) => [...prev, saved]);
-        }
+        if (saved) setPersons((prev) => [...prev, saved]);
       }
+
       setShowModal(false);
       setEditingId(null);
       setFormData(emptyForm());
@@ -198,112 +301,23 @@ export default function SimpleInterestPage() {
   const toggleExpand = (name: string) =>
     setExpanded((prev) => (prev === name ? null : name));
 
-  const handleOpenDatePicker = (field: "startDate" | "endDate") => {
-    // parse existing date if present
-    const existing =
-      field === "startDate" ? formData.startDate : formData.endDate;
-    const parsed = existing ? new Date(existing) : new Date();
-    setTempDate(parsed);
-    setDatePickerField(field);
-    setShowDatePicker(true);
-  };
-  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === "ios");
-
-    if (selectedDate) {
-      const yyyy = selectedDate.getFullYear();
-      const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
-      const dd = String(selectedDate.getDate()).padStart(2, "0");
-
-      const formatted = `${yyyy}-${mm}-${dd}`;
-
-      if (datePickerField === "startDate") {
-        setFormData((p) => ({ ...p, startDate: formatted }));
-      } else if (datePickerField === "endDate") {
-        setFormData((p) => ({ ...p, endDate: formatted }));
-      }
-    }
-
-    setDatePickerField(null);
-  };
-
-  const handleDownloadPDF = async () => {
-    try {
-      let html = `
-      <html>
-      <body style="font-family: Arial; padding: 12px;">
-        <h2>Interest Money Summary</h2>
-
-        <table style="width:100%; font-size:14px; border-collapse: collapse;">
-          <tr><td><b>Your Remaining Money</b></td><td style="text-align:right">₹ ${formatAmountIndian(
-            totalAmount
-          )}</td></tr>
-          <tr><td><b>Money Taken By You</b></td><td style="text-align:right;color:red">₹ ${formatAmountIndian(
-            totalTakenByYou
-          )}</td></tr>
-          <tr><td><b>Money Given By You</b></td><td style="text-align:right;color:green">₹ ${formatAmountIndian(
-            totalGivenByYou
-          )}</td></tr>
-        </table>
-
-        <hr/>
-
-        <h3>Records (${showActive ? "Active" : "Inactive"})</h3>
-    `;
-
-      Object.keys(grouped).forEach((name) => {
-        html += `<h4>${name}</h4>`;
-        html += `<table style="width:100%; border-collapse: collapse;">`;
-
-        grouped[name].forEach((r) => {
-          html += `
-          <tr>
-            <td>${r.type === "given" ? "Money Taken" : "Money Given"}</td>
-            <td style="text-align:right">₹ ${formatAmountIndian(r.amount)}</td>
-            <td style="text-align:center">${r.rate ?? 0}%</td>
-            <td style="text-align:center">${formatDateForDisplay(
-              r.startDate
-            )}</td>
-            <td>${r.comment ?? ""}</td>
-          </tr>`;
-        });
-
-        html += `</table>`;
-      });
-
-      const { uri } = await Print.printToFileAsync({ html });
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri);
-      } else {
-        Alert.alert("Saved", uri);
-      }
-    } catch (e) {
-      console.error(e);
-      Alert.alert("Error", "PDF failed");
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#222" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Interest Money</Text>
         </View>
 
-        {/* Single Summary Card (Option A) */}
+        {/* Summary (ALWAYS uses All Totals) */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Your Remaining Money</Text>
             <Text style={[styles.summaryAmount, styles.totalValue]}>
-              ₹ {formatAmountIndian(totalAmount)}
+              ₹ {formatAmountIndian(totalAmountAll)}
             </Text>
           </View>
 
@@ -312,7 +326,7 @@ export default function SimpleInterestPage() {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Money Taken By You</Text>
             <Text style={[styles.summaryAmount, styles.givenValue]}>
-              ₹ {formatAmountIndian(totalTakenByYou)}
+              ₹ {formatAmountIndian(totalTakenAll)}
             </Text>
           </View>
 
@@ -321,11 +335,10 @@ export default function SimpleInterestPage() {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Money Given By You</Text>
             <Text style={[styles.summaryAmount, styles.takenValue]}>
-              ₹ {formatAmountIndian(totalGivenByYou)}
+              ₹ {formatAmountIndian(totalGivenAll)}
             </Text>
           </View>
 
-          {/* action row */}
           <View style={styles.summaryActions}>
             <TouchableOpacity
               style={styles.activeBtn}
@@ -335,62 +348,48 @@ export default function SimpleInterestPage() {
                 {showActive ? "Active" : "InActive"} ⏷
               </Text>
             </TouchableOpacity>
+
             <TouchableOpacity style={styles.pdfBtn} onPress={handleDownloadPDF}>
               <Text style={styles.pdfText}>PDF</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Content list */}
+        {/* List */}
         {loading ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" />
           </View>
         ) : (
-          <ScrollView
-            style={styles.list}
-            contentContainerStyle={{ paddingBottom: 120 }}
-          >
+          <ScrollView style={styles.list} contentContainerStyle={{ paddingBottom: 120 }}>
             {Object.keys(grouped).length === 0 && (
               <View style={styles.emptyBox}>
-                <Text style={styles.emptyText}>
-                  No records yet. Tap + to add.
-                </Text>
+                <Text style={styles.emptyText}>No records yet. Tap + to add.</Text>
               </View>
             )}
 
             {Object.keys(grouped).map((name) => {
               const records = grouped[name];
-              const netAmount = records.reduce(
-                (s, r) => s + (r.amount || 0),
-                0
-              );
+              const netAmount = records.reduce((s, r) => s + (r.amount || 0), 0);
               const type = records[0].type;
+
               return (
                 <View key={name} style={styles.personCard}>
-                  <TouchableOpacity
-                    style={styles.personHeader}
-                    onPress={() => toggleExpand(name)}
-                  >
+                  <TouchableOpacity style={styles.personHeader} onPress={() => toggleExpand(name)}>
                     <View style={{ flex: 1 }}>
-                      <Text
-                        style={styles.personName}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                      >
+                      <Text style={styles.personName} numberOfLines={1}>
                         {toTitleCase(name)}
                       </Text>
                       <Text style={styles.personSub}>
                         {records.length} record{records.length > 1 ? "s" : ""}
                       </Text>
                     </View>
+
                     <View style={styles.personAmountBox}>
                       <Text
                         style={[
                           styles.personAmount,
-                          type === "given"
-                            ? styles.givenValue
-                            : styles.takenValue,
+                          type === "given" ? styles.givenValue : styles.takenValue,
                         ]}
                       >
                         ₹ {formatAmountIndian(netAmount)}
@@ -406,40 +405,25 @@ export default function SimpleInterestPage() {
                             <Text
                               style={[
                                 styles.recordType,
-                                rec.type === "given"
-                                  ? styles.givenValue
-                                  : styles.takenValue,
+                                rec.type === "given" ? styles.givenValue : styles.takenValue,
                               ]}
                             >
-                              {rec.type === "given"
-                                ? "Money Taken By You"
-                                : "Money Given By You"}
+                              {rec.type === "given" ? "Money Taken By You" : "Money Given By You"}
                             </Text>
 
-                            <TouchableOpacity
-                              onPress={() => onEditOpen(rec)}
-                              style={styles.recordEditBtn}
-                            >
-                              <FontAwesome
-                                name="edit"
-                                size={16}
-                                color="#007bff"
-                              />
+                            <TouchableOpacity onPress={() => onEditOpen(rec)} style={styles.recordEditBtn}>
+                              <FontAwesome name="edit" size={16} color="#007bff" />
                             </TouchableOpacity>
                           </View>
 
                           <View style={styles.recordRow}>
                             <Text style={styles.recordLabel}>Amount</Text>
-                            <Text style={styles.recordValue}>
-                              ₹ {formatAmountIndian(rec.amount)}
-                            </Text>
+                            <Text style={styles.recordValue}>₹ {formatAmountIndian(rec.amount)}</Text>
                           </View>
 
                           <View style={styles.recordRow}>
                             <Text style={styles.recordLabel}>Interest</Text>
-                            <Text style={styles.recordValue}>
-                              {rec.rate ?? 0} %
-                            </Text>
+                            <Text style={styles.recordValue}>{rec.rate ?? 0} %</Text>
                           </View>
 
                           <View style={styles.recordRow}>
@@ -452,9 +436,7 @@ export default function SimpleInterestPage() {
                           {rec.comment ? (
                             <View style={styles.recordRow}>
                               <Text style={styles.recordLabel}>Comment</Text>
-                              <Text style={styles.recordValue}>
-                                {rec.comment}
-                              </Text>
+                              <Text style={styles.recordValue}>{rec.comment}</Text>
                             </View>
                           ) : null}
                         </View>
@@ -467,26 +449,22 @@ export default function SimpleInterestPage() {
           </ScrollView>
         )}
 
-        {/* Floating Add button */}
+        {/* Add Button */}
         <TouchableOpacity style={styles.fab} onPress={onAddPress}>
           <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
 
-        {/* Add / Edit Modal */}
+        {/* Modal */}
         <Modal
           visible={showModal}
           animationType="slide"
           transparent
-          onRequestClose={() => {
-            if (!saving) setShowModal(false);
-          }}
+          onRequestClose={() => !saving && setShowModal(false)}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
-                  {editingId ? "Edit Record" : "Add Record"}
-                </Text>
+                <Text style={styles.modalTitle}>{editingId ? "Edit Record" : "Add Record"}</Text>
                 <TouchableOpacity
                   onPress={() => {
                     if (!saving) {
@@ -510,28 +488,18 @@ export default function SimpleInterestPage() {
                   editable={!saving}
                 />
 
-                {/* Type selector */}
                 <View style={styles.typeRow}>
                   <TouchableOpacity
-                    style={[
-                      styles.typeBtn,
-                      formData.type === "taken" && styles.typeBtnActive,
-                    ]}
-                    onPress={() =>
-                      setFormData((p) => ({ ...p, type: "taken" }))
-                    }
+                    style={[styles.typeBtn, formData.type === "taken" && styles.typeBtnActive]}
+                    onPress={() => setFormData((p) => ({ ...p, type: "taken" }))}
                     disabled={saving}
                   >
                     <Text style={styles.typeBtnText}>Money Given By You</Text>
                   </TouchableOpacity>
+
                   <TouchableOpacity
-                    style={[
-                      styles.typeBtn,
-                      formData.type === "given" && styles.typeBtnActive,
-                    ]}
-                    onPress={() =>
-                      setFormData((p) => ({ ...p, type: "given" }))
-                    }
+                    style={[styles.typeBtn, formData.type === "given" && styles.typeBtnActive]}
+                    onPress={() => setFormData((p) => ({ ...p, type: "given" }))}
                     disabled={saving}
                   >
                     <Text style={styles.typeBtnText}>Money Taken By You</Text>
@@ -577,39 +545,32 @@ export default function SimpleInterestPage() {
                   editable={!saving}
                 />
 
-                {/* Native Date pickers: open when user taps the row */}
-                <TouchableOpacity
-                  style={styles.dateRow}
-                  onPress={() => handleOpenDatePicker("startDate")}
-                >
+                {/* Start Date */}
+                <View style={styles.dateRow}>
                   <Text style={styles.dateLabel}>Start Date</Text>
-                  <Text
-                    style={[
-                      styles.input,
-                      styles.dateInput,
-                      { paddingVertical: 12 },
-                    ]}
-                  >
-                    {formData.startDate ?? ""}
-                  </Text>
-                </TouchableOpacity>
+                  <TextInput
+                    style={[styles.input, styles.dateInput]}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="#888"
+                    value={formData.startDate ?? ""}
+                    onChangeText={(t) => setFormData((p) => ({ ...p, startDate: t }))}
+                    editable={!saving}
+                  />
+                </View>
 
+                {/* End Date */}
                 {editingId && (
-                  <TouchableOpacity
-                    style={styles.dateRow}
-                    onPress={() => handleOpenDatePicker("endDate")}
-                  >
+                  <View style={styles.dateRow}>
                     <Text style={styles.dateLabel}>End Date</Text>
-                    <Text
-                      style={[
-                        styles.input,
-                        styles.dateInput,
-                        { paddingVertical: 12 },
-                      ]}
-                    >
-                      {formData.endDate ?? ""}
-                    </Text>
-                  </TouchableOpacity>
+                    <TextInput
+                      style={[styles.input, styles.dateInput]}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor="#888"
+                      value={formData.endDate ?? ""}
+                      onChangeText={(t) => setFormData((p) => ({ ...p, endDate: t }))}
+                      editable={!saving}
+                    />
+                  </View>
                 )}
 
                 <TextInput
@@ -617,9 +578,7 @@ export default function SimpleInterestPage() {
                   placeholderTextColor="#888"
                   style={[styles.input, styles.textarea]}
                   value={formData.comment ?? ""}
-                  onChangeText={(t) =>
-                    setFormData((p) => ({ ...p, comment: t }))
-                  }
+                  onChangeText={(t) => setFormData((p) => ({ ...p, comment: t }))}
                   editable={!saving}
                   multiline
                 />
@@ -657,24 +616,12 @@ export default function SimpleInterestPage() {
             </View>
           </View>
         </Modal>
-
-        {/* 👇 Add the DateTimePicker HERE */}
-        {showDatePicker && (
-          <DateTimePicker
-            value={tempDate}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={(event: DateTimePickerEvent, date?: Date) => {
-              onDateChange(event, date);
-            }}
-          />
-        )}
       </View>
     </SafeAreaView>
   );
 }
 
-/* Styles (kept clean and responsive) */
+/* Styles (unchanged) */
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#f4f6f9" },
   container: {
@@ -683,11 +630,9 @@ const styles = StyleSheet.create({
     position: "relative",
     paddingTop: Platform.OS === "android" ? 24 : 0,
   },
-
   header: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   backBtn: { padding: 8, marginRight: 8 },
   headerTitle: { fontSize: 20, fontWeight: "700", color: "#222" },
-
   summaryCard: {
     backgroundColor: "#fff",
     borderRadius: 14,
@@ -707,7 +652,6 @@ const styles = StyleSheet.create({
   summaryAmount: { fontSize: 18, fontWeight: "800" },
   divider: { height: 1, backgroundColor: "#f0f0f0", marginVertical: 8 },
   dividerThin: { height: 1, backgroundColor: "#fbfbfb", marginVertical: 6 },
-
   summaryActions: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -728,13 +672,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   pdfText: { color: "#fff", fontWeight: "700" },
-
   totalValue: { color: "#007bff" },
   givenValue: { color: "red" },
   takenValue: { color: "green" },
 
   list: { flex: 1 },
-
   center: { alignItems: "center", justifyContent: "center", flex: 1 },
 
   emptyBox: { padding: 20, alignItems: "center" },
@@ -824,6 +766,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#222",
   },
+
   textarea: { height: 80, textAlignVertical: "top" },
 
   typeRow: { flexDirection: "row", gap: 8, marginBottom: 8 },

@@ -106,15 +106,6 @@ export default function ProfileScreen() {
             style={styles.avatar}
           />
           <Text style={styles.name}>{userName}</Text>
-
-          <View style={styles.infoRow}>
-            <Ionicons name="mail-outline" size={18} color="#fff" />
-            <Text style={styles.infoText}>{userName}@gmail.com</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="call-outline" size={18} color="#fff" />
-            <Text style={styles.infoText}>+91 91544 32738</Text>
-          </View>
           <View style={styles.infoRow}>
             <Ionicons name="cash-outline" size={18} color="#fff" />
             <Text style={styles.infoText}>₹ (INR)</Text>

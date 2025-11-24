@@ -1,8 +1,6 @@
 // SimpleInterestPage.tsx 
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
-import * as Print from "expo-print";
 import { useRouter } from "expo-router";
-import * as Sharing from "expo-sharing";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,6 +20,7 @@ import {
   getAllInterests,
   updateInterest,
 } from "./interestService";
+import { generateInterestPDF } from "./pdfGenerator";
 
 type Interest = {
   id?: number | string;
@@ -161,99 +160,15 @@ export default function SimpleInterestPage() {
     setShowModal(true);
   };
 
- const handleDownloadPDF = async () => {
-  try {
-    let html = `
-    <html>
-      <body style="font-family: Arial; padding: 20px;">
-
-        <h2 style="margin-bottom:10px;">Interest Money Details</h2>
-
-        <!-- SUMMARY TABLE -->
-        <table style="width:100%; font-size:14px; border-collapse: collapse; margin-bottom: 25px;">
-          <tr>
-            <td style="padding:8px; border:1px solid #ccc;"><b>Your Remaining Money</b></td>
-            <td style="padding:8px; text-align:right; border:1px solid #ccc;">
-              ₹ ${formatAmountIndian(totalAmountAll)}
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding:8px; border:1px solid #ccc;"><b>Money Taken By You</b></td>
-            <td style="padding:8px; text-align:right; color:red; border:1px solid #ccc;">
-              ₹ ${formatAmountIndian(totalTakenAll)}
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding:8px; border:1px solid #ccc;"><b>Money Given By You</b></td>
-            <td style="padding:8px; text-align:right; color:green; border:1px solid #ccc;">
-              ₹ ${formatAmountIndian(totalGivenAll)}
-            </td>
-          </tr>
-        </table>
-    `;
-
-    // PERSON WISE DETAILS
-    Object.keys(grouped).forEach((name) => {
-      html += `
-        <h3 style="margin-top:25px; margin-bottom:6px;">${name.toUpperCase()}</h3>
-
-        <table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:20px;">
-          <tr style="background:#1e88e5; color:white;">
-            <th style="padding:8px; border:1px solid #ccc;">Type</th>
-            <th style="padding:8px; border:1px solid #ccc;">Amount</th>
-            <th style="padding:8px; border:1px solid #ccc;">Interest %</th>
-            <th style="padding:8px; border:1px solid #ccc;">Start Date</th>
-            <th style="padding:8px; border:1px solid #ccc;">Comment</th>
-          </tr>
-      `;
-
-      grouped[name].forEach((r) => {
-        html += `
-          <tr>
-            <td style="padding:8px; border:1px solid #ccc;">
-              ${r.type === "given" ? "Money Taken By You" : "Money Given By You"}
-            </td>
-
-            <td style="padding:8px; border:1px solid #ccc;">
-              Rs. ${formatAmountIndian(r.amount)}
-            </td>
-
-            <td style="padding:8px; border:1px solid #ccc; text-align:center;">
-              ${r.rate ?? 0} %
-            </td>
-
-            <td style="padding:8px; border:1px solid #ccc; text-align:center;">
-              ${formatDateForDisplay(r.startDate)}
-            </td>
-
-            <td style="padding:8px; border:1px solid #ccc;">
-              ${r.comment ?? ""}
-            </td>
-          </tr>
-        `;
-      });
-
-      html += `</table>`;
-    });
-
-    html += `
-      </body>
-    </html>
-    `;
-
-    const { uri } = await Print.printToFileAsync({ html });
-
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri);
-    } else {
-      Alert.alert("File Saved", uri);
-    }
-  } catch (e) {
-    console.error(e);
-    Alert.alert("Error", "PDF generation failed");
-  }
+const handleDownloadPDF = async () => {
+  await generateInterestPDF(
+    grouped,
+    totalAmountAll,
+    totalTakenAll,
+    totalGivenAll,
+    formatAmountIndian,
+    formatDateForDisplay
+  );
 };
 
 

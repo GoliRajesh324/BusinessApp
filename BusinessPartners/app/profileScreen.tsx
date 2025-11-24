@@ -79,7 +79,8 @@ export default function ProfileScreen() {
     {
       icon: "help-circle-outline",
       text: "Help & Support",
-      action: () => alert("Help & Support Coming Soon"),
+      action: () => router.push("/helpandSupportScreen"),
+      //action: () => alert("Help & Support Coming Soon"),
     },
     { icon: "log-out-outline", text: "Logout", action: handleLogout },
   ];
@@ -105,7 +106,7 @@ export default function ProfileScreen() {
             }}
             style={styles.avatar}
           />
-          <Text style={styles.name}>{userName}</Text>
+          <Text style={styles.name}>{userName?.toUpperCase()}</Text>
           <View style={styles.infoRow}>
             <Ionicons name="cash-outline" size={18} color="#fff" />
             <Text style={styles.infoText}>₹ (INR)</Text>

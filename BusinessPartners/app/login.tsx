@@ -1,35 +1,48 @@
 // app/login.tsx
-import React, { useState } from "react";
-import { Stack } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { Stack, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import BASE_URL from "../src/config/config";// ✅ adjust if your config path differs
-import ConnectionStatus from "./components/ConnectionStatus"; // adjust path
-
+import BASE_URL from "../src/config/config";
+import ConnectionStatus from "./components/ConnectionStatus";
 
 export const unstable_settings = {
-  headerShown: false,   // hide header
+  headerShown: false, // hide header
 };
 export default function LoginScreen() {
+  const router = useRouter();
+
+  // ⬇️ AUTO ROUTE LOGGED-IN + BIOMETRIC USERS
+  useEffect(() => {
+    const checkBiometricAndToken = async () => {
+      const bio = await AsyncStorage.getItem("appLockLastAuth");
+      const token = await AsyncStorage.getItem("token");
+
+      if (bio === "yes" && token) {
+        router.replace("/dashboard");
+      }
+    };
+
+    checkBiometricAndToken();
+  }, []);
+
   const [isLogin, setIsLogin] = useState(true);
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false); // ✅ new state
-
-  const router = useRouter();
 
   const handleSubmit = async () => {
     if (loading) return; // prevent double clicks
@@ -68,8 +81,7 @@ export default function LoginScreen() {
       setUsername("");
       setPassword("");
     } catch (err: any) {
-      const errorMsg =
-        err.response?.data?.message || "Something went wrong";
+      const errorMsg = err.response?.data?.message || "Something went wrong";
       setMessage(errorMsg);
       setPassword("");
     } finally {
@@ -78,76 +90,78 @@ export default function LoginScreen() {
   };
 
   return (
-        <>
+    <>
       <Stack.Screen options={{ headerShown: false }} />
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.container}
-      >
-        <View style={styles.card}>
-          <Text style={styles.title}>
-            {isLogin ? "Business Login" : "Register New User"}
-          </Text>
-
-          {/* Username */}
-          <View style={styles.inputGroup}>
-            <ConnectionStatus />
-            <Text style={styles.label}>Username</Text>
-            <TextInput
-              style={styles.input}
-              value={username}
-              onChangeText={(t) =>
-                setUsername(t.replace(/\s+/g, "").toLowerCase())
-              }
-              autoCapitalize="none"
-              placeholder="Enter username"
-            />
-          </View>
-
-          {/* Password */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordRow}>
-              <TextInput
-                style={[styles.input, { flex: 1 }]}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                placeholder="Enter password"
-              />
-              <Pressable
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.showBtn}
-              >
-                <Text style={styles.showBtnText}>
-                  {showPassword ? "Hide" : "Show"}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Message */}
-          {message ? (
-            <Text
-              style={[
-                styles.message,
-                message.toLowerCase().includes("success")
-                  ? { color: "green" }
-                  : { color: "red" },
-              ]}
-            >
-              {message}
+      <SafeAreaView style={styles.safe}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.container}
+        >
+          <View style={styles.card}>
+            <Text style={styles.title}>
+              {isLogin ? "Business Login" : "Register New User"}
             </Text>
-          ) : null}
 
-          {/* Submit */}
+            {/* Username */}
+            <View style={styles.inputGroup}>
+              <ConnectionStatus />
+              <Text style={styles.label}>Username</Text>
+              <TextInput
+                style={styles.input}
+                value={username}
+                onChangeText={(t) =>
+                  setUsername(t.replace(/\s+/g, "").toLowerCase())
+                }
+                placeholderTextColor="#847575ff"
+                autoCapitalize="none"
+                placeholder="Enter username"
+              />
+            </View>
+
+            {/* Password */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.passwordRow}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  placeholder="Enter password"
+                  placeholderTextColor="#847575ff"
+                />
+                <Pressable
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.showBtn}
+                >
+                  <Text style={styles.showBtnText}>
+                    {showPassword ? "Hide" : "Show"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Message */}
+            {message ? (
+              <Text
+                style={[
+                  styles.message,
+                  message.toLowerCase().includes("success")
+                    ? { color: "green" }
+                    : { color: "red" },
+                ]}
+              >
+                {message}
+              </Text>
+            ) : null}
+
+            {/* Submit */}
             <Pressable
               onPress={handleSubmit}
               style={[styles.button, loading && { opacity: 0.6 }]}
               disabled={loading}
             >
-            <Text style={styles.buttonText}>
+              <Text style={styles.buttonText}>
                 {loading
                   ? isLogin
                     ? "Logging in..."
@@ -155,32 +169,32 @@ export default function LoginScreen() {
                   : isLogin
                   ? "Login"
                   : "Register"}
-            </Text>
-          </Pressable>
-
-          {/* Switch Mode */}
-          <View style={{ marginTop: 16, alignItems: "center" }}>
-            <Text>
-              {isLogin
-                ? "Don't have an account?"
-                : "Already have an account?"}
-            </Text>
-            <Pressable
-              onPress={() => {
-                setIsLogin(!isLogin);
-                setMessage("");
-                setPassword("");
-              }}
-                disabled={loading}
-            >
-              <Text style={styles.link}>
-                {isLogin ? "Register here" : "Login here"}
               </Text>
             </Pressable>
+
+            {/* Switch Mode */}
+            <View style={{ marginTop: 16, alignItems: "center" }}>
+              <Text>
+                {isLogin
+                  ? "Don't have an account?"
+                  : "Already have an account?"}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  setIsLogin(!isLogin);
+                  setMessage("");
+                  setPassword("");
+                }}
+                disabled={loading}
+              >
+                <Text style={styles.link}>
+                  {isLogin ? "Register here" : "Login here"}
+                </Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </>
   );
 }
@@ -218,6 +232,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 10,
     fontSize: 16,
+    color: "#000",  // <-- add this
   },
   passwordRow: { flexDirection: "row", alignItems: "center" },
   showBtn: { paddingHorizontal: 10, justifyContent: "center" },

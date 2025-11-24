@@ -27,14 +27,18 @@ export default function SettingsScreen() {
   useEffect(() => {
     (async () => {
       try {
+        // Load Language
         const savedLang = await AsyncStorage.getItem("appLanguage");
         const langToUse = savedLang || "en";
-
         await i18n.changeLanguage(langToUse);
         setIsTelugu(langToUse === "te");
         setIsLangLoaded(true);
+
+        // Load App Lock
+        const savedLock = await AsyncStorage.getItem("appLockEnabled");
+        setAppLockEnabled(savedLock === "true");
       } catch (e) {
-        console.log("Language load error:", e);
+        console.log("Language/AppLock load error:", e);
       }
     })();
   }, []);
@@ -102,19 +106,23 @@ export default function SettingsScreen() {
   };
 
   // Toggle App Lock
-  const toggleAppLock = async (value: boolean) => {
-    if (value) {
-      const authSuccess = await handleBiometricAuth();
-      if (authSuccess) {
-        setAppLockEnabled(true);
-      } else {
-        setAppLockEnabled(false);
-      }
+const toggleAppLock = async (value: boolean) => {
+  if (value) {
+    const authSuccess = await handleBiometricAuth();
+    if (authSuccess) {
+      await AsyncStorage.setItem("appLockEnabled", "true");
+      setAppLockEnabled(true);
     } else {
+      await AsyncStorage.setItem("appLockEnabled", "false");
       setAppLockEnabled(false);
-      Alert.alert("App Lock Disabled", "App Lock has been turned off.");
     }
-  };
+  } else {
+    await AsyncStorage.setItem("appLockEnabled", "false");
+    setAppLockEnabled(false);
+  }
+};
+
+
 
   const handleBack = () => router.back();
 

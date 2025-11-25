@@ -2,33 +2,49 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    Image,
-    Keyboard,
-    Modal,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Alert,
+  Image,
+  Keyboard,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
-import { createCategory } from "./inventory";
+import { createCategory, updateCategory } from "./inventory";
 
 export default function AddCategory() {
   const router = useRouter();
-  const { businessId } = useLocalSearchParams();
+  const {
+    businessId,
+    isEdit,
+    categoryId,
+    name: editName,
+    description: editDesc,
+    quantityType: editQty,
+    imageUrl: editImage,
+  } = useLocalSearchParams();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [quantityType, setQuantityType] = useState<"KG" | "LITRES">("KG");
+  const [quantityType, setQuantityType] = useState<"KG" | "LITERS">("KG");
 
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
 
   /* ------------------ IMAGE PICKERS ------------------ */
+  useEffect(() => {
+    if (isEdit === "true") {
+      if (editName) setName(editName as string);
+      if (editDesc) setDescription(editDesc as string);
+      if (editQty) setQuantityType(editQty as "KG" | "LITERS");
+      if (editImage) setImageUri(editImage as string);
+    }
+  }, [isEdit, editName, editDesc, editQty, editImage]);
 
   const pickFromGallery = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -59,28 +75,48 @@ export default function AddCategory() {
   const removeImage = () => setImageUri(null);
 
   /* ------------------ SAVE CATEGORY ------------------ */
-
   const saveCategory = async () => {
     if (!name.trim()) return Alert.alert("Enter category name");
 
     const token = await AsyncStorage.getItem("token");
     if (!token) return Alert.alert("Token missing");
 
-    const payload = {
-      businessId: Number(businessId),
-      name,
-      description,
-      quantityType,
-      imageUrl: imageUri, // send image (or null)
-      createdBy: 1,
-    };
-
     try {
-      await createCategory(payload, token);
-      Alert.alert("Success", "Category saved");
+      if (isEdit === "true") {
+        // UPDATE
+        await updateCategory(
+          Number(categoryId),
+          {
+            name,
+            description,
+            quantityType,
+            imageUrl: imageUri,
+          },
+          token
+        );
+
+        Alert.alert("Success", "Category updated successfully");
+        router.back();
+        return;
+      }
+
+      // CREATE
+      await createCategory(
+        {
+          businessId: Number(businessId),
+          name,
+          description,
+          quantityType,
+          imageUrl: imageUri,
+          createdBy: 1,
+        },
+        token
+      );
+
+      Alert.alert("Success", "Category created");
       router.back();
     } catch (err: any) {
-      Alert.alert("Error", err.message);
+      Alert.alert("Error", err.message || "Failed to save");
     }
   };
 
@@ -98,7 +134,10 @@ export default function AddCategory() {
           <Ionicons name="arrow-back" size={28} color="#fff" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Add Category</Text>
+        <Text style={styles.headerTitle}>
+          {isEdit === "true" ? "Edit Category" : "Add Category"}
+        </Text>
+
         <View style={{ width: 40 }} />
       </View>
 
@@ -132,7 +171,7 @@ export default function AddCategory() {
             {["KG", "LITRES"].map((v) => (
               <TouchableOpacity
                 key={v}
-                onPress={() => setQuantityType(v as "KG" | "LITRES")}
+                onPress={() => setQuantityType(v as "KG" | "LITERS")}
                 style={[
                   styles.qtyOption,
                   quantityType === v && styles.qtySelected,
@@ -154,25 +193,33 @@ export default function AddCategory() {
           <Text style={styles.label}>Image</Text>
 
           <View style={styles.imageRow}>
-            <TouchableOpacity style={styles.imageButton} onPress={pickFromGallery}>
+            <TouchableOpacity
+              style={styles.imageButton}
+              onPress={pickFromGallery}
+            >
               <Ionicons name="image" size={28} color="#4f93ff" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.imageButton} onPress={pickFromCamera}>
+            <TouchableOpacity
+              style={styles.imageButton}
+              onPress={pickFromCamera}
+            >
               <Ionicons name="camera" size={28} color="#4f93ff" />
             </TouchableOpacity>
           </View>
 
           {/* Image Preview Thumbnail */}
           {imageUri && (
-            <View style={{ marginTop: 12, position: "relative" }}>
+            <View style={{ marginTop: 12, position: "relative", width: 120 }}>
               <TouchableOpacity onPress={() => setPreviewVisible(true)}>
                 <Image source={{ uri: imageUri }} style={styles.thumbnail} />
               </TouchableOpacity>
 
-              {/* Remove Image Button */}
-              <TouchableOpacity onPress={removeImage} style={styles.removeImageBtn}>
-                <Ionicons name="close-circle" size={28} color="red" />
+              <TouchableOpacity
+                onPress={removeImage}
+                style={styles.removeImageBtn}
+              >
+                <Ionicons name="close" size={18} color="#fff" />
               </TouchableOpacity>
             </View>
           )}
@@ -183,7 +230,10 @@ export default function AddCategory() {
           </TouchableOpacity>
 
           {/* Cancel */}
-          <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.cancelBtn}
+            onPress={() => router.back()}
+          >
             <Text style={{ color: "#333", fontWeight: "600" }}>Cancel</Text>
           </TouchableOpacity>
         </View>
@@ -272,8 +322,14 @@ const styles = StyleSheet.create({
   },
   removeImageBtn: {
     position: "absolute",
-    top: -10,
-    right: -10,
+    top: 4,
+    right: 4,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   /* Buttons */

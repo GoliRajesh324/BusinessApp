@@ -36,3 +36,30 @@ export async function fetchLogs(categoryId: string, token: string) {
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
+
+
+export async function fetchCategoryById(categoryId: number, token: string) {
+  const res = await fetch(`${BASE_URL}/api/inventory/category/${categoryId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Failed to load category");
+
+  return res.json();
+}
+export async function updateCategory(categoryId: number, payload: any, token: string) {
+  const res = await fetch(`${BASE_URL}/api/inventory/category/${categoryId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) throw new Error("Failed to update category");
+
+  return res.json();
+}

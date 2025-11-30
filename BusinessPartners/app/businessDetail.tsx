@@ -85,6 +85,26 @@ export default function BusinessDetail() {
     { label: "Everyone's Transactions", value: "allInvestments" },
   ]);
 
+    useEffect(() => {
+    if (!businessId || !token) return;
+    fetchSuppliers();
+  }, [businessId, token, investmentDetails]);
+
+  // Load token & userId
+  useEffect(() => {
+    const loadData = async () => {
+      const t = await AsyncStorage.getItem("token");
+      const u = await AsyncStorage.getItem("userId");
+      const uName = await AsyncStorage.getItem("userName");
+      setUserName(uName);
+      console.log("📌 Loaded username:", uName);
+      setToken(t);
+      setUserId(u);
+    };
+    loadData();
+  }, []);
+
+
   useEffect(() => {
     AsyncStorage.getItem("token").then(setToken);
   }, []);
@@ -106,7 +126,7 @@ export default function BusinessDetail() {
 
   useEffect(() => {
     fetchBusinessDetails();
-  }, [safeBusinessId, token]);
+  }, [safeBusinessId, token, userName]);
 
   const fetchSuppliers = async () => {
     try {
@@ -150,25 +170,6 @@ export default function BusinessDetail() {
       alert("Error fetching suppliers");
     }
   };
-
-  useEffect(() => {
-    if (!businessId || !token) return;
-    fetchSuppliers();
-  }, [businessId, token, investmentDetails]);
-
-  // Load token & userId
-  useEffect(() => {
-    const loadData = async () => {
-      const t = await AsyncStorage.getItem("token");
-      const u = await AsyncStorage.getItem("userId");
-      const uName = await AsyncStorage.getItem("userName");
-      setUserName(uName);
-      console.log("📌 Loaded username:", uName);
-      setToken(t);
-      setUserId(u);
-    };
-    loadData();
-  }, []);
 
   const parseAmount = (v: any) => {
     if (v == null) return 0;

@@ -37,7 +37,7 @@ export default function ProfileScreen() {
       const result = await Share.share({
         title: "Check out this awesome app!",
         message:
-          "Hey! Check out this awesome app I’ve been using. Download it here:\nhttps://play.google.com/store/apps/details?id=com.BusinessMoney",
+          "Hey! Check out this awesome app I’ve been using. Download it here:\nhttps://play.google.com/store/apps/details?id=com.srilekhaapps.businessmoney",
       });
 
       if (result.action === Share.sharedAction) {

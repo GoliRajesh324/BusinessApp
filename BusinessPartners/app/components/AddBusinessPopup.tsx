@@ -42,7 +42,7 @@ export default function AddBusinessPopup({
   const [partners, setPartners] = useState<Partner[]>(
     editingBusiness?.partners
       ? editingBusiness.partners.map((p: any) => ({
-          name: p.username ?? p.name,
+          name: (p.username ?? p.name)?.toLowerCase(),
           share: String(p.share),
         }))
       : []
@@ -137,7 +137,7 @@ export default function AddBusinessPopup({
     if (editingIndex !== null) {
       const updated = [...partners];
       updated[editingIndex] = {
-        name: partnerName.trim(),
+        name: partnerName.trim().toLowerCase(),
         share: shareNum.toString(),
       };
       setPartners(updated);
@@ -145,7 +145,7 @@ export default function AddBusinessPopup({
     } else {
       setPartners([
         ...partners,
-        { name: partnerName.trim(), share: shareNum.toString() },
+        { name: partnerName.trim().toLowerCase(), share: shareNum.toString() },
       ]);
     }
 

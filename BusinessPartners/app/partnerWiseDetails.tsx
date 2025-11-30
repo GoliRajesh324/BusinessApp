@@ -101,30 +101,54 @@ export default function PartnerWiseDetails() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {investmentDetails.map((inv, index) => (
-          <View key={index} style={styles.card}>
-            <View style={styles.rowBetween}>
-              <Text style={styles.partnerName}>{inv.partner.username}</Text>
-              <Text style={styles.smallShare}>Share: {inv.partner.share}%</Text>
+          <View key={index} style={styles.partnerCard}>
+            {/* Header */}
+            <View style={styles.partnerCardHeader}>
+              <Text style={styles.partnerCardName}>{inv.partner.username}</Text>
+              <Text style={styles.partnerCardShare}>
+                Share: {inv.partner.share}%
+              </Text>
             </View>
 
-            <View style={styles.rowWrap}>
-              <View style={styles.item}>
-                <Text style={styles.label}>Available Money</Text>
-                <Text style={styles.value}>₹{formatAmount(inv.leftOver)}</Text>
+            {/* Grid */}
+            <View style={styles.partnerGrid}>
+              {/* Available Money */}
+              <View style={styles.partnerGridItem}>
+                <Text style={styles.gridLabel}>Available Money</Text>
+                <Text
+                  style={[
+                    styles.gridValue,
+                    inv.leftOver < 0
+                      ? { color: "#DC2626" } // red
+                      : inv.leftOver > 0
+                      ? { color: "#16A34A" } // green
+                      : { color: "#000" }, // zero
+                  ]}
+                >
+                  ₹{formatAmount(inv.leftOver)}
+                </Text>
               </View>
-              <View style={styles.item}>
-                <Text style={styles.label}>Withdrawn</Text>
-                <Text style={styles.value}>₹{formatAmount(inv.withdrawn)}</Text>
+
+              {/* Withdrawn */}
+              <View style={styles.partnerGridItem}>
+                <Text style={styles.gridLabel}>Withdrawn</Text>
+                <Text style={styles.gridValue}>
+                  ₹{formatAmount(inv.withdrawn)}
+                </Text>
               </View>
-              <View style={styles.item}>
-                <Text style={styles.label}>Actual Investment</Text>
-                <Text style={styles.value}>
+
+              {/* Actual Investment */}
+              <View style={styles.partnerGridItem}>
+                <Text style={styles.gridLabel}>Actual Investment</Text>
+                <Text style={styles.gridValue}>
                   ₹{formatAmount(inv.actualInvestment)}
                 </Text>
               </View>
-              <View style={styles.item}>
-                <Text style={styles.label}>You Invested</Text>
-                <Text style={styles.value}>
+
+              {/* You Invested */}
+              <View style={styles.partnerGridItem}>
+                <Text style={styles.gridLabel}>You Invested</Text>
+                <Text style={styles.gridValue}>
                   ₹{formatAmount(inv.yourInvestment)}
                 </Text>
               </View>
@@ -139,18 +163,6 @@ export default function PartnerWiseDetails() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f7f8fc" },
 
-  /*   header: {
-    height:
-      Platform.OS === "android" ? 80 + (StatusBar.currentHeight || 0) : 100,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop:
-      Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
-    backgroundColor: "#4f93ff",
-    elevation: 3,
-  }, */
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -207,4 +219,67 @@ const styles = StyleSheet.create({
   },
   label: { fontSize: 11, color: "#555" },
   value: { fontSize: 14, fontWeight: "600", color: "#222" },
+
+  partnerCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+
+    borderLeftWidth: 6,
+    borderLeftColor: "#4f93ff",
+  },
+
+  partnerCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  partnerCardName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1f2937",
+  },
+
+  partnerCardShare: {
+    fontSize: 12,
+    color: "#6b7280",
+    fontWeight: "600",
+  },
+
+  partnerGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+
+  partnerGridItem: {
+    width: "48%",
+    backgroundColor: "#f8faff",
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+
+  gridLabel: {
+    fontSize: 12,
+    color: "#6b7280",
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+
+  gridValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
 });

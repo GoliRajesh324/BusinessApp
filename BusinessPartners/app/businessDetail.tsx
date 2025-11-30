@@ -85,7 +85,7 @@ export default function BusinessDetail() {
     { label: "Everyone's Transactions", value: "allInvestments" },
   ]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (!businessId || !token) return;
     fetchSuppliers();
   }, [businessId, token, investmentDetails]);
@@ -103,7 +103,6 @@ export default function BusinessDetail() {
     };
     loadData();
   }, []);
-
 
   useEffect(() => {
     AsyncStorage.getItem("token").then(setToken);
@@ -509,31 +508,34 @@ export default function BusinessDetail() {
 
   // Render intelligent card based on flags
   const renderInvestmentCard = (inv: any, idx: number) => {
-    // Choose background color based on investmentGroupId
-    const bgColor =
-      (inv?.investmentGroupId ?? 0) % 2 === 0 ? "#e1e3e6ff" : "#fff";
+    const type =
+      inv.withdrawFlag === "Y"
+        ? "Withdraw"
+        : inv.soldFlag === "Y"
+        ? "Sold"
+        : "Investment";
 
-    const soldFlag = inv?.soldFlag ?? inv?.soldflag ?? "N";
-    const withdrawFlag = inv?.withdrawFlag ?? inv?.withdrawflag ?? "N";
+    const typeColor =
+      type === "Investment"
+        ? "#2563EB" // blue
+        : type === "Sold"
+        ? "#16A34A" // green
+        : "#DC2626"; // red
 
-    // Normalize names
-    const description = inv?.description || inv?.comments || "-";
-    const partnerName = inv?.partnerName || inv?.supplierName || "-";
-    const totalAmount =
-      inv?.totalAmount ?? inv?.invested ?? inv?.investable ?? 0;
-    const invested = inv?.invested ?? inv?.investable ?? 0;
+    const description = inv?.description || "-";
+    const partnerName = inv?.partnerName || "-";
+    const totalAmount = inv?.totalAmount ?? 0;
+    const invested = inv?.invested ?? 0;
     const investable = inv?.investable ?? 0;
-    const withdrawn = inv?.withdrawn ?? 0;
-    const soldAmount = inv?.soldAmount ?? 0;
-    const splitType = inv?.splitType ?? inv?.splittype ?? "-";
-    const updatedBy = inv?.updatedBy || inv?.createdBy || "-";
-    const shareAmount = inv?.share ?? inv?.soldAmount ?? inv?.soldAmount ?? 0;
-    const imageUrl = inv?.imageUrl || null;
-    const createdAt = inv?.createdAt || inv?.createdDate || null;
+    const splitType = inv?.splitType ?? "-";
+    const createdAt = inv?.createdAt || "-";
+    const createdBy = inv?.createdBy || "-";
 
     return (
       <TouchableOpacity
         key={String(inv?.investmentId ?? idx)}
+        style={styles.newCard}
+        activeOpacity={0.9}
         onPress={() =>
           router.push({
             pathname: "/investmentDetail",
@@ -544,58 +546,53 @@ export default function BusinessDetail() {
             },
           })
         }
-        activeOpacity={0.9}
-        style={[styles.investmentCard, { backgroundColor: bgColor }]}
       >
-        <View style={styles.cardHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle} numberOfLines={2}>
-              {description}
-            </Text>
-            <Text style={styles.cardSubtitle}>{partnerName}</Text>
+        {/* Top Section */}
+        <View style={styles.newTopRow}>
+          <Text
+            style={styles.newDescription}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {description}
+          </Text>
+
+          <View style={[styles.typeBadge, { backgroundColor: typeColor }]}>
+            <Text style={styles.typeBadgeText}>{type}</Text>
+          </View>
+        </View>
+
+        {/* Name + Split */}
+        <View style={styles.newSecondRow}>
+          <Text style={styles.partnerNameText}>{partnerName}</Text>
+          <Text style={styles.splitText}>{splitType}</Text>
+        </View>
+
+        {/* Amounts */}
+        <View style={{ marginTop: 10 }}>
+          <Text style={styles.investedLabel}>Invested</Text>
+          <Text style={styles.investedValue}>₹{formatAmount(invested)}</Text>
+
+          <View style={styles.amountRow}>
+            <Text style={styles.amountLabel}>Investable</Text>
+            <Text style={styles.amountValue}>₹{formatAmount(investable)}</Text>
           </View>
 
-          {imageUrl ? (
-            <Image source={{ uri: imageUrl }} style={styles.imageThumb} />
-          ) : (
-            <View style={styles.imageThumbPlaceholder}>
-              <Ionicons name="cash-outline" size={22} color="#fff" />
-            </View>
-          )}
+          <View style={styles.amountRow}>
+            <Text style={styles.amountLabel}>Total Amount</Text>
+            <Text style={styles.amountValue}>₹{formatAmount(totalAmount)}</Text>
+          </View>
         </View>
 
-        <View style={styles.cardBody}>
-          <RowKV k="Total Amount" v={`₹${formatAmount(totalAmount)}`} />
-          {soldFlag === "N" && withdrawFlag === "N" && (
-            <>
-              <RowKV k="Invested" v={`₹${formatAmount(invested)}`} />
-              <RowKV k="Investable" v={`₹${formatAmount(investable)}`} />
-              <RowKV k="Split Type" v={splitType} />
-            </>
-          )}
-
-          {soldFlag === "N" && withdrawFlag === "Y" && (
-            <>
-              <RowKV k="Withdrawn" v={`₹${formatAmount(withdrawn)}`} />
-              <RowKV k="Split" v={splitType} />
-            </>
-          )}
-
-          {soldFlag === "Y" && withdrawFlag === "N" && (
-            <>
-              <RowKV k="Sold Amount" v={`₹${formatAmount(soldAmount)}`} />
-              <RowKV k="Split" v={splitType} />
-            </>
-          )}
-        </View>
-
-        <View style={styles.cardFooter}>
-          <Text style={styles.createdAtText}>created by : {updatedBy}</Text>
-          <Text style={styles.createdAtText}>{formatDateTime(createdAt)}</Text>
+        {/* Footer */}
+        <View style={styles.footerRow}>
+          <Text style={styles.footerLeft}>Created by: {createdBy}</Text>
+          <Text style={styles.footerRight}>{formatDateTime(createdAt)}</Text>
         </View>
       </TouchableOpacity>
     );
   };
+
   const handleSelect = (val: string) => {
     setSelectedFilter(val);
     setOpen(false); // ✅ closes the dropdown when selected
@@ -625,12 +622,9 @@ export default function BusinessDetail() {
           paddingTop: 16, // spacing from header
         }}
       >
-        <View>
-          <Text style={styles.businessSummary}> Business Summary</Text>
-        </View>
         {/* Summary Card (tap to expand/collapse) */}
         <TouchableOpacity
-          activeOpacity={0.95}
+          activeOpacity={0.9}
           onPress={() =>
             router.push({
               pathname: "/partnerWiseDetails",
@@ -641,56 +635,65 @@ export default function BusinessDetail() {
               },
             })
           }
-          style={[styles.summaryCard, expanded && styles.summaryCardExpanded]}
+          style={styles.summaryCardNew}
         >
-          <View style={styles.summaryItemRow}>
-            <Text style={styles.summaryLabelSmall}>Total Investment :</Text>
-            <Text style={styles.summaryValueLarge}>
-              {formatAmount(totalInvestment)}
-            </Text>
+          {/* Header */}
+          <View style={styles.summaryHeaderRow}>
+            <Text style={styles.summaryTitle}>Business Summary</Text>
+            <Ionicons name="stats-chart" size={22} color="#2563eb" />
           </View>
 
-          <View style={styles.summaryItemRow}>
-            <Text style={styles.summaryLabelSmall}>Total Sold :</Text>
-            <Text style={styles.summaryValueLarge}>
-              {formatAmount(totalSoldAmount)}
-            </Text>
-          </View>
-
-          <View style={styles.summaryVertical}>
-            <View style={styles.summaryItemRow}>
-              <Text style={styles.summaryLabelSmall}>Availabe Money :</Text>
-              <Text style={styles.summaryValueLarge}>
-                {formatAmount(leftOver)}
+          {/* Row 1 */}
+          <View style={styles.summaryRowNew}>
+            <View style={styles.summaryBlock}>
+              <Text style={styles.summaryLabelNew}>Total Investment</Text>
+              <Text style={styles.summaryValuePrimary}>
+                ₹{formatAmount(totalInvestment)}
               </Text>
             </View>
 
-            <View style={styles.summaryItemRow}>
-              <Text style={styles.summaryLabelSmall}>Your Investment :</Text>
-              <Text style={styles.summaryValueLarge}>
-                {formatAmount(yourInvestment)}
+            <View style={styles.summaryBlock}>
+              <Text style={styles.summaryLabelNew}>Total Sold</Text>
+              <Text style={styles.summaryValuePrimary}>
+                ₹{formatAmount(totalSoldAmount)}
               </Text>
             </View>
-
-            {/*   <View style={{ alignItems: "center", marginTop: 4 }}>
-              <Ionicons
-                name={expanded ? "chevron-up" : "chevron-down"}
-                size={22}
-                color="#666"
-              />
-            </View> */}
           </View>
 
-          {/* optional expanded summary area (additional details) */}
-          {/* {expanded && (
-            <View style={styles.expandedContent}>
-              
-              <Text style={{ color: "#666" }}>
-                Tap the card to collapse. Scroll the table below for more
-                details.
+          {/* Divider */}
+          <View style={styles.summaryDivider} />
+
+          {/* Row 2 */}
+          <View style={styles.summaryRowNew}>
+            <View style={styles.summaryBlock}>
+              <Text style={styles.summaryLabelNew}>Available Money</Text>
+
+              <Text
+                style={[
+                  styles.summaryValueSecondary,
+                  {
+                    color:
+                      leftOver < 0
+                        ? "#DC2626" // red
+                        : leftOver > 0
+                        ? "#16A34A" // green
+                        : "#000000", // black
+                  },
+                ]}
+              >
+                ₹{formatAmount(leftOver)}
               </Text>
             </View>
-          )} */}
+
+            <View style={styles.summaryBlock}>
+              <Text style={styles.summaryLabelNew}>Your Investment</Text>
+              <Text
+                style={[styles.summaryValueSecondary, { color: "#2563eb" }]}
+              >
+                ₹{formatAmount(yourInvestment)}
+              </Text>
+            </View>
+          </View>
         </TouchableOpacity>
 
         {/* SUPPLIER CONTRIBUTIONS SECTION */}
@@ -1401,5 +1404,166 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#555",
     textAlign: "center",
+  },
+  newCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+
+  newTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  newDescription: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111",
+    marginRight: 10,
+  },
+
+  typeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+
+  typeBadgeText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+
+  newSecondRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 6,
+  },
+
+  partnerNameText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#444",
+  },
+
+  splitText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+
+  investedLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 6,
+  },
+
+  investedValue: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#111",
+  },
+
+  amountRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 6,
+  },
+
+  amountLabel: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+
+  amountValue: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  footerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+
+  footerLeft: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+
+  footerRight: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+
+  summaryCardNew: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+
+  summaryHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1e293b",
+  },
+
+  summaryRowNew: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+
+  summaryBlock: {
+    flex: 1,
+  },
+
+  summaryLabelNew: {
+    fontSize: 13,
+    color: "#6b7280",
+    fontWeight: "600",
+  },
+
+  summaryValuePrimary: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#111827",
+    marginTop: 4,
+  },
+
+  summaryValueSecondary: {
+    fontSize: 17,
+    fontWeight: "700",
+    marginTop: 4,
+  },
+
+  summaryDivider: {
+    height: 1,
+    backgroundColor: "#e5e7eb",
+    marginVertical: 12,
   },
 });

@@ -104,7 +104,7 @@ export default function PartnerWiseDetails() {
           <View key={index} style={styles.partnerCard}>
             {/* Header */}
             <View style={styles.partnerCardHeader}>
-              <Text style={styles.partnerCardName}>{inv.partner.username}</Text>
+              <Text style={styles.partnerCardName}>{inv?.partner?.username?.toUpperCase()}</Text>
               <Text style={styles.partnerCardShare}>
                 Share: {inv.partner.share}%
               </Text>

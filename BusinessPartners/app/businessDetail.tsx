@@ -77,6 +77,14 @@ export default function BusinessDetail() {
   const [selectedFilter, setSelectedFilter] = useState("byLoggedInUser"); // default
   const [open, setOpen] = useState(false);
 
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [openStart, setOpenStart] = useState(false);
+  const [openEnd, setOpenEnd] = useState(false);
+
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [openTime, setOpenTime] = useState(false);
+
   const [items, setItems] = useState([
     { label: "Your Transactions", value: "byLoggedInUser" },
     { label: "Your Investments", value: "byInvestment" },
@@ -564,7 +572,9 @@ export default function BusinessDetail() {
 
         {/* Name + Split */}
         <View style={styles.newSecondRow}>
-          <Text style={styles.partnerNameText}>{partnerName}</Text>
+          <Text style={styles.partnerNameText}>
+            {partnerName.toUpperCase()}
+          </Text>
           <Text style={styles.splitText}>{splitType}</Text>
         </View>
 
@@ -723,6 +733,7 @@ export default function BusinessDetail() {
             </ScrollView>
           </View>
         )} */}
+
 
         {/* --- FILTER SECTION --- */}
         <View style={{ marginVertical: 12, zIndex: 1000 }}>

@@ -327,7 +327,7 @@ export default function AddBusinessPopup({
             </View>
 
             {partners.length === 0 ? (
-              <Text style={styles.emptyPartners}>No partners added</Text>
+              <Text style={styles.emptyPartners}>No partners have been added.{'\n'}You can add only partners who have an account.</Text>
             ) : (
               partners.map((p, idx) => (
                 <View key={idx} style={styles.partnerCard}>

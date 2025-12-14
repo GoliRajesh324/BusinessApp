@@ -48,6 +48,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   const [investmentDataState, setInvestmentDataState] =
     useState(investmentData);
   const [supplierName, setSupplierName] = useState(first.supplierName ?? "");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   /* const [checkedState, setCheckedState] = useState<Record<number, boolean>>({});
 
@@ -182,7 +183,11 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   }, [visible, investmentData]);
 
   const handleSave = async () => {
+    if (isUpdating) return; // 🛑 safety guard
+
     try {
+      setIsUpdating(true); // 🔒 lock button
+
       investmentData.map((inv) =>
         console.log("Investment to update:", inv.invested)
       );
@@ -284,6 +289,8 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     } catch (err) {
       console.error("❌ handleSave error:", err);
       Alert.alert("Error", "Unexpected error occurred");
+    } finally {
+      setIsUpdating(false); // 🔓 always unlock
     }
   };
 
@@ -532,11 +539,18 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
             onPress={handleSave}
             style={[
               styles.headerRight,
-              { opacity: !totalAmount || Number(totalAmount) <= 0 ? 0.5 : 1 },
+              {
+                opacity:
+                  isUpdating || !totalAmount || Number(totalAmount) <= 0
+                    ? 0.5
+                    : 1,
+              },
             ]}
-            disabled={!totalAmount || Number(totalAmount) <= 0}
+            disabled={isUpdating || !totalAmount || Number(totalAmount) <= 0}
           >
-            <Text style={styles.saveText}>Update</Text>
+            <Text style={styles.saveText}>
+              {isUpdating ? "Updating..." : "Update"}
+            </Text>
           </TouchableOpacity>
         </View>
 

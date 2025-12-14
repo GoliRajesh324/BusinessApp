@@ -275,6 +275,21 @@ export default function BusinessDetail() {
     fetchPartners();
   }, [safeBusinessId, token]);
 
+  useEffect(() => {
+    if (!userName || !investmentDetails.length) return;
+
+    const myRecord = investmentDetails.find((inv) => {
+      const partnerName = inv?.partnerName ?? inv?.partner?.username ?? "";
+      return (
+        partnerName.toString().toLowerCase() ===
+        userName.toString().toLowerCase()
+      );
+    });
+
+    setYourInvestment(myRecord?.yourInvestment || 0);
+    setLeftOver(myRecord?.leftOver || 0);
+  }, [investmentDetails, userName]);
+
   // --- NEW: fetch investments when businessId or token changes ---
   const [allInvestments, setAllInvestments] = useState<any[]>([]);
 
@@ -323,26 +338,7 @@ export default function BusinessDetail() {
       );
       setCropDetails(data?.crop || null);
 
-      // 🧍‍♂️ Find record for logged-in user safely
-      if (Array.isArray(data?.investmentDetails) && userName) {
-        const myRecord =
-          data.investmentDetails.find((inv: any) => {
-            const partnerName =
-              inv?.partnerName ?? inv?.partner?.username ?? "";
-            return (
-              partnerName.toString().toLowerCase() ===
-              userName.toString().toLowerCase()
-            );
-          }) || null;
-
-        if (myRecord) {
-          setYourInvestment(myRecord.yourInvestment || 0);
-          setLeftOver(myRecord.leftOver || 0);
-        } else {
-          setYourInvestment(0);
-          setLeftOver(0);
-        }
-      }
+      setInvestmentDetails(data.investmentDetails || []); 
     } catch (err) {
       console.error("❌ Error fetching business details:", err);
     }

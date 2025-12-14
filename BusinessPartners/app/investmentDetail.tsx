@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -140,7 +139,7 @@ export default function InvestmentDetail() {
   }, [investments]);
  */
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -150,7 +149,7 @@ export default function InvestmentDetail() {
         <View style={styles.headerIcons}>
           <TouchableOpacity
             onPress={() => {
-            setEditInvestments(normalizeForEditPopup(editInvestments));
+              setEditInvestments(normalizeForEditPopup(editInvestments));
               setEditVisible(true);
             }}
           >
@@ -166,8 +165,13 @@ export default function InvestmentDetail() {
 
       {/* Scrollable Content */}
       <ScrollView
-        style={styles.content}
-        contentContainerStyle={{ paddingBottom: 80 }} // <-- FIX
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 16,
+          paddingBottom: 120,
+        }}
+        keyboardShouldPersistTaps="handled"
+        onStartShouldSetResponderCapture={() => true}
       >
         {investments.length === 0 ? (
           <Text>No investments found for this group</Text>
@@ -250,7 +254,7 @@ export default function InvestmentDetail() {
           onUpdated={fetchGroupInvestments}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -261,7 +265,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 40,
     paddingBottom: 12,
     backgroundColor: "#4f93ff",
     elevation: 4,
@@ -273,6 +277,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#fff",
   },
-  headerIcons: { flexDirection: "row" },
-  content: { padding: 16, flex: 1 },
+  headerIcons: { flexDirection: "row",  gap: 16 },
+  content: { padding: 16 },
 });

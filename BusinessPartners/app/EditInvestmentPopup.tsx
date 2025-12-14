@@ -48,6 +48,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   const [investmentDataState, setInvestmentDataState] =
     useState(investmentData);
   const [supplierName, setSupplierName] = useState(first.supplierName ?? "");
+
   /* const [checkedState, setCheckedState] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
@@ -61,6 +62,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       setCheckedState(initialState);
     }
   }, [investmentDataState]); */
+
   const [checkedState, setCheckedState] = useState(false);
 
   const toggleCheckbox = () => {
@@ -110,7 +112,8 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     "share" | "equal" | "manual"
   >("share");
   const [shareValues, setShareValues] = useState<number[]>([]);
-/*   const [remaining, setRemaining] = useState<number>(0);
+
+  /*   const [remaining, setRemaining] = useState<number>(0);
   const [showSupplierPopup, setShowSupplierPopup] = useState(false); */
   // ✅ Restore saved split type when editing an existing investment
   useEffect(() => {
@@ -122,17 +125,87 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     }
   }, [first]);
 
+  const normalizeEditData = (data: InvestmentDTO[]) => {
+    return data.map((inv) => {
+      // INVESTMENT
+      if (inv.withdrawFlag !== "Y" && inv.soldFlag !== "Y") {
+        return {
+          ...inv,
+          invested: Number(inv.invested ?? 0),
+          investable: Number(inv.investable ?? inv.invested ?? 0),
+        };
+      }
+
+      // WITHDRAW
+      if (inv.withdrawFlag === "Y") {
+        return {
+          ...inv,
+          invested: 0,
+          investable: 0,
+          withdrawn: Number(inv.withdrawn ?? 0),
+        };
+      }
+
+      // SOLD
+      if (inv.soldFlag === "Y") {
+        return {
+          ...inv,
+          invested: 0,
+          investable: 0,
+          soldAmount: Number(inv.soldAmount ?? 0),
+        };
+      }
+
+      return inv;
+    });
+  };
+
+  useEffect(() => {
+    if (!visible || !investmentData?.length) return;
+
+    // 🔥 normalize ONCE when edit opens
+    const normalized = normalizeEditData(investmentData);
+    setInvestmentDataState(normalized);
+
+    // header level values
+    setTotalAmount(String(investmentData[0]?.totalAmount ?? ""));
+    setDescription(investmentData[0]?.description ?? "");
+    setTransactionType(
+      investmentData[0]?.withdrawFlag === "Y"
+        ? "Withdraw"
+        : investmentData[0]?.soldFlag === "Y"
+        ? "Sold"
+        : "Investment"
+    );
+
+    isInitialLoad.current = true;
+  }, [visible, investmentData]);
+
   const handleSave = async () => {
     try {
       investmentData.map((inv) =>
         console.log("Investment to update:", inv.invested)
       );
-      const totalEntered = investmentDataState.reduce(
-        (sum, r) => sum + (parseFloat((r.invested || "0").toString()) || 0),
-        0
-      );
+      const totalEntered = investmentDataState.reduce((sum, r) => {
+        if (transactionType === "Withdraw") {
+          return sum + Number(r.withdrawn ?? 0);
+        }
+
+        if (transactionType === "Sold") {
+          return sum + Number(r.soldAmount ?? 0);
+        }
+
+        // Investment
+        return sum + Number(r.invested ?? 0);
+      }, 0);
+
       console.log("handleSave called with: ", totalEntered, expected);
-      if (first.supplierId == null && Math.round((totalEntered - expected) * 100) / 100 !== 0) {
+      const enteredTotal = Number(totalAmount);
+
+      if (
+        first.supplierId == null &&
+        Math.round((totalEntered - enteredTotal) * 100) / 100 !== 0
+      ) {
         Alert.alert("Error", "Total entered does not match expected amount");
         return;
       }
@@ -155,13 +228,21 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
           createdBy: inv.createdBy,
           cropId: inv.cropId,
           description: description || inv.description,
-          investable: Number(/* match?.actual ||  */ inv.investable || 0),
-          invested: Number(/* match?.investing ||  */ inv.invested || 0),
+          invested:
+            transactionType === "Investment" ? Number(inv.invested || 0) : 0,
+          investable:
+            transactionType === "Investment" ? Number(inv.investable || 0) : 0,
+          withdrawn:
+            transactionType === "Withdraw" ? Number(inv.withdrawn || 0) : 0,
+          soldAmount:
+            transactionType === "Sold" ? Number(inv.soldAmount || 0) : 0,
+          //      investable: Number(/* match?.actual ||  */ inv.investable || 0),
+          //    invested: Number(/* match?.investing ||  */ inv.invested || 0),
           partnerId: inv.partnerId,
           share: inv.share,
-          soldAmount: inv.soldAmount,
+          //  soldAmount: inv.soldAmount,
           soldFlag: inv.soldFlag,
-          withdrawn: inv.withdrawn,
+          //withdrawn: inv.withdrawn,
           comments: inv.comments,
           withdrawFlag: inv.withdrawFlag,
           partnerName: inv.partnerName,
@@ -206,81 +287,86 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (visible) {
+      isInitialLoad.current = true;
+    }
+  }, [visible]);
+
   // Auto-update when totalAmount or splitMode changes
   // ✅ To skip first recalculation when popup opens
   const isInitialLoad = useRef(true);
 
   useEffect(() => {
     if (isInitialLoad.current) {
-      console.log("Initial load - skipping recalculation");
       isInitialLoad.current = false;
-      console.log(" Check this ", investmentDataState);
       return;
     }
-
-    console.log("Recalculating partner investments for totalAmount change");
 
     if (
       !totalAmount ||
       Number(totalAmount) <= 0 ||
       !investmentDataState?.length
     ) {
-      // Reset invested values to 0.00 (as number)
-      setInvestmentDataState((prev) =>
-        prev.map((r) => ({
-          ...r,
-          invested: 0,
-          investable: 0,
-          actual: 0,
-        }))
-      );
       return;
     }
 
-    const total = parseFloat(totalAmount);
+    const total = Number(totalAmount);
 
     const updated = investmentDataState.map((r) => {
       const share = Number(r.share) || 0;
-      let invested = 0;
+      const value =
+        splitMode === "equal"
+          ? total / investmentDataState.length
+          : (total * share) / 100;
 
-      if (splitMode === "share") {
-        invested = (total * share) / 100;
-      } else if (splitMode === "equal") {
-        invested = total / investmentDataState.length;
-      } else {
-        invested = Number(r.invested) || 0; // manual entry
+      if (transactionType === "Withdraw") {
+        return {
+          ...r,
+          withdrawn: Number(value.toFixed(2)),
+        };
       }
 
+      if (transactionType === "Sold") {
+        return {
+          ...r,
+          soldAmount: Number(value.toFixed(2)),
+        };
+      }
+
+      // Investment
       return {
         ...r,
-        invested: Number(invested.toFixed(2)),
-        investable: Number(invested.toFixed(2)),
-        actual: Number(invested.toFixed(2)),
+        invested: Number(value.toFixed(2)),
+        investable: Number(value.toFixed(2)),
       };
     });
 
     setInvestmentDataState(updated);
-  }, [totalAmount, splitMode]);
+  }, [totalAmount, transactionType]);
 
   const openSheet = () => {
+    // 🔒 Block for Withdraw / Sold
+
     if (!totalAmount || Number(totalAmount) <= 0) {
       Alert.alert("Error", "Please enter a valid amount first");
       return;
     }
+
     setSheetTempMode(splitMode);
 
-    // Prepare temp share values based on current split mode
+    // ✅ Prepare temp values correctly for EDIT
     if (splitMode === "share") {
-      // Actual invested amounts for partners in share mode
-      setShareValues(
-        investmentDataState.map((r) => parseFloat(String(r.invested ?? "0")))
-      );
+      // load current invested values
+      setShareValues(investmentDataState.map((r) => Number(r.invested ?? 0)));
     } else if (splitMode === "equal") {
-      const per = expected / partners.length;
-      setShareValues(investmentDataState.map(() => per));
+      const per = expected / investmentDataState.length;
+      setShareValues(investmentDataState.map(() => Number(per.toFixed(2))));
     } else {
-      setShareValues(investmentDataState.map((r) => parseFloat("0")));
+      // ✅ MANUAL → load existing values (NOT zero)
+      setShareValues(investmentDataState.map((r) => Number(r.invested ?? 0)));
     }
+
     setSheetVisible(true);
   };
 
@@ -433,27 +519,6 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     }
   }, [visible]);
 
-  useEffect(() => {
-    if (!totalAmount || !investmentData?.length) return;
-
-    const total = parseFloat(totalAmount);
-    if (isNaN(total) || total <= 0) return;
-
-    // Recalculate partner investments based on share
-    const updatedRows = investmentDataState.map((inv) => {
-      const share = parseFloat((inv.share ?? 0).toString());
-      const invested = (total * share) / 100;
-
-      return {
-        ...inv,
-        invested: invested.toFixed(2),
-        investable: invested.toFixed(2), // same as actual for now
-      };
-    });
-
-    setRows(updatedRows);
-  }, [totalAmount, investmentData]);
-
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.container}>
@@ -572,9 +637,14 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                       <View style={styles.partnerRightBox}>
                         <Text style={styles.partnerInvestedText}>
                           {Number(
-                            r.invested ?? r.withdrawn ?? r.soldAmount ?? 0
+                            transactionType === "Withdraw"
+                              ? r.withdrawn
+                              : transactionType === "Sold"
+                              ? r.soldAmount
+                              : r.invested
                           ).toFixed(2)}
                         </Text>
+
                         <Text style={styles.partnerStatusText}>
                           {extraText(r)}
                         </Text>

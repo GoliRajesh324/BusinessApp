@@ -202,6 +202,12 @@ export default function RootLayout() {
                 headerShown: false,
               }}
             />
+              <Stack.Screen
+              name="chartsScreen"
+              options={{
+                headerShown: false,
+              }}
+            />
             <Stack.Screen
               name="addCategory"
               options={{

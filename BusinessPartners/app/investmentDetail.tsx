@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -40,9 +41,7 @@ export default function InvestmentDetail() {
     try {
       const res = await fetch(
         `${BASE_URL}/api/investment/all-group-investments/${investmentGroupId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       //   console.log("Fetching business name:", businessName);
       if (!res.ok) throw new Error("Failed to fetch group investments");
@@ -59,6 +58,46 @@ export default function InvestmentDetail() {
       console.error(err);
       Alert.alert("Error", "Failed to fetch group investments");
     }
+  };
+
+  const normalizeForEditPopup = (rows: InvestmentDTO[]) => {
+    if (!rows.length) return [];
+
+    return rows.map((inv) => {
+      // SOLD
+      if (inv.soldFlag === "Y") {
+        return {
+          ...inv,
+          transactionType: "Sold",
+          invested: 0,
+          investable: 0,
+          withdrawn: 0,
+          soldAmount: Number(inv.soldAmount ?? 0),
+        };
+      }
+
+      // WITHDRAW
+      if (inv.withdrawFlag === "Y") {
+        return {
+          ...inv,
+          transactionType: "Withdraw",
+          invested: 0,
+          investable: 0,
+          soldAmount: 0,
+          withdrawn: Number(inv.withdrawn ?? 0),
+        };
+      }
+
+      // INVESTMENT
+      return {
+        ...inv,
+        transactionType: "Investment",
+        invested: Number(inv.invested ?? 0),
+        investable: Number(inv.investable ?? inv.invested ?? 0),
+        soldAmount: 0,
+        withdrawn: 0,
+      };
+    });
   };
 
   const formatAmount = (v: any) =>
@@ -101,7 +140,7 @@ export default function InvestmentDetail() {
   }, [investments]);
  */
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -109,10 +148,11 @@ export default function InvestmentDetail() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Transaction Details</Text>
         <View style={styles.headerIcons}>
-          {/* Header-level Edit/Delete */}
           <TouchableOpacity
-            onPress={() => setEditVisible(true)}
-            style={{ marginRight: 16 }}
+            onPress={() => {
+            setEditInvestments(normalizeForEditPopup(editInvestments));
+              setEditVisible(true);
+            }}
           >
             <MaterialIcons name="edit" size={26} color="#fff" />
           </TouchableOpacity>
@@ -124,7 +164,11 @@ export default function InvestmentDetail() {
         </View>
       </View>
 
-      <ScrollView style={styles.content}>
+      {/* Scrollable Content */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: 80 }} // <-- FIX
+      >
         {investments.length === 0 ? (
           <Text>No investments found for this group</Text>
         ) : (
@@ -141,19 +185,61 @@ export default function InvestmentDetail() {
               <Text style={{ fontWeight: "700", fontSize: 14 }}>
                 {inv.description ?? inv.comments ?? "-"}
               </Text>
-              <Text>Partner: {inv.partnerName ?? inv.supplierName ?? "-"}</Text>
-              <Text>
-                Total Amount: ₹{formatAmount(inv.totalAmount ?? inv.invested)}
-              </Text>
-              <Text>Invested: ₹{formatAmount(inv.invested ?? 0)}</Text>
-              <Text>Split Type: {inv.splitType ?? "-"}</Text>
-              <Text>Created At: {formatDateTime(inv.createdAt ?? "")}</Text>
+
+              {inv.investmentId != null && (
+                <Text>Investment Id: {inv.investmentId}</Text>
+              )}
+              {inv.createdAt && (
+                <Text>Created At: {formatDateTime(inv.createdAt)}</Text>
+              )}
+              {inv.createdBy && <Text>Created By: {inv.createdBy}</Text>}
+              {inv.cropId != null && <Text>Crop Id: {inv.cropId}</Text>}
+              {inv.description && <Text>Description: {inv.description}</Text>}
+              {inv.investable != null && (
+                <Text>Investable: {inv.investable}</Text>
+              )}
+              {inv.invested != null && <Text>Invested: {inv.invested}</Text>}
+              {inv.partnerId != null && (
+                <Text>Partner Id: {inv.partnerId}</Text>
+              )}
+              {inv.share != null && <Text>Share: {inv.share}</Text>}
+              {inv.soldAmount != null && (
+                <Text>Sold Amount: {inv.soldAmount}</Text>
+              )}
+              {inv.soldFlag && <Text>Sold Flag: {inv.soldFlag}</Text>}
+              {inv.withdrawn != null && <Text>Withdrawn: {inv.withdrawn}</Text>}
+              {inv.comments && <Text>Comments: {inv.comments}</Text>}
+              {inv.withdrawFlag && (
+                <Text>Withdraw Flag: {inv.withdrawFlag}</Text>
+              )}
+              {inv.partnerName && <Text>Partner Name: {inv.partnerName}</Text>}
+              {inv.investmentGroupId != null && (
+                <Text>Investment Group Id: {inv.investmentGroupId}</Text>
+              )}
+              {inv.totalAmount != null && (
+                <Text>Total Amount: {inv.totalAmount}</Text>
+              )}
+              {inv.imageUrl && <Text>Image URL: {inv.imageUrl}</Text>}
+              {inv.splitType && <Text>Split Type: {inv.splitType}</Text>}
+              {inv.supplierName && (
+                <Text>Supplier Name: {inv.supplierName}</Text>
+              )}
+              {inv.supplierId != null && (
+                <Text>Supplier Id: {inv.supplierId}</Text>
+              )}
+              {inv.updatedBy && <Text>Updated By: {inv.updatedBy}</Text>}
+              {inv.reduceLeftOver != null && (
+                <Text>Reduce Left Over: {inv.reduceLeftOver}</Text>
+              )}
+              {inv.reduceLeftOverFlag && (
+                <Text>Reduce Left Over Flag: {inv.reduceLeftOverFlag}</Text>
+              )}
             </View>
           ))
         )}
       </ScrollView>
 
-      {/* Edit Investment Popup */}
+      {/* Popup */}
       {editVisible && investmentGroupId && (
         <EditInvestmentPopup
           visible={editVisible}
@@ -164,7 +250,7 @@ export default function InvestmentDetail() {
           onUpdated={fetchGroupInvestments}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -175,7 +261,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 60,
+    paddingTop: 10,
     paddingBottom: 12,
     backgroundColor: "#4f93ff",
     elevation: 4,
@@ -188,5 +274,5 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   headerIcons: { flexDirection: "row" },
-  content: { padding: 16 },
+  content: { padding: 16, flex: 1 },
 });

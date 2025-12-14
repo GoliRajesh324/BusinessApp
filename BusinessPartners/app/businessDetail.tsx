@@ -10,7 +10,6 @@ import {
   UIManager,
   View,
 } from "react-native";
-
 import DropDownPicker from "react-native-dropdown-picker";
 
 import { Entypo, Ionicons } from "@expo/vector-icons";
@@ -18,6 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
+import { useFocusEffect } from "@react-navigation/native";
 import BASE_URL from "../src/config/config";
 import AddInvestmentPopup from "./addInvestmentPopup";
 import InvestmentAudit from "./components/InvestmentAudit";
@@ -45,6 +45,18 @@ export default function BusinessDetail() {
     businessId?: string;
     businessName?: string;
   }>();
+
+  const [summaryFilter, setSummaryFilter] = useState("ALL");
+  const [summaryDropdownOpen, setSummaryDropdownOpen] = useState(false);
+
+  const summaryOptions = [
+    "ALL",
+    "TODAY",
+    "YESTERDAY",
+    "THIS MONTH",
+    "LAST MONTH",
+  ];
+
   const router = useRouter();
 
   // //console.log("➡️ Params received:", businessId, businessName);
@@ -286,6 +298,7 @@ export default function BusinessDetail() {
       );
       if (!response.ok) throw new Error("Failed to fetch investments");
       const data = await response.json();
+      console.log("➡️ Fetched investments:", data);
       setAllInvestments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
@@ -334,6 +347,21 @@ export default function BusinessDetail() {
       console.error("❌ Error fetching business details:", err);
     }
   };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      // If token not loaded yet → skip refresh
+      if (!token) {
+        console.log("⏳ Token not loaded yet → skipping focus refresh");
+        return;
+      }
+      console.log("🔄 BusinessDetail focused → refreshing all APIs");
+      fetchInvestments();
+      fetchBusinessDetails();
+      fetchSuppliers();
+      //fetchPartners();
+    }, [safeBusinessId, token])
+  );
 
   const filteredInvestments = useMemo(() => {
     if (!allInvestments) return [];
@@ -535,6 +563,8 @@ export default function BusinessDetail() {
     const totalAmount = inv?.totalAmount ?? 0;
     const invested = inv?.invested ?? 0;
     const investable = inv?.investable ?? 0;
+    const soldAmount = inv?.soldAmount ?? 0;
+    const withdrawn = inv?.withdrawn ?? 0;
     const splitType = inv?.splitType ?? "-";
     const createdAt = inv?.createdAt || "-";
     const createdBy = inv?.createdBy || "-";
@@ -580,18 +610,63 @@ export default function BusinessDetail() {
 
         {/* Amounts */}
         <View style={{ marginTop: 10 }}>
-          <Text style={styles.investedLabel}>Invested</Text>
-          <Text style={styles.investedValue}>₹{formatAmount(invested)}</Text>
+          {/* Investment Layout */}
+          {type === "Investment" && (
+            <>
+              <Text style={styles.investedLabel}>Invested</Text>
+              <Text style={styles.investedValue}>
+                ₹{formatAmount(invested)}
+              </Text>
 
-          <View style={styles.amountRow}>
-            <Text style={styles.amountLabel}>Investable</Text>
-            <Text style={styles.amountValue}>₹{formatAmount(investable)}</Text>
-          </View>
+              <View style={styles.amountRow}>
+                <Text style={styles.amountLabel}>Investable</Text>
+                <Text style={styles.amountValue}>
+                  ₹{formatAmount(investable)}
+                </Text>
+              </View>
 
-          <View style={styles.amountRow}>
-            <Text style={styles.amountLabel}>Total Amount</Text>
-            <Text style={styles.amountValue}>₹{formatAmount(totalAmount)}</Text>
-          </View>
+              <View style={styles.amountRow}>
+                <Text style={styles.amountLabel}>Total Amount</Text>
+                <Text style={styles.amountValue}>
+                  ₹{formatAmount(totalAmount)}
+                </Text>
+              </View>
+            </>
+          )}
+
+          {/* Sold Layout */}
+          {type === "Sold" && (
+            <>
+              <Text style={styles.investedLabel}>Your Sold Amount</Text>
+              <Text style={styles.investedValue}>
+                ₹{formatAmount(soldAmount)}
+              </Text>
+
+              <View style={styles.amountRow}>
+                <Text style={styles.amountLabel}>Total Sold Amount</Text>
+                <Text style={styles.amountValue}>
+                  ₹{formatAmount(totalAmount)}
+                </Text>
+              </View>
+            </>
+          )}
+
+          {/* Withdraw Layout */}
+          {type === "Withdraw" && (
+            <>
+              <Text style={styles.investedLabel}>Your Withdrawal</Text>
+              <Text style={styles.investedValue}>
+                ₹{formatAmount(withdrawn)}
+              </Text>
+
+              <View style={styles.amountRow}>
+                <Text style={styles.amountLabel}>Total Withdrawal</Text>
+                <Text style={styles.amountValue}>
+                  ₹{formatAmount(totalAmount)}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
 
         {/* Footer */}
@@ -650,8 +725,57 @@ export default function BusinessDetail() {
           {/* Header */}
           <View style={styles.summaryHeaderRow}>
             <Text style={styles.summaryTitle}>Business Summary</Text>
-            <Ionicons name="stats-chart" size={22} color="#2563eb" />
+
+            {/* 📌 ICON + DROPDOWN BUTTON */}
+            <TouchableOpacity
+              onPress={() => setSummaryDropdownOpen(!summaryDropdownOpen)}
+              style={{ flexDirection: "row", alignItems: "center" }}
+            >
+              <Text
+                style={{
+                  marginLeft: 6,
+                  fontSize: 12,
+                  fontWeight: "600",
+                  color: "#2563eb",
+                  flexShrink: 0, // IMPORTANT FIX
+                }}
+              >
+                {summaryFilter.toLowerCase()}
+              </Text>
+
+              <Ionicons
+                name={summaryDropdownOpen ? "chevron-up" : "chevron-down"}
+                size={18}
+                color="#2563eb"
+                style={{ marginLeft: 4 }}
+              />
+            </TouchableOpacity>
           </View>
+
+          {/* 📌 SMALL DROPDOWN LIST */}
+          {summaryDropdownOpen && (
+            <View style={styles.summaryDropdownBox}>
+              {summaryOptions.map((opt, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => {
+                    setSummaryFilter(opt);
+                    setSummaryDropdownOpen(false);
+                  }}
+                  style={styles.summaryDropdownItem}
+                >
+                  <Text
+                    style={[
+                      styles.summaryDropdownText,
+                      { color: opt === summaryFilter ? "#2563eb" : "#000" },
+                    ]}
+                  >
+                    {opt}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           {/* Row 1 */}
           <View style={styles.summaryRowNew}>
@@ -677,7 +801,6 @@ export default function BusinessDetail() {
           <View style={styles.summaryRowNew}>
             <View style={styles.summaryBlock}>
               <Text style={styles.summaryLabelNew}>Available Money</Text>
-
               <Text
                 style={[
                   styles.summaryValueSecondary,
@@ -733,7 +856,6 @@ export default function BusinessDetail() {
             </ScrollView>
           </View>
         )} */}
-
 
         {/* --- FILTER SECTION --- */}
         <View style={{ marginVertical: 12, zIndex: 1000 }}>
@@ -875,6 +997,15 @@ export default function BusinessDetail() {
         <TouchableOpacity
           style={styles.bottomButtonIcon}
           onPress={() => alert("Charts Feature coming soon")}
+          /* onPress={() =>
+            router.push({
+              pathname: "/chartsScreen",
+              params: {
+                businessId: safeBusinessId,
+                businessName: safeBusinessName,
+              },
+            })
+          } */
         >
           <Ionicons name="bar-chart" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Charts</Text>
@@ -1575,6 +1706,29 @@ const styles = StyleSheet.create({
   summaryDivider: {
     height: 1,
     backgroundColor: "#e5e7eb",
-    marginVertical: 12,
+    marginVertical: 2,
+  },
+
+  summaryDropdownBox: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    overflow: "hidden",
+    elevation: 4,
+    zIndex: 999,
+  },
+
+  summaryDropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
+
+  summaryDropdownText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

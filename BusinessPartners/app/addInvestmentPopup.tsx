@@ -17,7 +17,7 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
+  View,
 } from "react-native";
 import BASE_URL from "../src/config/config";
 import SupplierPopup from "./SupplierPopup";
@@ -158,9 +158,9 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
           })
         );
         console.log({ mappedRows });
-      if (mappedRows.length > 0) {
-        setRows(mappedRows);
-      }
+        if (mappedRows.length > 0) {
+          setRows(mappedRows);
+        }
       } catch (err) {
         console.error("❌ Error fetching business info:", err);
       }
@@ -296,7 +296,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
     }
 
     console.log("End of Applying split options sheet with mode:", shareValues);
-     console.log("rows", rows);
+    console.log("rows", rows);
     setSheetVisible(false);
   };
 
@@ -333,6 +333,27 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
       return;
     }
+
+    // ❌ Validation: used leftover should NOT exceed available leftover
+    for (const r of rows) {
+      if (r.checked) {
+        const used = Number(r.reduceLeftOver || 0);
+        const available = Number(r.leftOver || 0);
+
+        if (used > available) {
+          Alert.alert(
+            "Invalid Amount",
+            `Used amount (₹${used.toFixed(
+              2
+            )}) cannot be greater than available money (₹${available.toFixed(
+              2
+            )}).`
+          );
+          return; // ⛔ STOP SAVE
+        }
+      }
+    }
+
     const totalEntered = rows.reduce(
       (sum, r) => sum + (parseFloat(r.actual) || 0),
       0
@@ -503,7 +524,12 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   };
 
   const extraText = (r: any) => {
-    console.log("Calculating extraText for Name:", r.name, r.actual, r.investing);  
+    console.log(
+      "Calculating extraText for Name:",
+      r.name,
+      r.actual,
+      r.investing
+    );
     console.log("Calculating extraText for actual:", r.actual);
     console.log("Calculating extraText for investing:", r.investing);
     const actualNum = parseFloat(r.actual) || 0;

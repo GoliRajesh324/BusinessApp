@@ -597,7 +597,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
           )}
 
           {/* Supplier Name */}
-          <TextInput
+          {supplierName?.trim() !== "" && (<TextInput
             style={{
               borderWidth: 1,
               borderColor: "#ccc",
@@ -620,7 +620,8 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
               );
             }}
           />
-
+          )}
+          
           {/* Partner Cards */}
           <View style={{ marginTop: 12 }}>
             <Text style={styles.sectionTitle}>Partners</Text>

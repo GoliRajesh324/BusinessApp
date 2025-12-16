@@ -65,6 +65,7 @@ interface PartnerRow {
 }
 
 const SLIDER_THUMB_SIZE = 18;
+const shakeAnimations = useRef<Record<string, Animated.Value>>({}).current;
 
 const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   visible,
@@ -117,6 +118,8 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   }, []);
 
   const createdBy = userName;
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const hasRowErrors = Object.keys(rowErrors).length > 0;
 
   // ✅ Fetch business info with leftover + partnerDTO
   useEffect(() => {
@@ -334,25 +337,61 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
       return;
     }
 
-    // ❌ Validation: used leftover should NOT exceed available leftover
-    for (const r of rows) {
+    // ❌ Validate leftover usage
+    const errors: Record<string, string> = {};
+
+    rows.forEach((r) => {
       if (r.checked) {
         const used = Number(r.reduceLeftOver || 0);
         const available = Number(r.leftOver || 0);
 
         if (used > available) {
-          Alert.alert(
-            "Invalid Amount",
-            `Used amount (₹${used.toFixed(
-              2
-            )}) cannot be greater than available money (₹${available.toFixed(
-              2
-            )}).`
-          );
-          return; // ⛔ STOP SAVE
+          errors[r.id] = `Used amount ₹${used.toFixed(
+            2
+          )} exceeds available ₹${available.toFixed(2)}`;
         }
       }
+    });
+
+    // ⛔ Stop save if any error
+    if (Object.keys(errors).length > 0) {
+      setRowErrors(errors);
+
+      // 🔥 Trigger shake for invalid cards
+      Object.keys(errors).forEach((id) => {
+        if (!shakeAnimations[id]) {
+          shakeAnimations[id] = new Animated.Value(0);
+        }
+
+        Animated.sequence([
+          Animated.timing(shakeAnimations[id], {
+            toValue: 10,
+            duration: 50,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnimations[id], {
+            toValue: -10,
+            duration: 50,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnimations[id], {
+            toValue: 6,
+            duration: 50,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnimations[id], {
+            toValue: 0,
+            duration: 50,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+
+      return;
     }
+
+    // ✅ Clear errors if valid
+    setRowErrors({});
 
     const totalEntered = rows.reduce(
       (sum, r) => sum + (parseFloat(r.actual) || 0),
@@ -554,9 +593,14 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             onPress={handleSave}
             style={[
               styles.headerRight,
-              { opacity: !totalAmount || Number(totalAmount) <= 0 ? 0.5 : 1 },
+              {
+                opacity:
+                  !totalAmount || Number(totalAmount) <= 0 || hasRowErrors
+                    ? 0.5
+                    : 1,
+              },
             ]}
-            disabled={!totalAmount || Number(totalAmount) <= 0}
+            disabled={!totalAmount || Number(totalAmount) <= 0 || hasRowErrors}
           >
             <Text style={styles.saveText}>Save</Text>
           </TouchableOpacity>
@@ -612,7 +656,24 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             >
               {rows.map((r, i) => (
                 <View key={r.id} style={{ marginBottom: 12 }}>
-                  <View style={styles.partnerCard}>
+                  <Animated.View
+                    style={[
+                      styles.partnerCard,
+                      rowErrors[r.id] && {
+                        borderColor: "red",
+                        borderWidth: 2,
+                        backgroundColor: "#fff5f5",
+                      },
+                      {
+                        transform: [
+                          {
+                            translateX:
+                              shakeAnimations[r.id] || new Animated.Value(0),
+                          },
+                        ],
+                      },
+                    ]}
+                  >
                     {/* Top Row = Partner Left + Partner Right */}
                     <View
                       style={{
@@ -705,24 +766,54 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
                           </TouchableOpacity>
 
                           {r.checked && (
-                            <TextInput
-                              style={styles.leftOverInput}
-                              keyboardType="numeric"
-                              placeholder="Enter amount to use..."
-                              placeholderTextColor="#888"
-                              value={r.reduceLeftOver ?? ""}
-                              onChangeText={(val) => {
-                                setRows((prev) => {
-                                  const next = [...prev];
-                                  next[i] = { ...next[i], reduceLeftOver: val };
-                                  return next;
-                                });
-                              }}
-                            />
+                            <>
+                              <TextInput
+                                style={styles.leftOverInput}
+                                keyboardType="numeric"
+                                placeholder="Enter amount to use..."
+                                placeholderTextColor="#888"
+                                value={r.reduceLeftOver ?? ""}
+                                onChangeText={(val) => {
+                                  setRows((prev) => {
+                                    const next = [...prev];
+                                    next[i] = {
+                                      ...next[i],
+                                      reduceLeftOver: val,
+                                    };
+                                    return next;
+                                  });
+
+                                  // ✅ Auto-clear error when value becomes valid
+                                  const used = Number(val || 0);
+                                  const available = Number(r.leftOver || 0);
+
+                                  if (used <= available) {
+                                    setRowErrors((prev) => {
+                                      const copy = { ...prev };
+                                      delete copy[r.id];
+                                      return copy;
+                                    });
+                                  }
+                                }}
+                              />
+                              {/* ❌ Inline error message */}
+                              {rowErrors[r.id] && (
+                                <Text
+                                  style={{
+                                    color: "red",
+                                    fontSize: 12,
+                                    marginTop: 4,
+                                    marginLeft: 6,
+                                  }}
+                                >
+                                  {rowErrors[r.id]}
+                                </Text>
+                              )}
+                            </>
                           )}
                         </View>
                       )}
-                  </View>
+                  </Animated.View>
                 </View>
               ))}
             </ScrollView>

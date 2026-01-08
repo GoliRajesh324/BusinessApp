@@ -27,7 +27,7 @@ export default function ProfileScreen() {
       await AsyncStorage.removeItem("userId");
       router.replace("/login");
     } catch (err) {
-      console.error("❌ Logout error:", err);
+      console.log("❌ Logout error:", err);
       Alert.alert("Error", "Failed to logout");
     }
   };
@@ -50,7 +50,7 @@ export default function ProfileScreen() {
         console.log("Share dismissed");
       }
     } catch (error) {
-      console.error("Error sharing app:", error);
+      console.log("Error sharing app:", error);
     }
   };
 
@@ -94,7 +94,14 @@ export default function ProfileScreen() {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.title}>Profile</Text>
-          <TouchableOpacity>
+          <TouchableOpacity
+            onPress={() =>
+              Alert.alert(
+                "Coming Soon",
+                "Edit profile feature is coming soon 🚀"
+              )
+            }
+          >
             <Feather name="edit" size={20} color="#fff" />
           </TouchableOpacity>
         </View>

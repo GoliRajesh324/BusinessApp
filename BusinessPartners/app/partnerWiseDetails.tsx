@@ -3,11 +3,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import BASE_URL from "../src/config/config";
 
@@ -44,7 +44,7 @@ export default function PartnerWiseDetails() {
 
         if (data?.partners) setPartners(data.partners);
       } catch (err) {
-        console.error("❌ Error fetching partner details:", err);
+        console.log("❌ Error fetching partner details:", err);
       }
     };
 
@@ -75,7 +75,7 @@ export default function PartnerWiseDetails() {
           });
         } */
       } catch (err) {
-        console.error("❌ Error fetching business info:", err);
+        console.log("❌ Error fetching business info:", err);
       }
     };
 

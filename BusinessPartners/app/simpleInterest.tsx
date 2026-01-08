@@ -1,4 +1,4 @@
-// SimpleInterestPage.tsx 
+// SimpleInterestPage.tsx
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -52,7 +52,7 @@ const toTitleCase = (str?: string) => {
     .join(" ");
 };
 
-const formatDateForDisplay = (dateStr?: string) => {
+const formatDateForDisplay = (dateStr?: string) => { 
   if (!dateStr) return "";
   const parts = dateStr.split("-");
   if (parts.length !== 3) return dateStr;
@@ -65,7 +65,6 @@ const formatAmountIndian = (amount?: number) => {
   return Number(amount).toLocaleString("en-IN");
 };
 
-
 export default function SimpleInterestPage() {
   const router = useRouter();
   const [persons, setPersons] = useState<Interest[]>([]);
@@ -76,6 +75,7 @@ export default function SimpleInterestPage() {
   const [saving, setSaving] = useState(false);
   const [showActive, setShowActive] = useState(true);
   const [formData, setFormData] = useState<Partial<Interest>>(emptyForm());
+  const [showSummaryAmounts, setShowSummaryAmounts] = useState(false);
 
   useEffect(() => {
     fetchAll();
@@ -104,7 +104,7 @@ export default function SimpleInterestPage() {
       const data = await getAllInterests();
       setPersons(data || []);
     } catch (e) {
-      console.error(e);
+      console.log(e);
       Alert.alert("Error", "Failed to fetch interests");
     } finally {
       setLoading(false);
@@ -160,17 +160,16 @@ export default function SimpleInterestPage() {
     setShowModal(true);
   };
 
-const handleDownloadPDF = async () => {
-  await generateInterestPDF(
-    grouped,
-    totalAmountAll,
-    totalTakenAll,
-    totalGivenAll,
-    formatAmountIndian,
-    formatDateForDisplay
-  );
-};
-
+  const handleDownloadPDF = async () => {
+    await generateInterestPDF(
+      grouped,
+      totalAmountAll,
+      totalTakenAll,
+      totalGivenAll,
+      formatAmountIndian,
+      formatDateForDisplay
+    );
+  };
 
   const handleSave = async () => {
     if (!formData.name || formData.amount == null) {
@@ -206,7 +205,7 @@ const handleDownloadPDF = async () => {
       setEditingId(null);
       setFormData(emptyForm());
     } catch (e) {
-      console.error(e);
+      console.log(e);
       Alert.alert("Error", "Something went wrong while saving.");
     } finally {
       setSaving(false);
@@ -221,7 +220,10 @@ const handleDownloadPDF = async () => {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
             <Ionicons name="arrow-back" size={22} color="#222" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Interest Money</Text>
@@ -232,7 +234,9 @@ const handleDownloadPDF = async () => {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Your Remaining Money</Text>
             <Text style={[styles.summaryAmount, styles.totalValue]}>
-              ₹ {formatAmountIndian(totalAmountAll)}
+              {showSummaryAmounts
+                ? `₹ ${formatAmountIndian(totalAmountAll)}`
+                : "********"}
             </Text>
           </View>
 
@@ -241,7 +245,9 @@ const handleDownloadPDF = async () => {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Money Taken By You</Text>
             <Text style={[styles.summaryAmount, styles.givenValue]}>
-              ₹ {formatAmountIndian(totalTakenAll)}
+              {showSummaryAmounts
+                ? `₹ ${formatAmountIndian(totalTakenAll)}`
+                : "********"}
             </Text>
           </View>
 
@@ -250,20 +256,40 @@ const handleDownloadPDF = async () => {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Money Given By You</Text>
             <Text style={[styles.summaryAmount, styles.takenValue]}>
-              ₹ {formatAmountIndian(totalGivenAll)}
+              {showSummaryAmounts
+                ? `₹ ${formatAmountIndian(totalGivenAll)}`
+                : "********"}
             </Text>
           </View>
 
           <View style={styles.summaryActions}>
-            <TouchableOpacity
-              style={styles.activeBtn}
-              onPress={() => setShowActive((s) => !s)}
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
             >
-              <Text style={styles.activeText}>
-                {showActive ? "Active" : "InActive"} ⏷
-              </Text>
-            </TouchableOpacity>
+              {/* Active / InActive */}
+              <TouchableOpacity
+                style={styles.activeBtn}
+                onPress={() => setShowActive((s) => !s)}
+              >
+                <Text style={styles.activeText}>
+                  {showActive ? "Active" : "InActive"} ⏷
+                </Text>
+              </TouchableOpacity>
 
+              {/* Eye Button */}
+              <TouchableOpacity
+                style={styles.eyeBtn}
+                onPress={() => setShowSummaryAmounts((s) => !s)}
+              >
+                <Ionicons
+                  name={showSummaryAmounts ? "eye" : "eye-off"}
+                  size={18}
+                  color="#007bff"
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* PDF */}
             <TouchableOpacity style={styles.pdfBtn} onPress={handleDownloadPDF}>
               <Text style={styles.pdfText}>PDF</Text>
             </TouchableOpacity>
@@ -276,21 +302,32 @@ const handleDownloadPDF = async () => {
             <ActivityIndicator size="large" />
           </View>
         ) : (
-          <ScrollView style={styles.list} contentContainerStyle={{ paddingBottom: 120 }}>
+          <ScrollView
+            style={styles.list}
+            contentContainerStyle={{ paddingBottom: 120 }}
+          >
             {Object.keys(grouped).length === 0 && (
               <View style={styles.emptyBox}>
-                <Text style={styles.emptyText}>No records yet. Tap + to add.</Text>
+                <Text style={styles.emptyText}>
+                  No records yet. Tap + to add.
+                </Text>
               </View>
             )}
 
             {Object.keys(grouped).map((name) => {
               const records = grouped[name];
-              const netAmount = records.reduce((s, r) => s + (r.amount || 0), 0);
+              const netAmount = records.reduce(
+                (s, r) => s + (r.amount || 0),
+                0
+              );
               const type = records[0].type;
 
               return (
                 <View key={name} style={styles.personCard}>
-                  <TouchableOpacity style={styles.personHeader} onPress={() => toggleExpand(name)}>
+                  <TouchableOpacity
+                    style={styles.personHeader}
+                    onPress={() => toggleExpand(name)}
+                  >
                     <View style={{ flex: 1 }}>
                       <Text style={styles.personName} numberOfLines={1}>
                         {toTitleCase(name)}
@@ -304,7 +341,9 @@ const handleDownloadPDF = async () => {
                       <Text
                         style={[
                           styles.personAmount,
-                          type === "given" ? styles.givenValue : styles.takenValue,
+                          type === "given"
+                            ? styles.givenValue
+                            : styles.takenValue,
                         ]}
                       >
                         ₹ {formatAmountIndian(netAmount)}
@@ -320,25 +359,40 @@ const handleDownloadPDF = async () => {
                             <Text
                               style={[
                                 styles.recordType,
-                                rec.type === "given" ? styles.givenValue : styles.takenValue,
+                                rec.type === "given"
+                                  ? styles.givenValue
+                                  : styles.takenValue,
                               ]}
                             >
-                              {rec.type === "given" ? "Money Taken By You" : "Money Given By You"}
+                              {rec.type === "given"
+                                ? "Money Taken By You"
+                                : "Money Given By You"}
                             </Text>
 
-                            <TouchableOpacity onPress={() => onEditOpen(rec)} style={styles.recordEditBtn}>
-                              <FontAwesome name="edit" size={16} color="#007bff" />
+                            <TouchableOpacity
+                              onPress={() => onEditOpen(rec)}
+                              style={styles.recordEditBtn}
+                            >
+                              <FontAwesome
+                                name="edit"
+                                size={16}
+                                color="#007bff"
+                              />
                             </TouchableOpacity>
                           </View>
 
                           <View style={styles.recordRow}>
                             <Text style={styles.recordLabel}>Amount</Text>
-                            <Text style={styles.recordValue}>₹ {formatAmountIndian(rec.amount)}</Text>
+                            <Text style={styles.recordValue}>
+                              ₹ {formatAmountIndian(rec.amount)}
+                            </Text>
                           </View>
 
                           <View style={styles.recordRow}>
                             <Text style={styles.recordLabel}>Interest</Text>
-                            <Text style={styles.recordValue}>{rec.rate ?? 0} %</Text>
+                            <Text style={styles.recordValue}>
+                              {rec.rate ?? 0} %
+                            </Text>
                           </View>
 
                           <View style={styles.recordRow}>
@@ -351,7 +405,9 @@ const handleDownloadPDF = async () => {
                           {rec.comment ? (
                             <View style={styles.recordRow}>
                               <Text style={styles.recordLabel}>Comment</Text>
-                              <Text style={styles.recordValue}>{rec.comment}</Text>
+                              <Text style={styles.recordValue}>
+                                {rec.comment}
+                              </Text>
                             </View>
                           ) : null}
                         </View>
@@ -379,7 +435,9 @@ const handleDownloadPDF = async () => {
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{editingId ? "Edit Record" : "Add Record"}</Text>
+                <Text style={styles.modalTitle}>
+                  {editingId ? "Edit Record" : "Add Record"}
+                </Text>
                 <TouchableOpacity
                   onPress={() => {
                     if (!saving) {
@@ -405,16 +463,26 @@ const handleDownloadPDF = async () => {
 
                 <View style={styles.typeRow}>
                   <TouchableOpacity
-                    style={[styles.typeBtn, formData.type === "taken" && styles.typeBtnActive]}
-                    onPress={() => setFormData((p) => ({ ...p, type: "taken" }))}
+                    style={[
+                      styles.typeBtn,
+                      formData.type === "taken" && styles.typeBtnActive,
+                    ]}
+                    onPress={() =>
+                      setFormData((p) => ({ ...p, type: "taken" }))
+                    }
                     disabled={saving}
                   >
                     <Text style={styles.typeBtnText}>Money Given By You</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.typeBtn, formData.type === "given" && styles.typeBtnActive]}
-                    onPress={() => setFormData((p) => ({ ...p, type: "given" }))}
+                    style={[
+                      styles.typeBtn,
+                      formData.type === "given" && styles.typeBtnActive,
+                    ]}
+                    onPress={() =>
+                      setFormData((p) => ({ ...p, type: "given" }))
+                    }
                     disabled={saving}
                   >
                     <Text style={styles.typeBtnText}>Money Taken By You</Text>
@@ -468,7 +536,9 @@ const handleDownloadPDF = async () => {
                     placeholder="YYYY-MM-DD"
                     placeholderTextColor="#888"
                     value={formData.startDate ?? ""}
-                    onChangeText={(t) => setFormData((p) => ({ ...p, startDate: t }))}
+                    onChangeText={(t) =>
+                      setFormData((p) => ({ ...p, startDate: t }))
+                    }
                     editable={!saving}
                   />
                 </View>
@@ -482,7 +552,9 @@ const handleDownloadPDF = async () => {
                       placeholder="YYYY-MM-DD"
                       placeholderTextColor="#888"
                       value={formData.endDate ?? ""}
-                      onChangeText={(t) => setFormData((p) => ({ ...p, endDate: t }))}
+                      onChangeText={(t) =>
+                        setFormData((p) => ({ ...p, endDate: t }))
+                      }
                       editable={!saving}
                     />
                   </View>
@@ -493,7 +565,9 @@ const handleDownloadPDF = async () => {
                   placeholderTextColor="#888"
                   style={[styles.input, styles.textarea]}
                   value={formData.comment ?? ""}
-                  onChangeText={(t) => setFormData((p) => ({ ...p, comment: t }))}
+                  onChangeText={(t) =>
+                    setFormData((p) => ({ ...p, comment: t }))
+                  }
                   editable={!saving}
                   multiline
                 />
@@ -714,4 +788,13 @@ const styles = StyleSheet.create({
   cancelBtn: { backgroundColor: "#f13535" },
   saveBtn: { backgroundColor: "#007bff" },
   btnText: { fontWeight: "700", color: "#fff" },
+  eyeBtn: {
+  backgroundColor: "#eef6ff",
+  paddingHorizontal: 10,
+  paddingVertical: 6,
+  borderRadius: 8,
+  justifyContent: "center",
+  alignItems: "center",
+},
+
 });

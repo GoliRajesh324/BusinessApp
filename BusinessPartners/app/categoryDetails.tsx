@@ -29,9 +29,8 @@ export default function CategoryDetails() {
       try {
         const data = await fetchCategoryById(Number(categoryId), token);
         setCategory(data);
-       setCategory(data);
-console.log("🔥 Loaded Category:", data);
-
+        setCategory(data);
+        console.log("🔥 Loaded Category:", data);
       } catch (err) {
         console.log("❌ Error loading category:", err);
       } finally {
@@ -120,10 +119,10 @@ console.log("🔥 Loaded Category:", data);
 
 const styles = StyleSheet.create({
   container: {
-  flex: 1,
-  backgroundColor: "#fff",
-  padding: 20,
-},
+    flex: 1,
+    backgroundColor: "#fff",
+    padding: 20,
+  },
 
   loadingBox: {
     flex: 1,
@@ -131,18 +130,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  header: {
-    backgroundColor: "#4f93ff",
-    paddingTop: 45,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
+header: {
+  backgroundColor: "#4f93ff",
+  paddingVertical: 14,     // ✅ single padding
+  paddingTop: 40,      // ✅ to offset status bar
+  paddingHorizontal: 16,
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+},
 
-    flexDirection: "row",
+
+  headerLeft: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
     alignItems: "center",
-    justifyContent: "space-between",
   },
-
-  headerLeft: { width: 40 },
 
   headerTitle: {
     flex: 1,
@@ -159,7 +163,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  body: { padding: 20 },
+  body: { padding: 20},
   label: { marginTop: 16, fontWeight: "700", color: "#333" },
   value: {
     marginTop: 4,

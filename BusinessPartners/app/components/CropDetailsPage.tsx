@@ -1,16 +1,15 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-  Alert,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import BASE_URL from "../../src/config/config";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Import your popup components (you need to convert them to RN too)
 //import EditInvestmentPopup from "../components/EditInvestmentPopup";
@@ -64,7 +63,7 @@ const CropDetailsPage = () => {
           : []
       );
     } catch (err) {
-      console.error(err);
+      console.log(err);
       Alert.alert("Error", "Error fetching investments");
     }
   };

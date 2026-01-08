@@ -168,7 +168,7 @@ export default function AddCategory() {
           {/* Quantity Type */}
           <Text style={styles.label}>Quantity Type</Text>
           <View style={styles.qtyRow}>
-            {["KG", "LITRES"].map((v) => (
+            {["KG"].map((v) => (
               <TouchableOpacity
                 key={v}
                 onPress={() => setQuantityType(v as "KG" | "LITERS")}
@@ -283,7 +283,12 @@ const styles = StyleSheet.create({
   },
 
   /* Body */
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#fff",
+  },
+
   label: { fontWeight: "600", marginTop: 16 },
   input: {
     borderWidth: 1,

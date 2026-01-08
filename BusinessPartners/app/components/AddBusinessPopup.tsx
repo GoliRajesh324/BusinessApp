@@ -2,18 +2,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  Animated,
-  KeyboardAvoidingView,
-  PanResponder,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    Alert,
+    Animated,
+    KeyboardAvoidingView,
+    PanResponder,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from "react-native";
 import BASE_URL from "../../src/config/config";
 
@@ -219,7 +219,7 @@ export default function AddBusinessPopup({
       resetForm();
     } catch (err: any) {
       // Detailed logging for debugging 403
-      console.error("AddBusiness save error:", {
+      console.log("AddBusiness save error:", {
         status: err?.response?.status,
         data: err?.response?.data,
         message: err?.message,

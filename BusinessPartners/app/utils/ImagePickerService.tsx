@@ -49,7 +49,7 @@ export const pickImageFromCamera = async (): Promise<ImageFile | null> => {
       type: "image/jpeg",
     };
   } catch (err) {
-    console.error("Camera error:", err);
+    console.log("Camera error:", err);
     Alert.alert("Error", "Could not open camera.");
     return null;
   }
@@ -96,7 +96,7 @@ export const pickImageFromGallery = async (): Promise<ImageFile | null> => {
       type: "image/jpeg",
     };
   } catch (err) {
-    console.error("Gallery error:", err);
+    console.log("Gallery error:", err);
     Alert.alert("Error", "Could not open gallery.");
     return null;
   }

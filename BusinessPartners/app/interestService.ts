@@ -22,7 +22,7 @@ const getAuthHeaders = async () => {
       "Content-Type": "application/json",
     };
   } catch (e) {
-    console.error("Error getting token from storage", e);
+    console.log("Error getting token from storage", e);
     return { "Content-Type": "application/json" };
   }
 };
@@ -34,7 +34,7 @@ export const getAllInterests = async (): Promise<DTO[]> => {
     const response = await axios.get(`${BASE_URL}/api/interest/all/${userId}`, { headers });
     return response.data || [];
   } catch (error) {
-    console.error("Error fetching interests:", error);
+    console.log("Error fetching interests:", error);
     return [];
   }
 };
@@ -46,7 +46,7 @@ export const addInterest = async (dto: DTO): Promise<DTO | null> => {
     const response = await axios.post(`${BASE_URL}/api/interest/add/${userId}`, dto, { headers });
     return response.data;
   } catch (error) {
-    console.error("Error adding interest:", error);
+    console.log("Error adding interest:", error);
     return null;
   }
 };
@@ -58,7 +58,7 @@ export const updateInterest = async (id: string | number | null, dto: DTO): Prom
     const response = await axios.put(`${BASE_URL}/api/interest/update/${id}`, dto, { headers });
     return response.data;
   } catch (error) {
-    console.error("Error updating interest:", error);
+    console.log("Error updating interest:", error);
     return null;
   }
 };

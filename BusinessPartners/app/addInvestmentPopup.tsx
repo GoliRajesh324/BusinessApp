@@ -165,7 +165,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
           setRows(mappedRows);
         }
       } catch (err) {
-        console.error("❌ Error fetching business info:", err);
+        console.log("❌ Error fetching business info:", err);
       }
     };
 

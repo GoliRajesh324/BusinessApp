@@ -3,12 +3,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import BASE_URL from "../src/config/config";
 import EditInvestmentPopup from "./EditInvestmentPopup";
@@ -54,7 +54,7 @@ export default function InvestmentDetail() {
       setEditInvestments(editInvestmentDetails);
       console.log("Fetched investments for group:", editInvestmentDetails);
     } catch (err) {
-      console.error(err);
+      console.log(err);
       Alert.alert("Error", "Failed to fetch group investments");
     }
   };

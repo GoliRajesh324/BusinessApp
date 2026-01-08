@@ -2,15 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Modal,
-  Platform,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    FlatList,
+    Modal,
+    Platform,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 import BASE_URL from "../../src/config/config";
 
@@ -58,7 +58,7 @@ export default function InvestmentAudit({
         const data = await response.json();
         setLogs(data);
       } catch (err) {
-        console.error("Error fetching audit logs:", err);
+        console.log("Error fetching audit logs:", err);
       } finally {
         setLoading(false);
       }

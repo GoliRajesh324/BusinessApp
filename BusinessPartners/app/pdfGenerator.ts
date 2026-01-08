@@ -2,6 +2,14 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Alert } from "react-native";
 
+const downloadedOn = new Date().toLocaleString("en-IN", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 export async function generateInterestPDF(
   grouped: Record<string, any[]>,
   totalAmountAll: number,
@@ -15,19 +23,49 @@ export async function generateInterestPDF(
     <html>
     <head>
       <style>
-        body { font-family: Arial; padding: 20px; }
+        body {
+          font-family: Arial;
+          padding: 20px;
+        }
+
+        .pdf-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 2px solid #1e88e5;
+          padding-bottom: 8px;
+          margin-bottom: 20px;
+          font-size: 12px;
+          color: #444;
+        }
+
+        h2, h3 {
+          margin-bottom: 10px;
+        }
 
         table {
           width: 100%;
           border-collapse: collapse;
           font-size: 14px;
+          page-break-inside: auto;
+        }
+
+        thead {
+          display: table-header-group;
+        }
+
+        tr {
+          page-break-inside: avoid;
+          page-break-after: auto;
         }
 
         th, td {
           padding: 8px;
           border: 1px solid #ccc;
-          word-wrap: break-word;
           text-align: left;
+          vertical-align: top;
+          word-break: break-word;
+          white-space: pre-wrap;
         }
 
         /* iOS ignores background on <tr>, so put on <th> */
@@ -40,12 +78,16 @@ export async function generateInterestPDF(
           padding: 8px;
           border: 1px solid #ccc;
         }
-
-        h2, h3 { margin-bottom: 10px; }
       </style>
     </head>
 
     <body>
+
+      <!-- HEADER -->
+      <div class="pdf-header">
+        <div><b>Downloaded By:</b> </div>
+        <div><b>Downloaded On:</b> ${downloadedOn}</div>
+      </div>
 
       <h2>Interest Money Details</h2>
 
@@ -54,12 +96,10 @@ export async function generateInterestPDF(
           <td><b>Your Remaining Money</b></td>
           <td style="text-align:right;">₹ ${formatAmountIndian(totalAmountAll)}</td>
         </tr>
-
         <tr>
           <td><b>Money Taken By You</b></td>
           <td style="text-align:right; color:red;">₹ ${formatAmountIndian(totalTakenAll)}</td>
         </tr>
-
         <tr>
           <td><b>Money Given By You</b></td>
           <td style="text-align:right; color:green;">₹ ${formatAmountIndian(totalGivenAll)}</td>
@@ -67,7 +107,7 @@ export async function generateInterestPDF(
       </table>
     `;
 
-    // PERSON WISE DETAILS
+    // CONTINUOUS PERSON-WISE DETAILS
     Object.keys(grouped).forEach((name) => {
       html += `
         <h3>${name.toUpperCase()}</h3>
@@ -75,21 +115,11 @@ export async function generateInterestPDF(
         <table>
           <thead>
   <tr>
-    <td style="padding:8px; border:1px solid #ccc; background:#1e88e5; color:white; font-weight:bold;">
-      Type
-    </td>
-    <td style="padding:8px; border:1px solid #ccc; background:#1e88e5; color:white; font-weight:bold;">
-      Amount
-    </td>
-    <td style="padding:8px; border:1px solid #ccc; background:#1e88e5; color:white; font-weight:bold;">
-      Interest %
-    </td>
-    <td style="padding:8px; border:1px solid #ccc; background:#1e88e5; color:white; font-weight:bold;">
-      Start Date
-    </td>
-    <td style="padding:8px; border:1px solid #ccc; background:#1e88e5; color:white; font-weight:bold;">
-      Comment
-    </td>
+              <th style="width:20%">Type</th>
+              <th style="width:15%">Amount</th>
+              <th style="width:10%">Interest %</th>
+              <th style="width:15%">Start Date</th>
+              <th style="width:40%">Comment</th>
   </tr>
 </thead>
 
@@ -100,7 +130,7 @@ export async function generateInterestPDF(
         html += `
           <tr>
             <td>${r.type === "given" ? "Money Taken By You" : "Money Given By You"}</td>
-            <td style="text-align:right;">Rs. ${formatAmountIndian(r.amount)}</td>
+            <td style="text-align:right;">₹ ${formatAmountIndian(r.amount)}</td>
             <td style="text-align:center;">${r.rate ?? 0} %</td>
             <td style="text-align:center;">${formatDateForDisplay(r.startDate)}</td>
             <td>${r.comment ?? ""}</td>
@@ -115,7 +145,10 @@ export async function generateInterestPDF(
       `;
     });
 
-    html += `</body></html>`;
+    html += `
+    </body>
+    </html>
+    `;
 
     const { uri } = await Print.printToFileAsync({ html });
 
@@ -125,7 +158,7 @@ export async function generateInterestPDF(
       Alert.alert("File Saved", uri);
     }
   } catch (e) {
-    console.error(e);
+    console.log("PDF Error:", e);
     throw new Error("PDF generation failed");
   }
 }

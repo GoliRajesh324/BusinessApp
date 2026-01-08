@@ -50,7 +50,7 @@ export default function InterestPerson() {
       const personRecords = all.filter((r: Interest) => r.name === decoded);
       setRecords(personRecords);
     } catch (e) {
-      console.error(e);
+      console.log(e);
     } finally {
       setLoading(false);
     }

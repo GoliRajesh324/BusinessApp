@@ -2,26 +2,26 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
-  Animated,
-  Image,
-  Keyboard,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    Alert,
+    Animated,
+    Image,
+    Keyboard,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from "react-native";
 import BASE_URL from "../src/config/config";
 import { InvestmentDTO } from "./types";
 import {
-  pickImageFromCamera,
-  pickImageFromGallery,
+    pickImageFromCamera,
+    pickImageFromGallery,
 } from "./utils/ImagePickerService";
 import { numberToWords } from "./utils/numberToWords";
 
@@ -278,7 +278,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
 
       if (!response.ok) {
         const text = await response.text();
-        console.error("❌ Backend error:", text);
+        console.log("❌ Backend error:", text);
         Alert.alert("Error", "Failed to update investment");
         return;
       }
@@ -287,7 +287,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       onUpdated();
       onClose();
     } catch (err) {
-      console.error("❌ handleSave error:", err);
+      console.log("❌ handleSave error:", err);
       Alert.alert("Error", "Unexpected error occurred");
     } finally {
       setIsUpdating(false); // 🔓 always unlock

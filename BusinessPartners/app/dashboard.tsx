@@ -7,16 +7,16 @@ import { useTranslation } from "react-i18next";
 import { Animated, Pressable } from "react-native";
 
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  Modal,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Modal,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import BASE_URL from "../src/config/config";
 import AddBusinessPopup from "./components/AddBusinessPopup";
@@ -43,7 +43,7 @@ export default function Dashboard() {
       await AsyncStorage.removeItem("userId");
       router.replace("/login"); // Navigate to login page
     } catch (err) {
-      console.error("❌ Logout error:", err);
+      console.log("❌ Logout error:", err);
       Alert.alert("Error", "Failed to logout");
     }
   };
@@ -93,7 +93,7 @@ export default function Dashboard() {
 
       setBusinesses(updated);
     } catch (err) {
-      console.error("❌ Fetch error:", err);
+      console.log("❌ Fetch error:", err);
       Alert.alert("Error", "Error loading businesses");
     } finally {
       setLoading(false);
@@ -137,7 +137,7 @@ export default function Dashboard() {
         },
       });
     } catch (err: any) {
-      console.error("❌ Start crop error:", err.response?.data || err.message);
+      console.log("❌ Start crop error:", err.response?.data || err.message);
       Alert.alert("Error", "Error while starting crop");
     } finally {
       setConfirmStart(null);
@@ -154,7 +154,7 @@ export default function Dashboard() {
       setConfirmDelete(null);
       await fetchBusinesses();
     } catch (err) {
-      console.error("❌ Delete error:", err);
+      console.log("❌ Delete error:", err);
       Alert.alert("Error", "Error deleting business");
     }
   };

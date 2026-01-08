@@ -185,7 +185,7 @@ export default function BusinessDetail() {
 
       setSuppliers(grouped); // ✅ now works
     } catch (err) {
-      console.error(err);
+      console.log(err);
       alert("Error fetching suppliers");
     }
   };
@@ -237,7 +237,7 @@ export default function BusinessDetail() {
           });
         }
       } catch (err) {
-        console.error("❌ Error fetching business info:", err);
+        console.log("❌ Error fetching business info:", err);
       }
     };
 
@@ -268,7 +268,7 @@ export default function BusinessDetail() {
           );
         }
       } catch (err) {
-        console.error("❌ Error fetching partners:", err);
+        console.log("❌ Error fetching partners:", err);
       }
     };
 
@@ -316,7 +316,7 @@ export default function BusinessDetail() {
       console.log("➡️ Fetched investments:", data);
       setAllInvestments(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error(err);
+      console.log(err);
       Alert.alert("Error", "Error fetching investments");
     }
   };
@@ -340,7 +340,7 @@ export default function BusinessDetail() {
 
       setInvestmentDetails(data.investmentDetails || []); 
     } catch (err) {
-      console.error("❌ Error fetching business details:", err);
+      console.log("❌ Error fetching business details:", err);
     }
   };
 
@@ -422,7 +422,7 @@ export default function BusinessDetail() {
       // Refresh and navigate
       router.push("/dashboard");
     } catch (err: any) {
-      console.error("❌ Restart crop error:", err);
+      console.log("❌ Restart crop error:", err);
       if (err.response?.status === 400) alert("Invalid partner data.");
       else if (err.response?.status === 403) alert("Access forbidden!");
       else alert("Error restarting crop.");
@@ -524,7 +524,7 @@ export default function BusinessDetail() {
       await fetchBusinessDetails();
       fetchInvestments();
     } catch (error) {
-      console.error(error);
+      console.log(error);
     }
   };
 
@@ -570,7 +570,7 @@ export default function BusinessDetail() {
         key={String(inv?.investmentId ?? idx)}
         style={styles.newCard}
         activeOpacity={0.9}
-        onPress={() =>
+       /*  onPress={() =>
           router.push({
             pathname: "/investmentDetail",
             params: {
@@ -579,7 +579,7 @@ export default function BusinessDetail() {
               businessName: safeBusinessName,
             },
           })
-        }
+        } */
       >
         {/* Top Section */}
         <View style={styles.newTopRow}>
@@ -706,7 +706,7 @@ export default function BusinessDetail() {
         {/* Summary Card (tap to expand/collapse) */}
         <TouchableOpacity
           activeOpacity={0.9}
-          onPress={() =>
+         /*  onPress={() =>
             router.push({
               pathname: "/partnerWiseDetails",
               params: {
@@ -715,7 +715,7 @@ export default function BusinessDetail() {
                 investmentDetails: investmentDetails,
               },
             })
-          }
+          } */
           style={styles.summaryCardNew}
         >
           {/* Header */}
@@ -749,7 +749,7 @@ export default function BusinessDetail() {
           </View>
 
           {/* 📌 SMALL DROPDOWN LIST */}
-          {summaryDropdownOpen && (
+          {/* {summaryDropdownOpen && (
             <View style={styles.summaryDropdownBox}>
               {summaryOptions.map((opt, index) => (
                 <TouchableOpacity
@@ -771,7 +771,7 @@ export default function BusinessDetail() {
                 </TouchableOpacity>
               ))}
             </View>
-          )}
+          )} */}
 
           {/* Row 1 */}
           <View style={styles.summaryRowNew}>
@@ -1009,7 +1009,7 @@ export default function BusinessDetail() {
 
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() =>
+         /*  onPress={() =>
             router.push({
               pathname: "/inventoryScreen",
               params: {
@@ -1017,8 +1017,8 @@ export default function BusinessDetail() {
                 businessName: safeBusinessName,
               },
             })
-          }
-          // onPress={() => alert("Inventory Feature coming soon")}
+          } */
+           onPress={() => alert("Inventory Feature coming soon")}
         >
           <Ionicons name="cube" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Inventory</Text>
@@ -1034,7 +1034,8 @@ export default function BusinessDetail() {
 
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() => setShowAuditPopup(true)}
+          onPress={() => alert("History Feature coming soon")}
+        /*   onPress={() => setShowAuditPopup(true)} */
         >
           <Ionicons name="time" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>History</Text>

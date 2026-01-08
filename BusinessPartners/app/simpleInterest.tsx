@@ -52,7 +52,7 @@ const toTitleCase = (str?: string) => {
     .join(" ");
 };
 
-const formatDateForDisplay = (dateStr?: string) => { 
+const formatDateForDisplay = (dateStr?: string) => {
   if (!dateStr) return "";
   const parts = dateStr.split("-");
   if (parts.length !== 3) return dateStr;
@@ -166,6 +166,35 @@ export default function SimpleInterestPage() {
       totalAmountAll,
       totalTakenAll,
       totalGivenAll,
+      formatAmountIndian,
+      formatDateForDisplay
+    );
+  };
+
+  const handleDownloadUserPDF = async (name: string) => {
+    const userRecords = grouped[name];
+    if (!userRecords || userRecords.length === 0) return;
+
+    // Group ONLY this user
+    const singleUserGrouped = {
+      [name]: userRecords,
+    };
+
+    const totalTaken = userRecords
+      .filter((r) => r.type === "given")
+      .reduce((s, r) => s + (r.amount || 0), 0);
+
+    const totalGiven = userRecords
+      .filter((r) => r.type === "taken")
+      .reduce((s, r) => s + (r.amount || 0), 0);
+
+    const totalAmount = totalGiven - totalTaken;
+
+    await generateInterestPDF(
+      singleUserGrouped,
+      totalAmount,
+      totalTaken,
+      totalGiven,
       formatAmountIndian,
       formatDateForDisplay
     );
@@ -324,18 +353,30 @@ export default function SimpleInterestPage() {
 
               return (
                 <View key={name} style={styles.personCard}>
-                  <TouchableOpacity
-                    style={styles.personHeader}
-                    onPress={() => toggleExpand(name)}
-                  >
-                    <View style={{ flex: 1 }}>
+                  <View style={styles.personHeader}>
+                    <TouchableOpacity
+                      style={{ flex: 1 }}
+                      onPress={() => toggleExpand(name)}
+                    >
                       <Text style={styles.personName} numberOfLines={1}>
                         {toTitleCase(name)}
                       </Text>
                       <Text style={styles.personSub}>
                         {records.length} record{records.length > 1 ? "s" : ""}
                       </Text>
-                    </View>
+                    </TouchableOpacity>
+
+                    {/* PER-USER PDF DOWNLOAD */}
+                    <TouchableOpacity
+                      onPress={() => handleDownloadUserPDF(name)}
+                      style={{ padding: 8, marginRight: 6 }}
+                    >
+                      <Ionicons
+                        name="download-outline"
+                        size={20}
+                        color="#007bff"
+                      />
+                    </TouchableOpacity>
 
                     <View style={styles.personAmountBox}>
                       <Text
@@ -349,7 +390,7 @@ export default function SimpleInterestPage() {
                         ₹ {formatAmountIndian(netAmount)}
                       </Text>
                     </View>
-                  </TouchableOpacity>
+                  </View>
 
                   {expanded === name && (
                     <View style={styles.recordsContainer}>
@@ -789,12 +830,11 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: "#007bff" },
   btnText: { fontWeight: "700", color: "#fff" },
   eyeBtn: {
-  backgroundColor: "#eef6ff",
-  paddingHorizontal: 10,
-  paddingVertical: 6,
-  borderRadius: 8,
-  justifyContent: "center",
-  alignItems: "center",
-},
-
+    backgroundColor: "#eef6ff",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

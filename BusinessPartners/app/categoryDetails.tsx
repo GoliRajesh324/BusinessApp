@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -48,7 +47,7 @@ export default function CategoryDetails() {
         name: category.name,
         description: category.description,
         quantityType: category.quantityType,
-        imageUrl: category.imageUrl ?? "",
+        imageUrl: "",
         businessId: category.businessId,
       },
     });
@@ -99,17 +98,6 @@ export default function CategoryDetails() {
 
         <Text style={styles.label}>Quantity Type</Text>
         <Text style={styles.value}>{category.quantityType}</Text>
-
-        <Text style={styles.label}>Image</Text>
-
-        {category.imageUrl ? (
-          <Image source={{ uri: category.imageUrl }} style={styles.image} />
-        ) : (
-          <View style={styles.noImageBox}>
-            <Ionicons name="image-outline" size={50} color="#aaa" />
-            <Text style={{ color: "#999" }}>No Image</Text>
-          </View>
-        )}
       </ScrollView>
     </View>
   );

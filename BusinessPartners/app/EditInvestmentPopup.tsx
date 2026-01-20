@@ -2,27 +2,22 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-    Alert,
-    Animated,
-    Image,
-    Keyboard,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Alert,
+  Animated,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
 } from "react-native";
 import BASE_URL from "../src/config/config";
 import { InvestmentDTO } from "./types";
-import {
-    pickImageFromCamera,
-    pickImageFromGallery,
-} from "./utils/ImagePickerService";
 import { numberToWords } from "./utils/numberToWords";
 
 interface EditInvestmentScreenProps {
@@ -492,23 +487,6 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       return next;
     });
   }; */
-
-  const pickImageCamera = async () => {
-    const file = await pickImageFromCamera();
-    if (file) setImages((prev) => [...prev, file]);
-  };
-
-  const pickImageGallery = async () => {
-    const file = await pickImageFromGallery();
-    if (file) setImages((prev) => [...prev, file]);
-  };
-
-  const removeImage = (index: number) => {
-    const updated = [...images];
-    updated.splice(index, 1);
-    setImages(updated);
-  };
-
   const extraText = (r: InvestmentDTO) => {
     const investableNum = parseFloat((r.investable ?? "0").toString()) || 0;
     const investedNum = parseFloat((r.invested ?? "0").toString()) || 0;
@@ -752,40 +730,6 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
               ))}
             </ScrollView>
           </View>
-
-          {/* Images */}
-          <Text style={styles.sectionTitle}>Images</Text>
-          <View style={{ flexDirection: "row", marginBottom: 10 }}>
-            <TouchableOpacity
-              style={styles.cameraBtn}
-              onPress={pickImageCamera}
-            >
-              <Ionicons name="camera" size={28} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.cameraBtn, { backgroundColor: "#28a745" }]}
-              onPress={pickImageGallery}
-            >
-              <Ionicons name="image" size={28} color="white" />
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {images.map((file, idx) => (
-              <TouchableOpacity
-                key={idx}
-                style={styles.imagePreview}
-                onPress={() => alert("Need to set previewimage")} //setPreviewImage(file.uri)}
-              >
-                <Image source={{ uri: file.uri }} style={styles.previewThumb} />
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={() => removeImage(idx)}
-                >
-                  <Text style={styles.deleteText}>X</Text>
-                </TouchableOpacity>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
         </ScrollView>
 
         {/* Footer */}
@@ -875,18 +819,6 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
           </Animated.View>
         )}
 
-        {/* Image Preview */}
-        {/*         <Modal visible={!!previewImage} transparent>
-          <View style={styles.previewContainer}>
-            <Image source={{ uri: previewImage! }} style={styles.fullPreview} />
-            <TouchableOpacity
-              style={styles.closeBtn}
-              onPress={() => setPreviewImage(null)}
-            >
-              <Ionicons name="close" size={36} color="white" />
-            </TouchableOpacity>
-          </View>
-        </Modal> */}
 
         {/* Split Sheet */}
         <Modal visible={sheetVisible} animationType="slide" transparent>

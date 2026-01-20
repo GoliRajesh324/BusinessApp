@@ -59,8 +59,6 @@ export default function BusinessDetail() {
 
   const router = useRouter();
 
-  // //console.log("➡️ Params received:", businessId, businessName);
-
   // Ensure safe usage
   const safeBusinessId = businessId ? String(businessId) : "";
   const safeBusinessName = businessName ? String(businessName) : "";
@@ -478,8 +476,8 @@ export default function BusinessDetail() {
     );
   };
 
-  const handlePopupSave = async ({ investmentData, images }: any) => {
-    console.log("➡️ Popup images :", images);
+  const handlePopupSave = async ({ investmentData }: any) => {
+   
     try {
       const response = await axios.post(
         `${BASE_URL}/api/investment/add-investment`,
@@ -488,17 +486,7 @@ export default function BusinessDetail() {
       );
       const investmentGroupId = response?.data;
       console.log("➡️ Investment Group ID:", investmentGroupId);
-      if (images && images.length > 0) {
-        for (let file of images) {
-          const formData = new FormData();
-          formData.append("file", file);
-          await axios.post(
-            `${BASE_URL}/api/investment-images/upload/${investmentGroupId}`,
-            formData,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-        }
-      }
+ 
       /* 
       const res = await fetch(
         `${BASE_URL}/api/business/${businessId}/business-details-by-id`,

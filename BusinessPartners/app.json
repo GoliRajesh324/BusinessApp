@@ -2,7 +2,7 @@
   "expo": {
     "name": "BIZ Money",
     "slug": "BusinessPartners",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/BizMoneyblackandwhite.jpeg",
     "scheme": "businesspartners",
@@ -23,12 +23,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.srilekhaapps.businessmoney",
-      "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES"
-      ]
+      "permissions": []
     },
 
     "web": {

@@ -6,7 +6,6 @@ import { Animated } from "react-native";
 
 import {
   Alert,
-  Image,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -17,15 +16,10 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View,
+  View
 } from "react-native";
 import BASE_URL from "../src/config/config";
 import SupplierPopup from "./SupplierPopup";
-import {
-  ImageFile,
-  pickImageFromCamera,
-  pickImageFromGallery,
-} from "./utils/ImagePickerService";
 import { numberToWords } from "./utils/numberToWords";
 
 type Partner = {
@@ -46,7 +40,7 @@ interface AddInvestmentPopupProps {
   businessName: string;
   partners: Partner[];
   cropDetails?: CropDetails;
-  onSave: (data: { investmentData: any[]; images: ImageFile[] }) => void;
+  onSave: (data: { investmentData: any[]; }) => void;
   onClose: () => void;
 }
 interface PartnerRow {
@@ -84,7 +78,6 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   const [totalAmount, setTotalAmount] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [rows, setRows] = useState<any[]>([]);
-  const [images, setImages] = useState<ImageFile[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number>(0);
   const [userId, setUserId] = useState<string | null>(null);
@@ -301,20 +294,6 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
     console.log("End of Applying split options sheet with mode:", shareValues);
     console.log("rows", rows);
     setSheetVisible(false);
-  };
-
-  const pickImageCamera = async () => {
-    const file = await pickImageFromCamera();
-    if (file) setImages((prev) => [...prev, file]);
-  };
-  const pickImageGallery = async () => {
-    const file = await pickImageFromGallery();
-    if (file) setImages((prev) => [...prev, file]);
-  };
-  const removeImage = (index: number) => {
-    const updated = [...images];
-    updated.splice(index, 1);
-    setImages(updated);
   };
 
   const handleSave = () => {
@@ -558,7 +537,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
       return {};
     });
 
-    onSave({ investmentData, images });
+    onSave({ investmentData });
     onClose();
   };
 
@@ -819,39 +798,6 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             </ScrollView>
           </View>
 
-          {/* Images */}
-          <Text style={styles.sectionTitle}>Images</Text>
-          <View style={{ flexDirection: "row", marginBottom: 10 }}>
-            <TouchableOpacity
-              style={styles.cameraBtn}
-              onPress={pickImageCamera}
-            >
-              <Ionicons name="camera" size={28} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.cameraBtn, { backgroundColor: "#28a745" }]}
-              onPress={pickImageGallery}
-            >
-              <Ionicons name="image" size={28} color="white" />
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {images.map((file, idx) => (
-              <TouchableOpacity
-                key={idx}
-                style={styles.imagePreview}
-                onPress={() => setPreviewImage(file.uri)}
-              >
-                <Image source={{ uri: file.uri }} style={styles.previewThumb} />
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={() => removeImage(idx)}
-                >
-                  <Text style={styles.deleteText}>X</Text>
-                </TouchableOpacity>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
         </ScrollView>
 
         {/* Footer */}
@@ -953,19 +899,6 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             }}
           />
         )}
-
-        {/* Image Preview */}
-        <Modal visible={!!previewImage} transparent>
-          <View style={styles.previewContainer}>
-            <Image source={{ uri: previewImage! }} style={styles.fullPreview} />
-            <TouchableOpacity
-              style={styles.closeBtn}
-              onPress={() => setPreviewImage(null)}
-            >
-              <Ionicons name="close" size={36} color="white" />
-            </TouchableOpacity>
-          </View>
-        </Modal>
 
         {/* Split Sheet */}
         <Modal visible={sheetVisible} animationType="slide" transparent>

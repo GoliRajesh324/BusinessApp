@@ -1,5 +1,6 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -19,7 +20,9 @@ export default function ProfileScreen() {
   const [userName, setUserName] = React.useState<string | null>(null);
   const [rateModalVisible, setRateModalVisible] = useState(false);
 
-  AsyncStorage.getItem("userName").then((name) => setUserName(name));
+  React.useEffect(() => {
+    AsyncStorage.getItem("userName").then((name) => setUserName(name));
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -34,33 +37,17 @@ export default function ProfileScreen() {
 
   const handleShareApp = async () => {
     try {
-      const result = await Share.share({
+      await Share.share({
         title: "Check out this awesome app!",
         message:
-          "Hey! Check out this awesome app I’ve been using. Download it here:\nhttps://play.google.com/store/apps/details?id=com.srilekhaapps.businessmoney",
+          "Hey! Check out this awesome app I’ve been using. Download it here:\n https://play.google.com/store/apps/details?id=com.srilekhaapps.businessmoney",
       });
-
-      if (result.action === Share.sharedAction) {
-        if (result.activityType) {
-          console.log("Shared with activity:", result.activityType);
-        } else {
-          console.log("App shared successfully");
-        }
-      } else if (result.action === Share.dismissedAction) {
-        console.log("Share dismissed");
-      }
     } catch (error) {
       console.log("Error sharing app:", error);
     }
   };
 
   const options = [
-    {
-      icon: "diamond",
-      text: "Business Money Pro",
-      action: () => alert("For Now Everything is Free"),
-      color: "#a59fa5d0",
-    },
     {
       icon: "settings-outline",
       text: "Settings",
@@ -69,7 +56,7 @@ export default function ProfileScreen() {
     {
       icon: "share-social-outline",
       text: "Share",
-      action: () => handleShareApp(),
+      action: handleShareApp,
     },
     {
       icon: "star",
@@ -80,14 +67,17 @@ export default function ProfileScreen() {
       icon: "help-circle-outline",
       text: "Help & Support",
       action: () => router.push("/helpandSupportScreen"),
-      //action: () => alert("Help & Support Coming Soon"),
     },
-    { icon: "log-out-outline", text: "Logout", action: handleLogout },
+    {
+      icon: "log-out-outline",
+      text: "Logout",
+      action: handleLogout,
+    },
   ];
 
   return (
     <View style={styles.screen}>
-      {/* HEADER BLUE BACKGROUND WITH CURVE */}
+      {/* HEADER */}
       <View style={styles.headerCurve}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -121,20 +111,17 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* OPTIONS BELOW */}
+      {/* OPTIONS */}
       <ScrollView
         style={styles.optionsScroll}
-        contentContainerStyle={{ paddingBottom: 50 }}
+        contentContainerStyle={{ paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.cardContainer}>
           {options.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={[
-                styles.option,
-                item.color ? { backgroundColor: item.color } : null,
-              ]}
+              style={styles.option}
               onPress={item.action}
             >
               <View style={styles.optionLeft}>
@@ -152,6 +139,13 @@ export default function ProfileScreen() {
         visible={rateModalVisible}
         onClose={() => setRateModalVisible(false)}
       />
+
+      {/* APP VERSION */}
+      <View style={styles.versionContainer}>
+        <Text style={styles.versionText}>
+          Version {Constants.expoConfig?.version ?? "1.0.0"}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -180,7 +174,11 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 12,
   },
-  title: { color: "#fff", fontSize: 20, fontWeight: "bold" },
+  title: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
   profileSection: {
     alignItems: "center",
     marginTop: 10,
@@ -193,15 +191,26 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#fff",
   },
-  name: { fontSize: 22, color: "#fff", marginVertical: 8, fontWeight: "bold" },
-  infoRow: { flexDirection: "row", alignItems: "center", marginVertical: 2 },
-  infoText: { color: "#fff", marginLeft: 8 },
+  name: {
+    fontSize: 22,
+    color: "#fff",
+    marginVertical: 8,
+    fontWeight: "bold",
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 2,
+  },
+  infoText: {
+    color: "#fff",
+    marginLeft: 8,
+  },
   optionsScroll: {
     flex: 1,
     backgroundColor: "#fff",
   },
   cardContainer: {
-    backgroundColor: "#fff",
     paddingVertical: 20,
     paddingHorizontal: 15,
   },
@@ -219,6 +228,23 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  optionLeft: { flexDirection: "row", alignItems: "center" },
-  optionText: { marginLeft: 12, fontSize: 16, color: "#000" },
+  optionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  optionText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: "#000",
+  },
+  versionContainer: {
+    position: "absolute",
+    bottom: 30,
+    width: "100%",
+    alignItems: "center",
+  },
+  versionText: {
+    fontSize: 12,
+    color: "#999",
+  },
 });

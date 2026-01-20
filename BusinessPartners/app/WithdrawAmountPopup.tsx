@@ -1,19 +1,16 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Picker } from "@react-native-picker/picker";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
+  Alert,
   Modal,
-  TextInput,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Alert,
-  Image,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { Picker } from "@react-native-picker/picker";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as ImageManipulator from "expo-image-manipulator";
 
 type Partner = {
   id: string | number;
@@ -60,7 +57,6 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
       const n = await AsyncStorage.getItem("userName");
       const u = await AsyncStorage.getItem("userId");
 
-      //console.log("📌 Loaded userId:", u);
       setUserName(n);
       setUserId(u);
     };
@@ -86,42 +82,6 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
       setWithdrawAmount("");
     }
   }, [selectedPartner, investmentDetails]);
-
-const pickImage = async () => {
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    quality: 1, // pick full quality initially
-  });
-
-  if (!result.canceled) {
-    const asset = result.assets[0];
-
-    // Compress and resize before saving
-    const manipulated = await ImageManipulator.manipulateAsync(
-      asset.uri,
-      [{ resize: { width: 800 } }], // scale down width, keep aspect ratio
-      { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG } // 60% quality
-    );
-
-    const file = {
-      uri: manipulated.uri,
-      name: asset.uri.split("/").pop() || "image.jpg",
-      type: "image/jpeg",
-    };
-
-    setImages([...images, file]);
-  }
-};
-
-  
-
-  // Remove image
-  const removeImage = (index: number) => {
-    const updated = [...images];
-    updated.splice(index, 1);
-    setImages(updated);
-  };
-
   // Save handler
   const handleSave = () => {
     if (!selectedPartner) {
@@ -155,7 +115,6 @@ const pickImage = async () => {
       investmentGroupId: null, // new group id will be generated for withdraw
     };
 
-    //console.log("➡️ Withdraw data to save:", images);
     onSave({
       investmentData: [withdrawData],
       images: images,
@@ -211,27 +170,6 @@ const pickImage = async () => {
               value={description}
               onChangeText={setDescription}
             />
-
-            {/* Image Upload */}
-            <Text style={styles.label}>Upload Images</Text>
-            <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-              <Text style={{ color: "white" }}>Pick Image</Text>
-            </TouchableOpacity>
-            <ScrollView horizontal style={{ marginTop: 8 }}>
-              {images.map((file, idx) => (
-                <View key={idx} style={styles.imagePreview}>
-                  <TouchableOpacity onPress={() => setPreviewImage(file.uri)} activeOpacity={0.8}>
-                    <Image source={{ uri: file.uri  }} style={styles.previewThumb} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.deleteBtn}
-                  onPress={() => removeImage(idx)}
-                  >
-                    <Text style={styles.deleteText}>X</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
           </ScrollView>
 
           {/* Actions */}
@@ -245,25 +183,6 @@ const pickImage = async () => {
           </View>
         </View>
       </View>
-
-      {/* Full Image Preview */}
-      {previewImage && (
-        <Modal visible transparent onRequestClose={() => setPreviewImage(null)}>
-          <View style={styles.previewOverlay}>
-            <TouchableOpacity
-              style={styles.previewClose}
-              onPress={() => setPreviewImage(null)}
-            >
-              <Text style={{ color: "white", fontSize: 18 }}>✕</Text>
-            </TouchableOpacity>
-            <Image
-              source={{ uri: previewImage }}
-              style={styles.previewLarge}
-              resizeMode="contain"
-            />
-          </View>
-        </Modal>
-      )}
     </Modal>
   );
 };

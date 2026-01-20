@@ -1,7 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as ImageManipulator from "expo-image-manipulator";
-import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -16,10 +14,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import {
-  pickImageFromCamera,
-  pickImageFromGallery
-} from "./utils/ImagePickerService";
 import { numberToWords } from "./utils/numberToWords";
 
 type Partner = { id: string; username: string; share?: number };
@@ -30,7 +24,7 @@ interface SoldAmountPopupProps {
   visible: boolean;
   partners: Partner[];
   cropDetails?: CropDetails;
-  onSave: (data: { investmentData: any[]; images: any[] }) => void;
+  onSave: (data: { investmentData: any[]; }) => void;
   onClose: () => void;
 }
 
@@ -107,29 +101,7 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
       return next;
     });
   };
-
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1,
-    });
-    if (!result.canceled) {
-      const asset = result.assets[0];
-      const manipulated = await ImageManipulator.manipulateAsync(
-        asset.uri,
-        [{ resize: { width: 800 } }],
-        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      setImages([...images, { uri: manipulated.uri, name: asset.uri.split("/").pop(), type: "image/jpeg" }]);
-    }
-  };
-
-  const removeImage = (index: number) => {
-    const updated = [...images];
-    updated.splice(index, 1);
-    setImages(updated);
-  };
-
+  
   const handleSave = () => {
     const totalEntered = rows.reduce(
       (sum, r) => sum + (parseFloat(r.investing) || 0),
@@ -155,7 +127,7 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
       splitType: splitMode.toUpperCase(),
       createdBy,
     }));
-    onSave({ investmentData, images });
+    onSave({ investmentData });
     onClose();
   };
 
@@ -245,43 +217,6 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
             );
           })}
 
-          {/* Images Section */}
-                 <Text style={styles.sectionTitle}>Images</Text>
-                 <View style={{ flexDirection: "row", marginBottom: 10 }}>
-                   {/* Camera */}
-                   <TouchableOpacity
-                     style={styles.cameraBtn}
-                     onPress={async () => {
-                       const file = await pickImageFromCamera();
-                       if (file) setImages((prev) => [...prev, file]);
-                     }}
-                   >
-                     <Ionicons name="camera" size={28} color="white" />
-                   </TouchableOpacity>
-         
-                   {/* Gallery */}
-                   <TouchableOpacity
-                     style={[styles.cameraBtn, { backgroundColor: "#28a745" }]}
-                     onPress={async () => {
-                       const file = await pickImageFromGallery();
-                       if (file) setImages((prev) => [...prev, file]);
-                     }}
-                   >
-                     <Ionicons name="image" size={28} color="white" />
-                   </TouchableOpacity>
-                 </View>
-
-          {/* Image Thumbnails */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {images.map((file, idx) => (
-              <TouchableOpacity key={idx} style={styles.imagePreview} onPress={() => setPreviewImage(file.uri)}>
-                <Image source={{ uri: file.uri }} style={styles.previewThumb} />
-                <TouchableOpacity style={styles.deleteBtn} onPress={() => removeImage(idx)}>
-                  <Text style={styles.deleteText}>X</Text>
-                </TouchableOpacity>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
         </ScrollView>
 
         {/* Full-Screen Preview */}

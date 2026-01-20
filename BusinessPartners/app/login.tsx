@@ -105,7 +105,7 @@ export default function LoginScreen() {
             {/* Username */}
             <View style={styles.inputGroup}>
               <ConnectionStatus />
-              <Text style={styles.label}>Username:</Text>
+              <Text style={styles.label}>Username</Text>
               <TextInput
                 style={styles.input}
                 value={username}

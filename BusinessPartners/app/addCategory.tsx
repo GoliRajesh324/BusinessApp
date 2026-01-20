@@ -1,19 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  Image,
   Keyboard,
-  Modal,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View,
+  View
 } from "react-native";
 import { createCategory, updateCategory } from "./inventory";
 
@@ -26,15 +23,11 @@ export default function AddCategory() {
     name: editName,
     description: editDesc,
     quantityType: editQty,
-    imageUrl: editImage,
   } = useLocalSearchParams();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [quantityType, setQuantityType] = useState<"KG" | "LITERS">("KG");
-
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  const [previewVisible, setPreviewVisible] = useState(false);
 
   /* ------------------ IMAGE PICKERS ------------------ */
   useEffect(() => {
@@ -42,37 +35,8 @@ export default function AddCategory() {
       if (editName) setName(editName as string);
       if (editDesc) setDescription(editDesc as string);
       if (editQty) setQuantityType(editQty as "KG" | "LITERS");
-      if (editImage) setImageUri(editImage as string);
     }
-  }, [isEdit, editName, editDesc, editQty, editImage]);
-
-  const pickFromGallery = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return Alert.alert("Permission required");
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      quality: 0.7,
-    });
-
-    if (!result.canceled && result.assets.length > 0) {
-      setImageUri(result.assets[0].uri);
-    }
-  };
-
-  const pickFromCamera = async () => {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) return Alert.alert("Camera permission required");
-
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 0.7,
-    });
-
-    if (!result.canceled && result.assets.length > 0) {
-      setImageUri(result.assets[0].uri);
-    }
-  };
-
-  const removeImage = () => setImageUri(null);
+  }, [isEdit, editName, editDesc, editQty]);
 
   /* ------------------ SAVE CATEGORY ------------------ */
   const saveCategory = async () => {
@@ -90,7 +54,6 @@ export default function AddCategory() {
             name,
             description,
             quantityType,
-            imageUrl: imageUri,
           },
           token
         );
@@ -107,7 +70,6 @@ export default function AddCategory() {
           name,
           description,
           quantityType,
-          imageUrl: imageUri,
           createdBy: 1,
         },
         token
@@ -189,41 +151,6 @@ export default function AddCategory() {
             ))}
           </View>
 
-          {/* Image Section */}
-          <Text style={styles.label}>Image</Text>
-
-          <View style={styles.imageRow}>
-            <TouchableOpacity
-              style={styles.imageButton}
-              onPress={pickFromGallery}
-            >
-              <Ionicons name="image" size={28} color="#4f93ff" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.imageButton}
-              onPress={pickFromCamera}
-            >
-              <Ionicons name="camera" size={28} color="#4f93ff" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Image Preview Thumbnail */}
-          {imageUri && (
-            <View style={{ marginTop: 12, position: "relative", width: 120 }}>
-              <TouchableOpacity onPress={() => setPreviewVisible(true)}>
-                <Image source={{ uri: imageUri }} style={styles.thumbnail} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={removeImage}
-                style={styles.removeImageBtn}
-              >
-                <Ionicons name="close" size={18} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          )}
-
           {/* Save */}
           <TouchableOpacity style={styles.saveBtn} onPress={saveCategory}>
             <Text style={{ color: "#fff", fontWeight: "700" }}>Save</Text>
@@ -238,20 +165,6 @@ export default function AddCategory() {
           </TouchableOpacity>
         </View>
       </TouchableWithoutFeedback>
-
-      {/* FULL IMAGE PREVIEW */}
-      <Modal visible={previewVisible} transparent>
-        <View style={styles.previewModal}>
-          <Image source={{ uri: imageUri ?? "" }} style={styles.previewImage} />
-
-          <TouchableOpacity
-            style={styles.previewClose}
-            onPress={() => setPreviewVisible(false)}
-          >
-            <Ionicons name="close" size={32} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      </Modal>
     </View>
   );
 }

@@ -7,16 +7,16 @@ import { useTranslation } from "react-i18next";
 import { Animated, Pressable } from "react-native";
 
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import BASE_URL from "../src/config/config";
 import AddBusinessPopup from "./components/AddBusinessPopup";
@@ -73,7 +73,7 @@ export default function Dashboard() {
   const fetchBusinesses = async () => {
     if (!token || !userId) return;
     try {
-      //console.log("📡 Fetching businesses...");
+    
       setLoading(true);
       const response = await fetch(`${BASE_URL}/api/business/user/${userId}`, {
         method: "GET",
@@ -81,8 +81,6 @@ export default function Dashboard() {
       });
       if (!response.ok) throw new Error("Failed to fetch businesses");
       const data = await response.json();
-      //console.log("✅ Businesses:", data);
-
       const updated = data.map((b: any) => {
         let inProgress = false;
         if (b.crops && b.crops.length > 0) {
@@ -391,7 +389,7 @@ export default function Dashboard() {
           <Text style={styles.bottomButtonText}>Interest</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
+  {/*       <TouchableOpacity
           style={styles.bottomButtonIcon}
           onPress={() => alert("SplitMoney Feature coming soon")}
         >
@@ -401,7 +399,7 @@ export default function Dashboard() {
             color="#4f93ff"
           />
           <Text style={styles.bottomButtonText}>SplitMoney</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity
           style={styles.bottomButtonIcon}

@@ -16,7 +16,7 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
+  View,
 } from "react-native";
 import BASE_URL from "../src/config/config";
 import SupplierPopup from "./SupplierPopup";
@@ -40,7 +40,7 @@ interface AddInvestmentPopupProps {
   businessName: string;
   partners: Partner[];
   cropDetails?: CropDetails;
-  onSave: (data: { investmentData: any[]; }) => void;
+  onSave: (data: { investmentData: any[] }) => void;
   onClose: () => void;
 }
 interface PartnerRow {
@@ -71,7 +71,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   onClose,
 }) => {
   const [splitMode, setSplitMode] = useState<"share" | "equal" | "manual">(
-    "share"
+    "share",
   );
 
   const [showSupplierPopup, setShowSupplierPopup] = useState(false);
@@ -124,7 +124,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
           `${BASE_URL}/api/business/${businessId}/business-details-by-id`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
 
         const text = await response.text();
@@ -151,7 +151,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             actual: "",
             checked: false,
             reduceLeftOver: "",
-          })
+          }),
         );
         console.log({ mappedRows });
         if (mappedRows.length > 0) {
@@ -213,7 +213,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             investing: prevRow.investing || "",
           };
         }
-      })
+      }),
     );
     console.log("Updated rows for splitMode:", rows);
   }, [splitMode, totalAmount, partners, shareValues]);
@@ -232,7 +232,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
     if (splitMode === "share") {
       // Actual invested amounts for partners in share mode
       setShareValues(
-        rows.map((r) => parseFloat(r.investing || r.actual || "0"))
+        rows.map((r) => parseFloat(r.investing || r.actual || "0")),
       );
     } else if (splitMode === "equal") {
       const per = expected / partners.length;
@@ -260,7 +260,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             investing: r.investing ? r.investing : actualAmount.toFixed(2),
             // Do NOT touch share %
           };
-        })
+        }),
       );
     } else if (sheetTempMode === "equal") {
       // Prefer shareValues (user may have edited the equal values).
@@ -275,7 +275,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
           };
           console.log(`Partner ${idx + 1} (${r.name}) →`, updated);
           return updated;
-        })
+        }),
       );
     } else {
       // Manual: apply user-entered values from shareValues (don't overwrite with old share)
@@ -287,7 +287,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             actual: Number(val).toFixed(2),
             investing: String(val),
           };
-        })
+        }),
       );
     }
 
@@ -326,7 +326,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
         if (used > available) {
           errors[r.id] = `Used amount ₹${used.toFixed(
-            2
+            2,
           )} exceeds available ₹${available.toFixed(2)}`;
         }
       }
@@ -374,21 +374,21 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
     const totalEntered = rows.reduce(
       (sum, r) => sum + (parseFloat(r.actual) || 0),
-      0
+      0,
     );
     console.log({ totalEntered, expected });
-    /* if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
+    if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
       Alert.alert("Error", "Total entered does not match expected amount");
       return;
-    } */
+    }
 
-    if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
+    /* if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
       console.log("Need supplier popup, diff:", expected - totalEntered);
       console.log(rows);
       setRemaining(expected - totalEntered);
       setShowSupplierPopup(true);
       return;
-    }
+    } */
     // ✅ If perfect match (no supplier needed)
     if (Math.round((totalEntered - expected) * 100) / 100 === 0) {
       saveInvestment(null);
@@ -546,7 +546,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
       "Calculating extraText for Name:",
       r.name,
       r.actual,
-      r.investing
+      r.investing,
     );
     console.log("Calculating extraText for actual:", r.actual);
     console.log("Calculating extraText for investing:", r.investing);
@@ -797,7 +797,6 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
               ))}
             </ScrollView>
           </View>
-
         </ScrollView>
 
         {/* Footer */}
@@ -937,7 +936,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
                               const shareBased = partners.map(
                                 (p, i) =>
                                   ((p.share ?? 100 / partners.length) / 100) *
-                                  expected
+                                  expected,
                               );
                               setShareValues(shareBased);
                             } else {

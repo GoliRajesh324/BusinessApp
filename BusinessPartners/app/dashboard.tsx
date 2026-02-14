@@ -73,12 +73,20 @@ export default function Dashboard() {
   const fetchBusinesses = async () => {
     if (!token || !userId) return;
     try {
-    
       setLoading(true);
       const response = await fetch(`${BASE_URL}/api/business/user/${userId}`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      // 👇 HANDLE EXPIRED TOKEN
+      if (response.status === 401 || response.status === 403) {
+        console.log("🔒 Token expired, logging out");
+
+        await AsyncStorage.multiRemove(["token", "userId", "userName"]);
+        router.replace("/login");
+        return;
+      }
       if (!response.ok) throw new Error("Failed to fetch businesses");
       const data = await response.json();
       const updated = data.map((b: any) => {
@@ -122,7 +130,7 @@ export default function Dashboard() {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-          }
+          },
         );
         await fetchBusinesses();
       }
@@ -199,7 +207,7 @@ export default function Dashboard() {
       <FlatList
         data={businesses}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ paddingBottom: 180 }}   // ✅ add this
+        contentContainerStyle={{ paddingBottom: 180 }} // ✅ add this
         onScroll={(e) => {
           const position = e.nativeEvent.contentOffset.y;
           if (position > 50) {
@@ -389,7 +397,7 @@ export default function Dashboard() {
           <Text style={styles.bottomButtonText}>Interest</Text>
         </TouchableOpacity>
 
-  {/*       <TouchableOpacity
+        {/*       <TouchableOpacity
           style={styles.bottomButtonIcon}
           onPress={() => alert("SplitMoney Feature coming soon")}
         >

@@ -18,6 +18,7 @@ import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { useFocusEffect } from "@react-navigation/native";
+import { Calendar, DateData } from "react-native-calendars";
 import BASE_URL from "../src/config/config";
 import AddInvestmentPopup from "./addInvestmentPopup";
 import InvestmentAudit from "./components/InvestmentAudit";
@@ -47,6 +48,11 @@ export default function BusinessDetail() {
   }>();
 
   const [summaryFilter, setSummaryFilter] = useState("ALL");
+  const [calendarVisible, setCalendarVisible] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState<string | null>(null);
+  const [customEndDate, setCustomEndDate] = useState<string | null>(null);
+  const [selectingStart, setSelectingStart] = useState(true);
+
   const [summaryDropdownOpen, setSummaryDropdownOpen] = useState(false);
 
   const summaryOptions = [
@@ -55,6 +61,7 @@ export default function BusinessDetail() {
     "YESTERDAY",
     "THIS MONTH",
     "LAST MONTH",
+    "SELECT DATES",
   ];
 
   const router = useRouter();
@@ -122,9 +129,9 @@ export default function BusinessDetail() {
     loadData();
   }, []);
 
-  useEffect(() => {
+  /*   useEffect(() => {
     AsyncStorage.getItem("token").then(setToken);
-  }, []);
+  }, []); */
 
   // 🏷 Get label text dynamically based on selected value
   const currentLabel =
@@ -141,10 +148,10 @@ export default function BusinessDetail() {
     }
   }, []);
 
-  useEffect(() => {
+  /*   useEffect(() => {
     fetchBusinessDetails();
   }, [safeBusinessId, token, userName]);
-
+ */
   const fetchSuppliers = async () => {
     try {
       const res = await fetch(
@@ -152,7 +159,7 @@ export default function BusinessDetail() {
         {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       if (!res.ok) throw new Error("Failed to fetch suppliers");
@@ -178,7 +185,7 @@ export default function BusinessDetail() {
           });
 
           return acc;
-        }, {})
+        }, {}),
       );
 
       setSuppliers(grouped); // ✅ now works
@@ -187,6 +194,115 @@ export default function BusinessDetail() {
       alert("Error fetching suppliers");
     }
   };
+
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const getDateRange = (filter: string) => {
+    const today = new Date();
+
+    // 🔥 NEW: Custom Range Support
+    if (filter === "SELECT DATES" && customStartDate && customEndDate) {
+      return {
+        startDate: customStartDate,
+        endDate: customEndDate,
+      };
+    }
+
+    switch (filter) {
+      case "TODAY":
+        return {
+          startDate: formatDate(today),
+          endDate: formatDate(today),
+        };
+
+      case "YESTERDAY":
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+        return {
+          startDate: formatDate(yesterday),
+          endDate: formatDate(yesterday),
+        };
+
+      case "THIS MONTH":
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        return {
+          startDate: formatDate(firstDay),
+          endDate: formatDate(lastDay),
+        };
+
+      case "LAST MONTH":
+        const firstDayLastMonth = new Date(
+          today.getFullYear(),
+          today.getMonth() - 1,
+          1,
+        );
+        const lastDayLastMonth = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          0,
+        );
+        return {
+          startDate: formatDate(firstDayLastMonth),
+          endDate: formatDate(lastDayLastMonth),
+        };
+
+      default:
+        return null;
+    }
+  };
+
+  const fetchSummaryByDateRange = async (
+    startDate: string,
+    endDate: string,
+  ) => {
+    if (!token || !safeBusinessId) return;
+
+    try {
+      console.log(`📅 Fetching summary for range: ${startDate} to ${endDate}`);
+
+      const response = await fetch(
+        `${BASE_URL}/api/business/${safeBusinessId}/business-details-by-id-and-date?startDate=${startDate}&endDate=${endDate}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      const data = await response.json();
+
+      setTotalInvestment(data?.totalInvestment || 0);
+      setTotalSoldAmount(data?.totalSoldAmount || 0);
+      setYourInvestment(0);
+      setLeftOver(0);
+    } catch (err) {
+      console.log("❌ Error fetching filtered summary:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!token || !safeBusinessId) return;
+
+    if (summaryFilter === "ALL") {
+      console.log(
+        "🔄 Summary filter ALL selected → fetching overall business details",
+      );
+      fetchBusinessDetails(); // existing method
+      return;
+    }
+    console.log(
+      `🔄 Summary filter ${summaryFilter} selected → fetching filtered summary`,
+    );
+    const range = getDateRange(summaryFilter);
+    if (!range) return;
+
+    fetchSummaryByDateRange(range.startDate, range.endDate);
+  }, [summaryFilter, token, safeBusinessId]);
 
   const parseAmount = (v: any) => {
     if (v == null) return 0;
@@ -218,7 +334,7 @@ export default function BusinessDetail() {
       try {
         const response = await fetch(
           `${BASE_URL}/api/business/${safeBusinessId}/business-details-by-id`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         const text = await response.text();
         if (!response.ok || !text) return;
@@ -250,7 +366,7 @@ export default function BusinessDetail() {
       try {
         const response = await fetch(
           `${BASE_URL}/api/business/${safeBusinessId}/partners`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         const text = await response.text();
         if (!response.ok || !text) return;
@@ -262,7 +378,7 @@ export default function BusinessDetail() {
               id: p.partnerId,
               username: p.username,
               share: p.share,
-            }))
+            })),
           );
         }
       } catch (err) {
@@ -307,11 +423,11 @@ export default function BusinessDetail() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
       if (!response.ok) throw new Error("Failed to fetch investments");
       const data = await response.json();
-      console.log("➡️ Fetched investments:", data);
+      //console.log("➡️ Fetched investments:", data);
       setAllInvestments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.log(err);
@@ -323,7 +439,7 @@ export default function BusinessDetail() {
     try {
       const response = await fetch(
         `${BASE_URL}/api/business/${safeBusinessId}/business-details-by-id`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       const data = await response.json();
@@ -332,11 +448,11 @@ export default function BusinessDetail() {
       setTotalInvestment(data?.totalInvestment || 0);
       setTotalSoldAmount(data?.totalSoldAmount || 0);
       setInvestmentDetails(
-        Array.isArray(data?.investmentDetails) ? data.investmentDetails : []
+        Array.isArray(data?.investmentDetails) ? data.investmentDetails : [],
       );
       setCropDetails(data?.crop || null);
 
-      setInvestmentDetails(data.investmentDetails || []); 
+      setInvestmentDetails(data.investmentDetails || []);
     } catch (err) {
       console.log("❌ Error fetching business details:", err);
     }
@@ -344,40 +460,56 @@ export default function BusinessDetail() {
 
   useFocusEffect(
     React.useCallback(() => {
-      // If token not loaded yet → skip refresh
-      if (!token) {
-        console.log("⏳ Token not loaded yet → skipping focus refresh");
-        return;
-      }
-      console.log("🔄 BusinessDetail focused → refreshing all APIs");
-      fetchInvestments();
-      fetchBusinessDetails();
-      fetchSuppliers();
-      //fetchPartners();
-    }, [safeBusinessId, token])
-  );
+      if (!token) return;
 
+      fetchInvestments();
+      fetchSuppliers();
+
+      // Only fetch full summary if filter is ALL
+      if (summaryFilter === "ALL") {
+        fetchBusinessDetails();
+      }
+    }, [safeBusinessId, token]),
+  );
   const filteredInvestments = useMemo(() => {
     if (!allInvestments) return [];
 
     switch (selectedFilter) {
       case "byLoggedInUser":
         return allInvestments.filter(
-          (inv) => inv.partnerName?.toString() === userName?.toString()
+          (inv) =>
+            inv.partnerName?.toString().toLowerCase() ===
+            userName?.toString().toLowerCase(),
         );
+
       case "byInvestment":
         return allInvestments.filter(
-          (inv) => inv?.soldFlag === "N" && inv?.withdrawFlag === "N"
+          (inv) =>
+            inv.partnerName?.toString().toLowerCase() ===
+              userName?.toString().toLowerCase() &&
+            inv?.soldFlag === "N" &&
+            inv?.withdrawFlag === "N",
         );
+
       case "byWithdraw":
-        return allInvestments.filter((inv) => inv?.withdrawFlag === "Y");
+        return allInvestments.filter(
+          (inv) =>
+            inv.partnerName?.toString().toLowerCase() ===
+              userName?.toString().toLowerCase() && inv?.withdrawFlag === "Y",
+        );
+
       case "bySold":
-        return allInvestments.filter((inv) => inv?.soldFlag === "Y");
+        return allInvestments.filter(
+          (inv) =>
+            inv.partnerName?.toString().toLowerCase() ===
+              userName?.toString().toLowerCase() && inv?.soldFlag === "Y",
+        );
+
       case "allInvestments":
       default:
         return allInvestments;
     }
-  }, [allInvestments, selectedFilter, userId]);
+  }, [allInvestments, selectedFilter, userName]);
 
   // Handle "Restart" (End Crop) click
   const handleRestartClick = () => {
@@ -415,7 +547,7 @@ export default function BusinessDetail() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
       // Refresh and navigate
       router.push("/dashboard");
@@ -477,16 +609,15 @@ export default function BusinessDetail() {
   };
 
   const handlePopupSave = async ({ investmentData }: any) => {
-   
     try {
       const response = await axios.post(
         `${BASE_URL}/api/investment/add-investment`,
         investmentData,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       const investmentGroupId = response?.data;
       console.log("➡️ Investment Group ID:", investmentGroupId);
- 
+
       /* 
       const res = await fetch(
         `${BASE_URL}/api/business/${businessId}/business-details-by-id`,
@@ -532,15 +663,15 @@ export default function BusinessDetail() {
       inv.withdrawFlag === "Y"
         ? "Withdraw"
         : inv.soldFlag === "Y"
-        ? "Sold"
-        : "Investment";
+          ? "Sold"
+          : "Investment";
 
     const typeColor =
       type === "Investment"
         ? "#2563EB" // blue
         : type === "Sold"
-        ? "#16A34A" // green
-        : "#DC2626"; // red
+          ? "#16A34A" // green
+          : "#DC2626"; // red
 
     const description = inv?.description || "-";
     const partnerName = inv?.partnerName || "-";
@@ -558,7 +689,7 @@ export default function BusinessDetail() {
         key={String(inv?.investmentId ?? idx)}
         style={styles.newCard}
         activeOpacity={0.9}
-       /*  onPress={() =>
+        onPress={() =>
           router.push({
             pathname: "/investmentDetail",
             params: {
@@ -567,7 +698,7 @@ export default function BusinessDetail() {
               businessName: safeBusinessName,
             },
           })
-        } */
+        }
       >
         {/* Top Section */}
         <View style={styles.newTopRow}>
@@ -694,7 +825,7 @@ export default function BusinessDetail() {
         {/* Summary Card (tap to expand/collapse) */}
         <TouchableOpacity
           activeOpacity={0.9}
-         /*  onPress={() =>
+          onPress={() =>
             router.push({
               pathname: "/partnerWiseDetails",
               params: {
@@ -703,7 +834,7 @@ export default function BusinessDetail() {
                 investmentDetails: investmentDetails,
               },
             })
-          } */
+          }
           style={styles.summaryCardNew}
         >
           {/* Header */}
@@ -737,14 +868,22 @@ export default function BusinessDetail() {
           </View>
 
           {/* 📌 SMALL DROPDOWN LIST */}
-          {/* {summaryDropdownOpen && (
+          {summaryDropdownOpen && (
             <View style={styles.summaryDropdownBox}>
               {summaryOptions.map((opt, index) => (
                 <TouchableOpacity
                   key={index}
                   onPress={() => {
-                    setSummaryFilter(opt);
                     setSummaryDropdownOpen(false);
+
+                    if (opt === "SELECT DATES") {
+                      setCalendarVisible(true);
+                      setCustomStartDate(null);
+                      setCustomEndDate(null);
+                      setSelectingStart(true);
+                    } else {
+                      setSummaryFilter(opt);
+                    }
                   }}
                   style={styles.summaryDropdownItem}
                 >
@@ -759,7 +898,7 @@ export default function BusinessDetail() {
                 </TouchableOpacity>
               ))}
             </View>
-          )} */}
+          )}
 
           {/* Row 1 */}
           <View style={styles.summaryRowNew}>
@@ -782,35 +921,39 @@ export default function BusinessDetail() {
           <View style={styles.summaryDivider} />
 
           {/* Row 2 */}
-          <View style={styles.summaryRowNew}>
-            <View style={styles.summaryBlock}>
-              <Text style={styles.summaryLabelNew}>Available Money</Text>
-              <Text
-                style={[
-                  styles.summaryValueSecondary,
-                  {
-                    color:
-                      leftOver < 0
-                        ? "#DC2626" // red
-                        : leftOver > 0
-                        ? "#16A34A" // green
-                        : "#000000", // black
-                  },
-                ]}
-              >
-                ₹{formatAmount(leftOver)}
-              </Text>
-            </View>
+          {summaryFilter === "ALL" && (
+            <>
+              <View style={styles.summaryRowNew}>
+                <View style={styles.summaryBlock}>
+                  <Text style={styles.summaryLabelNew}>Available Money</Text>
+                  <Text
+                    style={[
+                      styles.summaryValueSecondary,
+                      {
+                        color:
+                          leftOver < 0
+                            ? "#DC2626"
+                            : leftOver > 0
+                              ? "#16A34A"
+                              : "#000000",
+                      },
+                    ]}
+                  >
+                    ₹{formatAmount(leftOver)}
+                  </Text>
+                </View>
 
-            <View style={styles.summaryBlock}>
-              <Text style={styles.summaryLabelNew}>Your Investment</Text>
-              <Text
-                style={[styles.summaryValueSecondary, { color: "#2563eb" }]}
-              >
-                ₹{formatAmount(yourInvestment)}
-              </Text>
-            </View>
-          </View>
+                <View style={styles.summaryBlock}>
+                  <Text style={styles.summaryLabelNew}>Your Investment</Text>
+                  <Text
+                    style={[styles.summaryValueSecondary, { color: "#2563eb" }]}
+                  >
+                    ₹{formatAmount(yourInvestment)}
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
         </TouchableOpacity>
 
         {/* SUPPLIER CONTRIBUTIONS SECTION */}
@@ -907,7 +1050,7 @@ export default function BusinessDetail() {
             </View>
           ) : (
             filteredInvestments.map((inv, idx) =>
-              renderInvestmentCard(inv, idx)
+              renderInvestmentCard(inv, idx),
             )
           )}
         </View>
@@ -981,15 +1124,6 @@ export default function BusinessDetail() {
         <TouchableOpacity
           style={styles.bottomButtonIcon}
           onPress={() => alert("Charts Feature coming soon")}
-          /* onPress={() =>
-            router.push({
-              pathname: "/chartsScreen",
-              params: {
-                businessId: safeBusinessId,
-                businessName: safeBusinessName,
-              },
-            })
-          } */
         >
           <Ionicons name="bar-chart" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Charts</Text>
@@ -997,7 +1131,7 @@ export default function BusinessDetail() {
 
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-         /*  onPress={() =>
+          onPress={() =>
             router.push({
               pathname: "/inventoryScreen",
               params: {
@@ -1005,8 +1139,8 @@ export default function BusinessDetail() {
                 businessName: safeBusinessName,
               },
             })
-          } */
-           onPress={() => alert("Inventory Feature coming soon")}
+          }
+          //onPress={() => alert("Inventory Feature coming soon")}
         >
           <Ionicons name="cube" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Inventory</Text>
@@ -1023,7 +1157,7 @@ export default function BusinessDetail() {
         <TouchableOpacity
           style={styles.bottomButtonIcon}
           onPress={() => alert("History Feature coming soon")}
-        /*   onPress={() => setShowAuditPopup(true)} */
+          /*   onPress={() => setShowAuditPopup(true)} */
         >
           <Ionicons name="time" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>History</Text>
@@ -1078,6 +1212,77 @@ export default function BusinessDetail() {
           visible={showAuditPopup}
           onClose={() => setShowAuditPopup(false)}
         />
+      )}
+
+      {calendarVisible && (
+        <View style={styles.popupOverlay}>
+          <View style={[styles.popupContent, { padding: 10 }]}>
+            <Text style={{ fontSize: 16, fontWeight: "700", marginBottom: 10 }}>
+              Select Date Range
+            </Text>
+
+            <Calendar
+              markingType="period"
+              onDayPress={(day: DateData) => {
+                if (selectingStart) {
+                  setCustomStartDate(day.dateString);
+                  setCustomEndDate(null);
+                  setSelectingStart(false);
+                } else {
+                  if (customStartDate && day.dateString < customStartDate) {
+                    Alert.alert("End date must be after start date");
+                    return;
+                  }
+                  setCustomEndDate(day.dateString);
+                }
+              }}
+              markedDates={{
+                ...(customStartDate && {
+                  [customStartDate]: {
+                    startingDay: true,
+                    color: "#2563eb",
+                    textColor: "#fff",
+                  },
+                }),
+                ...(customEndDate && {
+                  [customEndDate]: {
+                    endingDay: true,
+                    color: "#2563eb",
+                    textColor: "#fff",
+                  },
+                }),
+              }}
+            />
+
+            <View style={{ flexDirection: "row", marginTop: 12 }}>
+              <TouchableOpacity
+                style={styles.moveBtn}
+                onPress={() => {
+                  if (!customStartDate) {
+                    Alert.alert("Please select a date");
+                    return;
+                  }
+
+                  const finalEndDate = customEndDate || customStartDate;
+
+                  setCalendarVisible(false);
+                  setSummaryFilter("SELECT DATES");
+
+                  fetchSummaryByDateRange(customStartDate, finalEndDate);
+                }}
+              >
+                <Text style={styles.buttonText}>Apply</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setCalendarVisible(false)}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       )}
 
       {confirmRestart && confirmRestart.length > 0 && (

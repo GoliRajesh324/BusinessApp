@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import {
-    Alert,
-    Platform,
-    StatusBar,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -53,12 +53,6 @@ export default function SettingsScreen() {
     }
   };
 
-  const toggleLanguage = () => {
-    const newLang = isTelugu ? "en" : "te";
-    i18n.changeLanguage(newLang);
-    setIsTelugu(!isTelugu);
-  };
-
   // Check device support for biometrics
   const checkBiometricSupport = async () => {
     const compatible = await LocalAuthentication.hasHardwareAsync();
@@ -67,7 +61,7 @@ export default function SettingsScreen() {
     if (!compatible) {
       Alert.alert(
         "Not Supported",
-        "Biometric authentication is not supported on this device."
+        "Biometric authentication is not supported on this device.",
       );
       return false;
     }
@@ -75,7 +69,7 @@ export default function SettingsScreen() {
     if (!enrolled) {
       Alert.alert(
         "Not Set Up",
-        "Please set up Face ID or Fingerprint on your device first."
+        "Please set up Face ID or Fingerprint on your device first.",
       );
       return false;
     }
@@ -106,23 +100,21 @@ export default function SettingsScreen() {
   };
 
   // Toggle App Lock
-const toggleAppLock = async (value: boolean) => {
-  if (value) {
-    const authSuccess = await handleBiometricAuth();
-    if (authSuccess) {
-      await AsyncStorage.setItem("appLockEnabled", "true");
-      setAppLockEnabled(true);
+  const toggleAppLock = async (value: boolean) => {
+    if (value) {
+      const authSuccess = await handleBiometricAuth();
+      if (authSuccess) {
+        await AsyncStorage.setItem("appLockEnabled", "true");
+        setAppLockEnabled(true);
+      } else {
+        await AsyncStorage.setItem("appLockEnabled", "false");
+        setAppLockEnabled(false);
+      }
     } else {
       await AsyncStorage.setItem("appLockEnabled", "false");
       setAppLockEnabled(false);
     }
-  } else {
-    await AsyncStorage.setItem("appLockEnabled", "false");
-    setAppLockEnabled(false);
-  }
-};
-
-
+  };
 
   const handleBack = () => router.back();
 

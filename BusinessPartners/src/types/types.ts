@@ -11,10 +11,8 @@ export interface InvestmentDTO {
   partnerName?: string;
   share?: number;
   soldAmount?: number;
-  soldFlag?: string;
   withdrawn?: number;
   comments?: string;
-  withdrawFlag?: string;
   investmentGroupId?: number;
   totalAmount?: number;
   imageUrl?: string;

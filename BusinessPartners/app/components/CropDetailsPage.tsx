@@ -2,12 +2,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import BASE_URL from "../../src/config/config";
 
@@ -51,7 +51,7 @@ const CropDetailsPage = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) throw new Error("Failed to fetch investments");
@@ -60,7 +60,7 @@ const CropDetailsPage = () => {
       setInvestments(
         Array.isArray(data)
           ? data.sort((a, b) => b.investmentId - a.investmentId)
-          : []
+          : [],
       );
     } catch (err) {
       console.log(err);
@@ -79,19 +79,19 @@ const CropDetailsPage = () => {
 
   // Sort groups by highest investmentId DESC
   const sortedGroups = Object.values(groupedInvestments).sort(
-    (a: any, b: any) => b[0].investmentId - a[0].investmentId
+    (a: any, b: any) => b[0].investmentId - a[0].investmentId,
   );
 
   // Handle clicking on investmentId for EDIT
   const handleInvestmentClick = (inv: any) => {
     const group = groupedInvestments[inv.investmentGroupId] || [];
-    if (inv.soldFlag === "N" && inv.withdrawFlag === "N") {
+    if (inv.transactionType === "INVESTMENT") {
       setEditGroup(group);
       setShowEditPopup(true);
-    } else if (inv.soldFlag === "Y" && inv.withdrawFlag === "N") {
+    } else if (inv.transactionType === "SOLD") {
       setEditGroup(group);
       setShowEditSoldPopup(true);
-    } else if (inv.soldFlag === "N" && inv.withdrawFlag === "Y") {
+    } else if (inv.transactionType === "WITHDRAW") {
       setEditGroup(group);
       setShowEditWithdrawPopup(true);
     } else {
@@ -111,7 +111,6 @@ const CropDetailsPage = () => {
 
   return (
     <View style={styles.container}>
-      
       <Text style={styles.title}>
         ALL Investments for {businessName || "Unknown"}
       </Text>
@@ -173,9 +172,7 @@ const CropDetailsPage = () => {
                           key={i}
                           onPress={() => Alert.alert("Open Image", url)}
                         >
-                          <Text style={styles.imageLink}>
-                            Image {i + 1}
-                          </Text>
+                          <Text style={styles.imageLink}>Image {i + 1}</Text>
                         </TouchableOpacity>
                       ))
                     ) : (
@@ -184,7 +181,7 @@ const CropDetailsPage = () => {
                   </View>
                 ) : null}
               </View>
-            ))
+            )),
           )}
         </View>
       </ScrollView>
@@ -202,7 +199,7 @@ const CropDetailsPage = () => {
       )} */}
 
       {/* Edit Sold Popup */}
-   {/*    {showEditSoldPopup && editGroup && (
+      {/*    {showEditSoldPopup && editGroup && (
         <EditSoldAmountPopup
           soldData={editGroup}
           onClose={() => {
@@ -214,7 +211,7 @@ const CropDetailsPage = () => {
       )} */}
 
       {/* Edit Withdraw Popup */}
-   {/*    {showEditWithdrawPopup && editGroup && (
+      {/*    {showEditWithdrawPopup && editGroup && (
         <EditWithdrawAmountPopup
           withdrawData={editGroup}
           onClose={() => {

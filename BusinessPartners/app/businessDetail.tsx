@@ -487,22 +487,23 @@ export default function BusinessDetail() {
           (inv) =>
             inv.partnerName?.toString().toLowerCase() ===
               userName?.toString().toLowerCase() &&
-            inv?.soldFlag === "N" &&
-            inv?.withdrawFlag === "N",
+            inv?.transactionType === "INVESTMENT",
         );
 
       case "byWithdraw":
         return allInvestments.filter(
           (inv) =>
             inv.partnerName?.toString().toLowerCase() ===
-              userName?.toString().toLowerCase() && inv?.withdrawFlag === "Y",
+              userName?.toString().toLowerCase() &&
+            inv?.transactionType === "WITHDRAW",
         );
 
       case "bySold":
         return allInvestments.filter(
           (inv) =>
             inv.partnerName?.toString().toLowerCase() ===
-              userName?.toString().toLowerCase() && inv?.soldFlag === "Y",
+              userName?.toString().toLowerCase() &&
+            inv?.transactionType === "SOLD",
         );
 
       case "allInvestments":
@@ -657,21 +658,32 @@ export default function BusinessDetail() {
     </View>
   );
 
+  const transactionConfig: Record<string, { label: string; color: string }> = {
+    INVESTMENT: {
+      label: "Investment",
+      color: "#2563EB", // blue
+    },
+    SOLD: {
+      label: "Sold",
+      color: "#16A34A", // green
+    },
+    WITHDRAW: {
+      label: "Withdraw",
+      color: "#DC2626", // red
+    },
+    INVESTMENT_WITHDRAW: {
+      label: "Investment Withdraw",
+      color: "#F59E0B", // amber/orange (mixed meaning)
+    },
+  };
+
   // Render intelligent card based on flags
   const renderInvestmentCard = (inv: any, idx: number) => {
-    const type =
-      inv.withdrawFlag === "Y"
-        ? "Withdraw"
-        : inv.soldFlag === "Y"
-          ? "Sold"
-          : "Investment";
+    const config =
+      transactionConfig[inv.transactionType] || transactionConfig["INVESTMENT"];
 
-    const typeColor =
-      type === "Investment"
-        ? "#2563EB" // blue
-        : type === "Sold"
-          ? "#16A34A" // green
-          : "#DC2626"; // red
+    const type = config.label;
+    const typeColor = config.color;
 
     const description = inv?.description || "-";
     const partnerName = inv?.partnerName || "-";

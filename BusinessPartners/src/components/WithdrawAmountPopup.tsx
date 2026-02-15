@@ -9,7 +9,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 type Partner = {
@@ -39,12 +39,11 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
   cropDetails,
   investmentDetails = [],
 }) => {
- 
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [description, setDescription] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-    const [images, setImages] = useState<any[]>([]);
+  const [images, setImages] = useState<any[]>([]);
 
   const [eligibleAmount, setEligibleAmount] = useState(0);
 
@@ -63,16 +62,14 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
     loadData();
   }, []);
 
-  const createdBy = userName; 
-
-
+  const createdBy = userName;
 
   useEffect(() => {
     if (selectedPartner) {
       const partnerData = investmentDetails.find(
         (inv) =>
           inv.partner?.username?.trim().toLowerCase() ===
-          selectedPartner.username?.trim().toLowerCase()
+          selectedPartner.username?.trim().toLowerCase(),
       );
       const leftover = partnerData?.leftOver ?? 0;
       setEligibleAmount(leftover);
@@ -108,8 +105,7 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
       invested: 0,
       withdrawn: parseFloat(withdrawAmount),
       soldAmount: 0,
-      soldFlag: "N",
-      withdrawFlag: "Y",
+      transactionType: "WITHDRAW",
       splitType: "MANUAL",
       createdBy,
       investmentGroupId: null, // new group id will be generated for withdraw
@@ -131,17 +127,17 @@ const WithdrawAmountPopup: React.FC<WithdrawAmountPopupProps> = ({
             {/* Partner Dropdown */}
             <Text style={styles.label}>Select Partner</Text>
             <Picker
-            selectedValue={selectedPartner?.id || ""}
-            onValueChange={(value) => {
-              const partner = partners.find((p) => p.id === value) || null;
-              setSelectedPartner(partner);
-            }}
-          >
-            <Picker.Item label="-- Select Partner --" value="" />
-            {partners.map((p) => (
-              <Picker.Item key={p.id} label={p.username} value={p.id} />
-            ))}
-          </Picker>
+              selectedValue={selectedPartner?.id || ""}
+              onValueChange={(value) => {
+                const partner = partners.find((p) => p.id === value) || null;
+                setSelectedPartner(partner);
+              }}
+            >
+              <Picker.Item label="-- Select Partner --" value="" />
+              {partners.map((p) => (
+                <Picker.Item key={p.id} label={p.username} value={p.id} />
+              ))}
+            </Picker>
 
             {/* Eligible + Withdraw */}
             {selectedPartner && (

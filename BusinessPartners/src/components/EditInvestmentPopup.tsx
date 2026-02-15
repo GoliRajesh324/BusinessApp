@@ -124,7 +124,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   const normalizeEditData = (data: InvestmentDTO[]) => {
     return data.map((inv) => {
       // INVESTMENT
-      if (inv.withdrawFlag !== "Y" && inv.soldFlag !== "Y") {
+      if (inv.transactionType === "INVESTMENT") {
         return {
           ...inv,
           invested: Number(inv.invested ?? 0),
@@ -133,7 +133,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       }
 
       // WITHDRAW
-      if (inv.withdrawFlag === "Y") {
+      if (inv.transactionType === "WITHDRAW") {
         return {
           ...inv,
           invested: 0,
@@ -143,7 +143,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       }
 
       // SOLD
-      if (inv.soldFlag === "Y") {
+      if (inv.transactionType === "SOLD") {
         return {
           ...inv,
           invested: 0,
@@ -167,9 +167,9 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     setTotalAmount(String(investmentData[0]?.totalAmount ?? ""));
     setDescription(investmentData[0]?.description ?? "");
     setTransactionType(
-      investmentData[0]?.withdrawFlag === "Y"
+      investmentData[0]?.transactionType === "WITHDRAW"
         ? "Withdraw"
-        : investmentData[0]?.soldFlag === "Y"
+        : investmentData[0]?.transactionType === "SOLD"
           ? "Sold"
           : "Investment",
     );
@@ -241,15 +241,14 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
           partnerId: inv.partnerId,
           share: inv.share,
           //  soldAmount: inv.soldAmount,
-          soldFlag: inv.soldFlag,
           //withdrawn: inv.withdrawn,
           comments: inv.comments,
-          withdrawFlag: inv.withdrawFlag,
           partnerName: inv.partnerName,
           investmentGroupId: inv.investmentGroupId,
           totalAmount: Number(totalAmount || inv.totalAmount || 0),
           imageUrl: inv.imageUrl,
           splitType: inv.splitType?.toUpperCase(),
+          transactionType: inv.transactionType?.toUpperCase(),
           supplierName: inv.supplierName,
           supplierId: inv.supplierId,
           updatedBy: userId,

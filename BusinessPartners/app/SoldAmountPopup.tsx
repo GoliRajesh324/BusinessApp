@@ -126,8 +126,7 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
       invested: 0,
       soldAmount: parseFloat(r.investing || 0),
       withdrawn: 0,
-      soldFlag: "Y",
-      withdrawFlag: "N",
+      transactionType: "SOLD",
       splitType: splitMode.toUpperCase(),
       createdBy,
     }));

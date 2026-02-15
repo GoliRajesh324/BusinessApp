@@ -49,7 +49,9 @@ export default function InvestmentDetail() {
       // ✅ Filter using data (not state)
       const editInvestmentDetails = data.filter(
         (inv: InvestmentDTO) =>
-          !(inv.withdrawFlag === "Y" && inv.reduceLeftOverFlag === "Y"),
+          !(
+            inv.transactionType === "WITHDRAW" && inv.reduceLeftOverFlag === "Y"
+          ),
       );
       setEditInvestments(editInvestmentDetails);
       console.log("Fetched investments for group:", editInvestmentDetails);
@@ -64,7 +66,7 @@ export default function InvestmentDetail() {
 
     return rows.map((inv) => {
       // SOLD
-      if (inv.soldFlag === "Y") {
+      if (inv.transactionType === "SOLD") {
         return {
           ...inv,
           transactionType: "Sold",
@@ -76,7 +78,7 @@ export default function InvestmentDetail() {
       }
 
       // WITHDRAW
-      if (inv.withdrawFlag === "Y") {
+      if (inv.transactionType === "WITHDRAW") {
         return {
           ...inv,
           transactionType: "Withdraw",

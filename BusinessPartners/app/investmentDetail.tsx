@@ -145,7 +145,9 @@ export default function InvestmentDetail() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
+
         <Text style={styles.headerTitle}>Transaction Details</Text>
+
         <View style={styles.headerIcons}>
           <TouchableOpacity
             onPress={() => {
@@ -155,6 +157,7 @@ export default function InvestmentDetail() {
           >
             <MaterialIcons name="edit" size={26} color="#fff" />
           </TouchableOpacity>
+
           <TouchableOpacity
             onPress={() => Alert.alert("Delete feature coming soon")}
           >
@@ -163,83 +166,110 @@ export default function InvestmentDetail() {
         </View>
       </View>
 
-      {/* Scrollable Content */}
+      {/* Meta Section */}
+      <View style={styles.metaContainer}>
+        <Text style={styles.metaText}>
+          Created By: {investments[0]?.createdBy || "-"}
+        </Text>
+
+        <Text style={styles.metaText}>
+          Created At:{" "}
+          {investments[0]?.createdAt
+            ? formatDateTime(investments[0]?.createdAt)
+            : "-"}
+        </Text>
+      </View>
+
+      {/* ✅ FIXED ScrollView */}
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 16,
-          paddingTop: 16,
-          paddingBottom: 120,
+          paddingTop: 12,
+          paddingBottom: 40,
         }}
         keyboardShouldPersistTaps="handled"
-        onStartShouldSetResponderCapture={() => true}
+        showsVerticalScrollIndicator={false}
       >
         {investments.length === 0 ? (
           <Text>No investments found for this group</Text>
         ) : (
-          investments.map((inv, idx) => (
-            <View
-              key={idx}
-              style={{
-                padding: 12,
-                marginBottom: 12,
-                borderRadius: 10,
-                backgroundColor: "#f0f4f7",
-              }}
-            >
-              <Text style={{ fontWeight: "700", fontSize: 14 }}>
-                {inv.description ?? inv.comments ?? "-"}
-              </Text>
+          investments.map((inv, idx) => {
+            const totalAmount = Number(inv.totalAmount || 0);
+            const investable = Number(inv.investable || 0);
+            const invested = Number(inv.invested || 0);
+            const soldAmount = Number(inv.soldAmount || 0);
+            const withdrawn = Number(inv.withdrawn || 0);
 
-              {inv.investmentId != null && (
-                <Text>Investment Id: {inv.investmentId}</Text>
-              )}
-              {inv.createdAt && (
-                <Text>Created At: {formatDateTime(inv.createdAt)}</Text>
-              )}
-              {inv.createdBy && <Text>Created By: {inv.createdBy}</Text>}
-              {inv.cropId != null && <Text>Crop Id: {inv.cropId}</Text>}
-              {inv.description && <Text>Description: {inv.description}</Text>}
-              {inv.investable != null && (
-                <Text>Investable: {inv.investable}</Text>
-              )}
-              {inv.invested != null && <Text>Invested: {inv.invested}</Text>}
-              {inv.partnerId != null && (
-                <Text>Partner Id: {inv.partnerId}</Text>
-              )}
-              {inv.share != null && <Text>Share: {inv.share}</Text>}
-              {inv.soldAmount != null && (
-                <Text>Sold Amount: {inv.soldAmount}</Text>
-              )}
-              {inv.soldFlag && <Text>Sold Flag: {inv.soldFlag}</Text>}
-              {inv.withdrawn != null && <Text>Withdrawn: {inv.withdrawn}</Text>}
-              {inv.comments && <Text>Comments: {inv.comments}</Text>}
-              {inv.withdrawFlag && (
-                <Text>Withdraw Flag: {inv.withdrawFlag}</Text>
-              )}
-              {inv.partnerName && <Text>Partner Name: {inv.partnerName}</Text>}
-              {inv.investmentGroupId != null && (
-                <Text>Investment Group Id: {inv.investmentGroupId}</Text>
-              )}
-              {inv.totalAmount != null && (
-                <Text>Total Amount: {inv.totalAmount}</Text>
-              )}
-              {inv.imageUrl && <Text>Image URL: {inv.imageUrl}</Text>}
-              {inv.splitType && <Text>Split Type: {inv.splitType}</Text>}
-              {inv.supplierName && (
-                <Text>Supplier Name: {inv.supplierName}</Text>
-              )}
-              {inv.supplierId != null && (
-                <Text>Supplier Id: {inv.supplierId}</Text>
-              )}
-              {inv.updatedBy && <Text>Updated By: {inv.updatedBy}</Text>}
-              {inv.reduceLeftOver != null && (
-                <Text>Reduce Left Over: {inv.reduceLeftOver}</Text>
-              )}
-              {inv.reduceLeftOverFlag && (
-                <Text>Reduce Left Over Flag: {inv.reduceLeftOverFlag}</Text>
-              )}
-            </View>
-          ))
+            return (
+              <View key={idx} style={styles.card}>
+                {/* Top Row */}
+                <View style={styles.cardTopRow}>
+                  <Text style={styles.partnerName}>
+                    {inv.partnerName || "-"}
+                  </Text>
+
+                  {inv.share != null && (
+                    <Text style={styles.shareText}>{inv.share}%</Text>
+                  )}
+                </View>
+
+                {/* Description */}
+                {inv.description && (
+                  <Text style={styles.descriptionText}>{inv.description}</Text>
+                )}
+
+                <View style={styles.divider} />
+
+                {/* Show only > 0 values */}
+
+                {totalAmount > 0 && (
+                  <View style={styles.amountRow}>
+                    <Text style={styles.amountLabel}>Total Amount</Text>
+                    <Text style={styles.amountValue}>
+                      ₹ {formatAmount(totalAmount)}
+                    </Text>
+                  </View>
+                )}
+
+                {investable > 0 && (
+                  <View style={styles.amountRow}>
+                    <Text style={styles.amountLabel}>Investable</Text>
+                    <Text style={styles.amountValue}>
+                      ₹ {formatAmount(investable)}
+                    </Text>
+                  </View>
+                )}
+
+                {invested > 0 && (
+                  <View style={styles.amountRow}>
+                    <Text style={styles.amountLabel}>Invested</Text>
+                    <Text style={styles.amountValue}>
+                      ₹ {formatAmount(invested)}
+                    </Text>
+                  </View>
+                )}
+
+                {soldAmount > 0 && (
+                  <View style={styles.amountRow}>
+                    <Text style={styles.amountLabel}>Sold Amount</Text>
+                    <Text style={styles.amountValue}>
+                      ₹ {formatAmount(soldAmount)}
+                    </Text>
+                  </View>
+                )}
+
+                {withdrawn > 0 && (
+                  <View style={styles.amountRow}>
+                    <Text style={styles.amountLabel}>Withdrawn</Text>
+                    <Text style={styles.amountValue}>
+                      ₹ {formatAmount(withdrawn)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            );
+          })
         )}
       </ScrollView>
 
@@ -279,4 +309,75 @@ const styles = StyleSheet.create({
   },
   headerIcons: { flexDirection: "row", gap: 16 },
   content: { padding: 16 },
+  metaContainer: {
+    backgroundColor: "#eef3f8",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+
+  metaText: {
+    fontSize: 13,
+    color: "#555",
+  },
+
+  card: {
+    backgroundColor: "#ffffff",
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 14,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+
+  cardTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  partnerName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111",
+  },
+
+  shareText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#2563eb",
+  },
+
+  descriptionText: {
+    fontSize: 14,
+    color: "#555",
+    marginTop: 6,
+    marginBottom: 6,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "#eee",
+    marginVertical: 8,
+  },
+
+  amountRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 6,
+  },
+
+  amountLabel: {
+    fontSize: 14,
+    color: "#6b7280",
+  },
+
+  amountValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111",
+  },
 });

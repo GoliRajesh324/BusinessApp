@@ -14,11 +14,11 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
+  View,
 } from "react-native";
-import BASE_URL from "../src/config/config";
-import { InvestmentDTO } from "./types";
-import { numberToWords } from "./utils/numberToWords";
+import BASE_URL from "../config/config";
+import { InvestmentDTO } from "../types/types";
+import { numberToWords } from "../utils/numberToWords";
 
 interface EditInvestmentScreenProps {
   visible: boolean;
@@ -77,13 +77,13 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   const [rows, setRows] = useState<any[]>(partners);
 
   const [totalAmount, setTotalAmount] = useState<string>(
-    first.totalAmount?.toString() ?? ""
+    first.totalAmount?.toString() ?? "",
   );
   const [description, setDescription] = useState<string>(
-    first.description ?? ""
+    first.description ?? "",
   );
   const [transactionType, setTransactionType] = useState<string>(
-    first.transactionType ?? "Investment"
+    first.transactionType ?? "Investment",
   );
   const [images, setImages] = useState<any[]>(first.images ?? []);
 
@@ -101,7 +101,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   const expected = useMemo(() => parseFloat(totalAmount) || 0, [totalAmount]);
 
   const [splitMode, setSplitMode] = useState<"share" | "equal" | "manual">(
-    "share"
+    "share",
   );
   const [sheetVisible, setSheetVisible] = useState(false);
   const [sheetTempMode, setSheetTempMode] = useState<
@@ -170,8 +170,8 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       investmentData[0]?.withdrawFlag === "Y"
         ? "Withdraw"
         : investmentData[0]?.soldFlag === "Y"
-        ? "Sold"
-        : "Investment"
+          ? "Sold"
+          : "Investment",
     );
 
     isInitialLoad.current = true;
@@ -184,7 +184,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       setIsUpdating(true); // 🔒 lock button
 
       investmentData.map((inv) =>
-        console.log("Investment to update:", inv.invested)
+        console.log("Investment to update:", inv.invested),
       );
       const totalEntered = investmentDataState.reduce((sum, r) => {
         if (transactionType === "Withdraw") {
@@ -217,7 +217,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
 
       console.log(
         "Preparing to send updated investments description...",
-        description
+        description,
       );
       // ✅ Prepare list of updated investments matching backend InvestmentDTO
       const updatedInvestments = investmentDataState.map((inv) => {
@@ -268,7 +268,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(updatedInvestments),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -451,7 +451,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
           actual: Number(val.toFixed(2)),
           splitType: sheetTempMode, // ✅ Save mode here
         };
-      })
+      }),
     );
     // 3️⃣ Close modal
     setSheetVisible(false);
@@ -575,31 +575,32 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
           )}
 
           {/* Supplier Name */}
-          {supplierName?.trim() !== "" && (<TextInput
-            style={{
-              borderWidth: 1,
-              borderColor: "#ccc",
-              padding: 8,
-              borderRadius: 6,
-              fontSize: 14,
-              backgroundColor: "#fff",
-            }}
-            value={supplierName}
-            placeholder="Enter supplier name"
-            onChangeText={(val) => {
-              setSupplierName(val);
+          {supplierName?.trim() !== "" && (
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: "#ccc",
+                padding: 8,
+                borderRadius: 6,
+                fontSize: 14,
+                backgroundColor: "#fff",
+              }}
+              value={supplierName}
+              placeholder="Enter supplier name"
+              onChangeText={(val) => {
+                setSupplierName(val);
 
-              // ✅ Update inside investmentDataState as well
-              setInvestmentDataState((prev) =>
-                prev.map((inv) => ({
-                  ...inv,
-                  supplierName: val,
-                }))
-              );
-            }}
-          />
+                // ✅ Update inside investmentDataState as well
+                setInvestmentDataState((prev) =>
+                  prev.map((inv) => ({
+                    ...inv,
+                    supplierName: val,
+                  })),
+                );
+              }}
+            />
           )}
-          
+
           {/* Partner Cards */}
           <View style={{ marginTop: 12 }}>
             <Text style={styles.sectionTitle}>Partners</Text>
@@ -633,8 +634,8 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                             transactionType === "Withdraw"
                               ? r.withdrawn
                               : transactionType === "Sold"
-                              ? r.soldAmount
-                              : r.invested
+                                ? r.soldAmount
+                                : r.invested,
                           ).toFixed(2)}
                         </Text>
 
@@ -819,7 +820,6 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
           </Animated.View>
         )}
 
-
         {/* Split Sheet */}
         <Modal visible={sheetVisible} animationType="slide" transparent>
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -857,7 +857,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                               const shareBased = partners.map(
                                 (p, i) =>
                                   ((p.share ?? 100 / partners.length) / 100) *
-                                  expected
+                                  expected,
                               );
                               setShareValues(shareBased);
                             } else {

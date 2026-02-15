@@ -19,9 +19,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { useFocusEffect } from "@react-navigation/native";
 import { Calendar, DateData } from "react-native-calendars";
+import InvestmentAudit from "../src/components/InvestmentAudit";
 import BASE_URL from "../src/config/config";
 import AddInvestmentPopup from "./addInvestmentPopup";
-import InvestmentAudit from "./components/InvestmentAudit";
 
 type Partner = {
   partnerId: number;
@@ -465,12 +465,12 @@ export default function BusinessDetail() {
       fetchInvestments();
       fetchSuppliers();
 
-      // Only fetch full summary if filter is ALL
       if (summaryFilter === "ALL") {
         fetchBusinessDetails();
       }
-    }, [safeBusinessId, token]),
+    }, [safeBusinessId, token, summaryFilter]),
   );
+
   const filteredInvestments = useMemo(() => {
     if (!allInvestments) return [];
 

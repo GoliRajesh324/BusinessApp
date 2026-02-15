@@ -1,23 +1,23 @@
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-    DarkTheme,
-    DefaultTheme,
-    ThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
 } from "@react-navigation/native";
+import * as LocalAuthentication from "expo-local-authentication";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as LocalAuthentication from "expo-local-authentication";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    AppState,
-    StyleSheet,
-    Text,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  AppState,
+  StyleSheet,
+  Text,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
+import "../src/i18n/i18n";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -90,7 +90,10 @@ export default function RootLayout() {
   // 2️⃣ Auto-lock when app goes to background
   useEffect(() => {
     const sub = AppState.addEventListener("change", async (nextState) => {
-      if (appState.current === "active" && nextState.match(/inactive|background/)) {
+      if (
+        appState.current === "active" &&
+        nextState.match(/inactive|background/)
+      ) {
         await AsyncStorage.setItem("appLockLastAuth", "no");
       }
       appState.current = nextState;
@@ -141,7 +144,9 @@ export default function RootLayout() {
     return (
       <View style={styles.center}>
         <Text style={styles.lockTitle}>Authentication Required</Text>
-        <Text style={styles.lockNote}>Close and reopen the app to try again.</Text>
+        <Text style={styles.lockNote}>
+          Close and reopen the app to try again.
+        </Text>
       </View>
     );
   }
@@ -150,7 +155,9 @@ export default function RootLayout() {
   return (
     <TouchableWithoutFeedback onPress={handleTouch}>
       <View style={{ flex: 1 }}>
-        <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <ThemeProvider
+          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+        >
           <Stack>
             <Stack.Screen
               name="dashboard"
@@ -178,7 +185,7 @@ export default function RootLayout() {
                 headerShown: false,
               }}
             />
-             <Stack.Screen
+            <Stack.Screen
               name="helpandSupportScreen"
               options={{
                 headerShown: false,
@@ -202,12 +209,7 @@ export default function RootLayout() {
                 headerShown: false,
               }}
             />
-              <Stack.Screen
-              name="chartsScreen"
-              options={{
-                headerShown: false,
-              }}
-            />
+
             <Stack.Screen
               name="addCategory"
               options={{

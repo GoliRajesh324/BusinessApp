@@ -10,9 +10,9 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
+  View,
 } from "react-native";
-import { createCategory, updateCategory } from "./inventory";
+import { createCategory, updateCategory } from "../src/services/inventory";
 
 export default function AddCategory() {
   const router = useRouter();
@@ -55,7 +55,7 @@ export default function AddCategory() {
             description,
             quantityType,
           },
-          token
+          token,
         );
 
         Alert.alert("Success", "Category updated successfully");
@@ -72,7 +72,7 @@ export default function AddCategory() {
           quantityType,
           createdBy: 1,
         },
-        token
+        token,
       );
 
       Alert.alert("Success", "Category created");

@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { numberToWords } from "./utils/numberToWords";
+import { numberToWords } from "../src/utils/numberToWords";
 
 type Partner = { id: string; username: string; share?: number };
 
@@ -24,7 +24,7 @@ interface SoldAmountPopupProps {
   visible: boolean;
   partners: Partner[];
   cropDetails?: CropDetails;
-  onSave: (data: { investmentData: any[]; }) => void;
+  onSave: (data: { investmentData: any[] }) => void;
   onClose: () => void;
 }
 
@@ -36,7 +36,7 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
   onClose,
 }) => {
   const [splitMode, setSplitMode] = useState<"share" | "equal" | "manual">(
-    "share"
+    "share",
   );
   const [totalAmount, setTotalAmount] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -88,8 +88,12 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
           const per = (expected / partners.length).toFixed(2);
           return { ...prevRow, actual: per, investing: per };
         }
-        return { ...prevRow, actual: prevRow.investing || "", investing: prevRow.investing || "" };
-      })
+        return {
+          ...prevRow,
+          actual: prevRow.investing || "",
+          investing: prevRow.investing || "",
+        };
+      }),
     );
   }, [splitMode, totalAmount, partners]);
 
@@ -101,11 +105,11 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
       return next;
     });
   };
-  
+
   const handleSave = () => {
     const totalEntered = rows.reduce(
       (sum, r) => sum + (parseFloat(r.investing) || 0),
-      0
+      0,
     );
     if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
       Alert.alert("Error", "Total entered does not match expected amount");
@@ -145,7 +149,9 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 16 }}>
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 16 }}
+        >
           {/* Description */}
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Description</Text>
@@ -169,7 +175,11 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
             />
           </View>
 
-          {!!totalAmount && <Text style={styles.amountWords}>{numberToWords(Number(totalAmount))}</Text>}
+          {!!totalAmount && (
+            <Text style={styles.amountWords}>
+              {numberToWords(Number(totalAmount))}
+            </Text>
+          )}
 
           {/* Split Mode Buttons */}
           <View style={styles.splitContainer}>
@@ -177,9 +187,19 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
               <TouchableOpacity
                 key={mode}
                 onPress={() => setSplitMode(mode as any)}
-                style={[styles.splitButton, splitMode === mode && styles.splitButtonActive]}
+                style={[
+                  styles.splitButton,
+                  splitMode === mode && styles.splitButtonActive,
+                ]}
               >
-                <Text style={{ fontSize: 12, color: splitMode === mode ? "white" : "black" }}>{mode.toUpperCase()}</Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: splitMode === mode ? "white" : "black",
+                  }}
+                >
+                  {mode.toUpperCase()}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -187,7 +207,9 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
           {/* Table Header */}
           <View style={[styles.row, styles.headerRow]}>
             <Text style={styles.headerCell}>User</Text>
-            {splitMode === "share" && <Text style={styles.headerCell}>Share %</Text>}
+            {splitMode === "share" && (
+              <Text style={styles.headerCell}>Share %</Text>
+            )}
             <Text style={styles.headerCell}>Actual</Text>
             <Text style={styles.headerCell}>Sold</Text>
             <Text style={styles.headerCell}>Diff</Text>
@@ -201,29 +223,52 @@ const SoldAmountPopup: React.FC<SoldAmountPopupProps> = ({
 
             return (
               <View key={row.id} style={styles.row}>
-                <Text style={[styles.cell, { fontSize: row.name.length > 10 ? 11 : 13 }]}>{row.name}</Text>
-                {splitMode === "share" && <Text style={styles.cell}>{row.share}%</Text>}
-                <Text style={[styles.cell, { fontSize: row.actual.length > 6 ? 11 : 13 }]}>{row.actual}</Text>
+                <Text
+                  style={[
+                    styles.cell,
+                    { fontSize: row.name.length > 10 ? 11 : 13 },
+                  ]}
+                >
+                  {row.name}
+                </Text>
+                {splitMode === "share" && (
+                  <Text style={styles.cell}>{row.share}%</Text>
+                )}
+                <Text
+                  style={[
+                    styles.cell,
+                    { fontSize: row.actual.length > 6 ? 11 : 13 },
+                  ]}
+                >
+                  {row.actual}
+                </Text>
                 <TextInput
                   style={[styles.cell, styles.inputCell]}
                   value={row.investing}
                   keyboardType="numeric"
                   onChangeText={(val) => handleInvestingChange(idx, val)}
                 />
-                <Text style={[styles.cell, { color: diff > 0 ? "green" : diff < 0 ? "red" : "#333" }]}>
+                <Text
+                  style={[
+                    styles.cell,
+                    { color: diff > 0 ? "green" : diff < 0 ? "red" : "#333" },
+                  ]}
+                >
                   {diff !== 0 ? diff.toFixed(2) : ""}
                 </Text>
               </View>
             );
           })}
-
         </ScrollView>
 
         {/* Full-Screen Preview */}
         <Modal visible={!!previewImage} transparent>
           <View style={styles.previewContainer}>
             <Image source={{ uri: previewImage! }} style={styles.fullPreview} />
-            <TouchableOpacity style={styles.closeBtn} onPress={() => setPreviewImage(null)}>
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={() => setPreviewImage(null)}
+            >
               <Ionicons name="close" size={36} color="white" />
             </TouchableOpacity>
           </View>
@@ -239,8 +284,10 @@ export default SoldAmountPopup;
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   header: {
-    height: Platform.OS === "android" ? 90 + (StatusBar.currentHeight || 0) : 110,
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
+    height:
+      Platform.OS === "android" ? 90 + (StatusBar.currentHeight || 0) : 110,
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
     backgroundColor: "#4f93ff",
     flexDirection: "row",
     alignItems: "center",
@@ -249,27 +296,106 @@ const styles = StyleSheet.create({
   },
   headerLeft: { width: 40, justifyContent: "center", alignItems: "flex-start" },
   headerRight: { width: 60, justifyContent: "center", alignItems: "flex-end" },
-  headerTitle: { fontSize: 20, fontWeight: "700", color: "#fff", textAlign: "center", flex: 1 },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#fff",
+    textAlign: "center",
+    flex: 1,
+  },
   saveText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   inputContainer: { marginVertical: 10 },
-  inputLabel: { fontSize: 16, fontWeight: "600", marginBottom: 6, color: "#333" },
-  inputBox: { borderWidth: 1, borderColor: "#ccc", borderRadius: 8, paddingHorizontal: 14, paddingVertical: 14, fontSize: 16, color: "#000", backgroundColor: "#f9f9f9" },
-  amountWords: { fontSize: 12, fontStyle: "italic", marginTop: 4, color: "#666" },
-  splitContainer: { flexDirection: "row", justifyContent: "space-around", marginVertical: 12 },
-  splitButton: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 14, backgroundColor: "#e0e0e0" },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 6,
+    color: "#333",
+  },
+  inputBox: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: "#000",
+    backgroundColor: "#f9f9f9",
+  },
+  amountWords: {
+    fontSize: 12,
+    fontStyle: "italic",
+    marginTop: 4,
+    color: "#666",
+  },
+  splitContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginVertical: 12,
+  },
+  splitButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: "#e0e0e0",
+  },
   splitButtonActive: { backgroundColor: "#007bff" },
-  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6, alignItems: "center" },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+    alignItems: "center",
+  },
   headerRow: { borderBottomWidth: 1, borderColor: "#ccc", paddingBottom: 4 },
-  headerCell: { flex: 1, textAlign: "center", fontWeight: "600", fontSize: 13, color: "#111" },
+  headerCell: {
+    flex: 1,
+    textAlign: "center",
+    fontWeight: "600",
+    fontSize: 13,
+    color: "#111",
+  },
   cell: { flex: 1, textAlign: "center", fontSize: 13 },
-  inputCell: { borderWidth: 1, borderColor: "#ccc", borderRadius: 6, padding: 4, textAlign: "center" },
-  sectionTitle: { marginTop: 16, marginBottom: 8, fontWeight: "600", fontSize: 16 },
-  cameraBtn: { width: 50, height: 50, backgroundColor: "#ff7f50", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 8 },
+  inputCell: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    padding: 4,
+    textAlign: "center",
+  },
+  sectionTitle: {
+    marginTop: 16,
+    marginBottom: 8,
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  cameraBtn: {
+    width: 50,
+    height: 50,
+    backgroundColor: "#ff7f50",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
   imagePreview: { marginRight: 10, position: "relative" },
   previewThumb: { width: 70, height: 70, borderRadius: 8 },
-  deleteBtn: { position: "absolute", top: -6, right: -6, backgroundColor: "red", borderRadius: 12, width: 24, height: 24, justifyContent: "center", alignItems: "center" },
+  deleteBtn: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "red",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   deleteText: { color: "#fff", fontWeight: "700" },
-  previewContainer: { flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" },
+  previewContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   fullPreview: { width: "100%", height: "100%", resizeMode: "contain" },
   closeBtn: { position: "absolute", top: 40, right: 20 },
 });

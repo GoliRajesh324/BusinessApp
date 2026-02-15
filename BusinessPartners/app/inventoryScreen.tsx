@@ -1,16 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import CategoryCard from "./components/CategoryCard";
-import { fetchCategories } from "./inventory";
+import CategoryCard from "../src/components/CategoryCard";
+import { fetchCategories } from "../src/services/inventory";
 
 export default function InventoryScreen() {
   const router = useRouter();
@@ -23,13 +24,21 @@ export default function InventoryScreen() {
   // Reload on focus
   useFocusEffect(
     useCallback(() => {
-      (async () => {
-        const t = await AsyncStorage.getItem("token");
-        if (!t) return;
+      let isActive = true;
 
-        loadCategories(t);
-      })();
-    }, [businessId])
+      const load = async () => {
+        const t = await AsyncStorage.getItem("token");
+        if (!t || !businessId || !isActive) return;
+
+        await loadCategories(t);
+      };
+
+      load();
+
+      return () => {
+        isActive = false;
+      };
+    }, [businessId]),
   );
 
   // Load categories
@@ -117,7 +126,7 @@ export default function InventoryScreen() {
             }
 
             const hasStock = categories.some(
-              (c: any) => Number(c.availableQuantity) > 0
+              (c: any) => Number(c.availableQuantity) > 0,
             );
 
             if (!hasStock) {

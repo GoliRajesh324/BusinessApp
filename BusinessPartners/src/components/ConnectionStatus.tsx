@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
 import axios from "axios";
-import BASE_URL from "../../src/config/config";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import BASE_URL from "../config/config";
 
 export default function ConnectionStatus() {
-  const [status, setStatus] = useState<"checking" | "connected" | "disconnected">("checking");
+  const [status, setStatus] = useState<
+    "checking" | "connected" | "disconnected"
+  >("checking");
 
   const checkConnection = async () => {
     try {
@@ -25,8 +27,8 @@ export default function ConnectionStatus() {
 
     // Run every 7 seconds, no matter what
     const interval = setInterval(() => {
-        setStatus("checking");
-        checkConnection();
+      setStatus("checking");
+      checkConnection();
     }, 7000);
 
     return () => clearInterval(interval);
@@ -35,8 +37,12 @@ export default function ConnectionStatus() {
   return (
     <View style={styles.container}>
       {status === "connected" && <Text style={styles.green}>🟢 Connected</Text>}
-      {status === "disconnected" && <Text style={styles.red}>🔴 No Connection</Text>}
-      {status === "checking" && <Text style={styles.orange}>⏳ Please Wait Getting Connection...</Text>}
+      {status === "disconnected" && (
+        <Text style={styles.red}>🔴 No Connection</Text>
+      )}
+      {status === "checking" && (
+        <Text style={styles.orange}>⏳ Please Wait Getting Connection...</Text>
+      )}
     </View>
   );
 }

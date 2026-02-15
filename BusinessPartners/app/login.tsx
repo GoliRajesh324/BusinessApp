@@ -7,14 +7,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import ConnectionStatus from "../src/components/ConnectionStatus";
 import BASE_URL from "../src/config/config";
-import ConnectionStatus from "./components/ConnectionStatus";
 
 export const unstable_settings = {
   headerShown: false, // hide header
@@ -167,8 +167,8 @@ export default function LoginScreen() {
                     ? "Logging in..."
                     : "Registering..."
                   : isLogin
-                  ? "Login"
-                  : "Register"}
+                    ? "Login"
+                    : "Register"}
               </Text>
             </Pressable>
 
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 10,
     fontSize: 16,
-    color: "#000",  // <-- add this
+    color: "#000", // <-- add this
   },
   passwordRow: { flexDirection: "row", alignItems: "center" },
   showBtn: { paddingHorizontal: 10, justifyContent: "center" },

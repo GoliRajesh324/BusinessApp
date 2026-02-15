@@ -7,7 +7,6 @@ import {
   Alert,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,12 +14,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   addInterest,
   getAllInterests,
   updateInterest,
-} from "./interestService";
-import { generateInterestPDF } from "./pdfGenerator";
+} from "../src/services/interestService";
+import { generateInterestPDF } from "../src/services/pdfGenerator";
 
 type Interest = {
   id?: number | string;
@@ -128,7 +128,7 @@ export default function SimpleInterestPage() {
      FILTER ONLY FOR DISPLAY (LIST)
      ************************************ */
   const filteredPersons = persons.filter((p) =>
-    showActive ? !p.endDate || p.endDate === "" : !!p.endDate
+    showActive ? !p.endDate || p.endDate === "" : !!p.endDate,
   );
 
   const grouped = filteredPersons.reduce<Record<string, Interest[]>>(
@@ -137,7 +137,7 @@ export default function SimpleInterestPage() {
       acc[p.name].push(p);
       return acc;
     },
-    {}
+    {},
   );
 
   const onAddPress = () => {
@@ -167,7 +167,7 @@ export default function SimpleInterestPage() {
       totalTakenAll,
       totalGivenAll,
       formatAmountIndian,
-      formatDateForDisplay
+      formatDateForDisplay,
     );
   };
 
@@ -196,7 +196,7 @@ export default function SimpleInterestPage() {
       totalTaken,
       totalGiven,
       formatAmountIndian,
-      formatDateForDisplay
+      formatDateForDisplay,
     );
   };
 
@@ -222,7 +222,7 @@ export default function SimpleInterestPage() {
         const updated = await updateInterest(editingId, dto);
         if (updated) {
           setPersons((prev) =>
-            prev.map((p) => (p.id === editingId ? updated : p))
+            prev.map((p) => (p.id === editingId ? updated : p)),
           );
         }
       } else {
@@ -347,7 +347,7 @@ export default function SimpleInterestPage() {
               const records = grouped[name];
               const netAmount = records.reduce(
                 (s, r) => s + (r.amount || 0),
-                0
+                0,
               );
               const type = records[0].type;
 

@@ -15,7 +15,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import BASE_URL from "../../src/config/config";
+import BASE_URL from "../config/config";
 
 interface Partner {
   name: string;
@@ -35,7 +35,7 @@ export default function AddBusinessPopup({
   editingBusiness,
 }: Props) {
   const [businessName, setBusinessName] = useState<string>(
-    editingBusiness?.name || ""
+    editingBusiness?.name || "",
   );
   const [partnerName, setPartnerName] = useState<string>("");
   const [share, setShare] = useState<string>("");
@@ -45,7 +45,7 @@ export default function AddBusinessPopup({
           name: (p.username ?? p.name)?.toLowerCase(),
           share: String(p.share),
         }))
-      : []
+      : [],
   );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -71,7 +71,7 @@ export default function AddBusinessPopup({
       inputRange: [0, 1],
       outputRange: [600, 0],
     }),
-    panY
+    panY,
   );
 
   // Detect swipe down to close
@@ -101,7 +101,7 @@ export default function AddBusinessPopup({
           }).start();
         }
       },
-    })
+    }),
   ).current;
 
   const resetForm = () => {
@@ -205,7 +205,7 @@ export default function AddBusinessPopup({
         await axios.put(
           `${BASE_URL}/api/business/${editingBusiness.id}`,
           payload,
-          { headers }
+          { headers },
         );
       } else {
         await axios.post(`${BASE_URL}/api/business/create`, payload, {
@@ -231,7 +231,8 @@ export default function AddBusinessPopup({
       if (status === 403) {
         Alert.alert(
           "Unauthorized",
-          serverMsg || "Access denied (403). Please login or check permissions."
+          serverMsg ||
+            "Access denied (403). Please login or check permissions.",
         );
         // do not auto-navigate away — keep behaviour unchanged
       } else {
@@ -327,7 +328,10 @@ export default function AddBusinessPopup({
             </View>
 
             {partners.length === 0 ? (
-              <Text style={styles.emptyPartners}>No partners have been added.{'\n'}You can add only partners who have an account.</Text>
+              <Text style={styles.emptyPartners}>
+                No partners have been added.{"\n"}You can add only partners who
+                have an account.
+              </Text>
             ) : (
               partners.map((p, idx) => (
                 <View key={idx} style={styles.partnerCard}>
@@ -359,7 +363,7 @@ export default function AddBusinessPopup({
               ))
             )}
 
-         {/*    <TouchableOpacity
+            {/*    <TouchableOpacity
               style={[styles.saveBtn, saveDisabled && styles.disabledBtn]}
               onPress={handleSave}
               disabled={saveDisabled}

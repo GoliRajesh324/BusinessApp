@@ -3,15 +3,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { changeStock, fetchCategories } from "./inventory";
+import { changeStock, fetchCategories } from "../src/services/inventory";
 
 export default function ConsumeStock() {
   const router = useRouter();
@@ -45,7 +45,7 @@ export default function ConsumeStock() {
     if (qty > selectedCategory.availableQuantity) {
       return Alert.alert(
         "Not Enough Stock",
-        `Only ${selectedCategory.availableQuantity} ${selectedCategory.quantityType} available.`
+        `Only ${selectedCategory.availableQuantity} ${selectedCategory.quantityType} available.`,
       );
     }
 
@@ -61,7 +61,7 @@ export default function ConsumeStock() {
           quantity: qty,
           note: "",
         },
-        token
+        token,
       );
 
       Alert.alert("Success", "Stock consumed successfully");

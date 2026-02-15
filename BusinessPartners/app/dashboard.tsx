@@ -18,8 +18,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AddBusinessPopup from "../src/components/AddBusinessPopup";
 import BASE_URL from "../src/config/config";
-import AddBusinessPopup from "./components/AddBusinessPopup";
 
 export default function Dashboard() {
   const [showPopup, setShowPopup] = useState(false);

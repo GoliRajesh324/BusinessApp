@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { RateUsModal } from "./components/RateUsModal";
+import { RateUsModal } from "../src/components/RateUsModal";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -88,7 +88,7 @@ export default function ProfileScreen() {
             onPress={() =>
               Alert.alert(
                 "Coming Soon",
-                "Edit profile feature is coming soon 🚀"
+                "Edit profile feature is coming soon 🚀",
               )
             }
           >

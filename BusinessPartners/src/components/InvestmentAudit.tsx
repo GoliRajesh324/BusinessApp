@@ -2,17 +2,17 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Modal,
-    Platform,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import BASE_URL from "../../src/config/config";
+import BASE_URL from "../config/config";
 
 interface InvestmentAuditProps {
   businessId: string;
@@ -51,7 +51,7 @@ export default function InvestmentAudit({
           {
             method: "GET",
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
 
         if (!response.ok) throw new Error("Failed to fetch audit logs");

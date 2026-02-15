@@ -10,9 +10,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import EditInvestmentPopup from "../src/components/EditInvestmentPopup";
 import BASE_URL from "../src/config/config";
-import EditInvestmentPopup from "./EditInvestmentPopup";
-import { InvestmentDTO } from "./types";
+import { InvestmentDTO } from "../src/types/types";
 
 export default function InvestmentDetail() {
   const { investmentGroupId, businessId, businessName } = useLocalSearchParams<{
@@ -40,7 +40,7 @@ export default function InvestmentDetail() {
     try {
       const res = await fetch(
         `${BASE_URL}/api/investment/all-group-investments/${investmentGroupId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       //   console.log("Fetching business name:", businessName);
       if (!res.ok) throw new Error("Failed to fetch group investments");
@@ -49,7 +49,7 @@ export default function InvestmentDetail() {
       // ✅ Filter using data (not state)
       const editInvestmentDetails = data.filter(
         (inv: InvestmentDTO) =>
-          !(inv.withdrawFlag === "Y" && inv.reduceLeftOverFlag === "Y")
+          !(inv.withdrawFlag === "Y" && inv.reduceLeftOverFlag === "Y"),
       );
       setEditInvestments(editInvestmentDetails);
       console.log("Fetched investments for group:", editInvestmentDetails);
@@ -277,6 +277,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#fff",
   },
-  headerIcons: { flexDirection: "row",  gap: 16 },
+  headerIcons: { flexDirection: "row", gap: 16 },
   content: { padding: 16 },
 });

@@ -3,15 +3,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { changeStock, fetchCategories } from "./inventory";
+import { changeStock, fetchCategories } from "../src/services/inventory";
 
 export default function AddStock() {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function AddStock() {
 
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
-    null
+    null,
   );
   const [quantity, setQuantity] = useState("");
 
@@ -54,7 +54,7 @@ export default function AddStock() {
           quantity: quantity,
           note: "",
         },
-        token
+        token,
       );
 
       Alert.alert("Success", "Stock added successfully");
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
 
   /* Header */
-header: {
+  header: {
     backgroundColor: "#4f93ff",
     paddingTop: 45,
     paddingBottom: 14,
@@ -142,11 +142,10 @@ header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    zIndex: 9999,           // <-- added
-    elevation: 6,           // <-- added
-    position: "relative",   // <-- added
-},
-
+    zIndex: 9999, // <-- added
+    elevation: 6, // <-- added
+    position: "relative", // <-- added
+  },
 
   headerLeft: { width: 40 },
   headerTitle: {

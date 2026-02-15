@@ -18,9 +18,9 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import SupplierPopup from "../src/components/SupplierPopup";
 import BASE_URL from "../src/config/config";
-import SupplierPopup from "./SupplierPopup";
-import { numberToWords } from "./utils/numberToWords";
+import { numberToWords } from "../src/utils/numberToWords";
 
 type Partner = {
   id: string;
@@ -59,7 +59,6 @@ interface PartnerRow {
 }
 
 const SLIDER_THUMB_SIZE = 18;
-const shakeAnimations = useRef<Record<string, Animated.Value>>({}).current;
 
 const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   visible,
@@ -70,6 +69,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   onSave,
   onClose,
 }) => {
+  const shakeAnimations = useRef<Record<string, Animated.Value>>({}).current;
   const [splitMode, setSplitMode] = useState<"share" | "equal" | "manual">(
     "share",
   );

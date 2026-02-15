@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { fetchCategoryById } from "./inventory";
+import { fetchCategoryById } from "../src/services/inventory";
 
 export default function CategoryDetails() {
   const router = useRouter();
@@ -118,16 +118,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-header: {
-  backgroundColor: "#4f93ff",
-  paddingVertical: 14,     // ✅ single padding
-  paddingTop: 40,      // ✅ to offset status bar
-  paddingHorizontal: 16,
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-},
-
+  header: {
+    backgroundColor: "#4f93ff",
+    paddingVertical: 14, // ✅ single padding
+    paddingTop: 40, // ✅ to offset status bar
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
 
   headerLeft: {
     width: 40,
@@ -151,7 +150,7 @@ header: {
     fontSize: 16,
   },
 
-  body: { padding: 20},
+  body: { padding: 20 },
   label: { marginTop: 16, fontWeight: "700", color: "#333" },
   value: {
     marginTop: 4,

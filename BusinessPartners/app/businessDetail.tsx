@@ -427,7 +427,7 @@ export default function BusinessDetail() {
       );
       if (!response.ok) throw new Error("Failed to fetch investments");
       const data = await response.json();
-      //console.log("➡️ Fetched investments:", data);
+      console.log("➡️ Fetched investments:", data);
       setAllInvestments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.log(err);

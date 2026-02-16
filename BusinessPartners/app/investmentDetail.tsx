@@ -89,6 +89,17 @@ export default function InvestmentDetail() {
         };
       }
 
+      if (inv.transactionType === "INVESTMENT_WITHDRAW") {
+        return {
+          ...inv,
+          transactionType: "Investment_Withdraw",
+          invested: 0,
+          investable: 0,
+          soldAmount: 0,
+          withdrawn: Number(inv.withdrawn ?? 0),
+        };
+      }
+
       // INVESTMENT
       return {
         ...inv,
@@ -212,7 +223,7 @@ export default function InvestmentDetail() {
                   </Text>
 
                   {inv.share != null && (
-                    <Text style={styles.shareText}>{inv.share}%</Text>
+                    <Text style={styles.shareText}>Share: {inv.share}%</Text>
                   )}
                 </View>
 

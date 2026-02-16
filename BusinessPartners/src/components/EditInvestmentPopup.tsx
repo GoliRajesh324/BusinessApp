@@ -44,6 +44,9 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     useState(investmentData);
   const [supplierName, setSupplierName] = useState(first.supplierName ?? "");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [originalReduceMap, setOriginalReduceMap] = useState<
+    Record<number, number>
+  >({});
 
   /* const [checkedState, setCheckedState] = useState<Record<number, boolean>>({});
 
@@ -58,16 +61,18 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       setCheckedState(initialState);
     }
   }, [investmentDataState]); */
+  const [checkedState, setCheckedState] = useState<Record<number, boolean>>({});
 
-  const [checkedState, setCheckedState] = useState(false);
-
-  const toggleCheckbox = () => {
-    setCheckedState((prev) => !prev);
+  const toggleCheckbox = (index: number) => {
+    setCheckedState((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
   };
 
   // ✅ Extract group data safely
   const partners =
-    investmentData?.map((inv) => ({
+    investmentDataState?.map((inv) => ({
       id: inv.partnerId?.toString() || "",
       username: inv.partnerName || "",
       share: inv.share ?? 0,
@@ -124,16 +129,17 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   const normalizeEditData = (data: InvestmentDTO[]) => {
     return data.map((inv) => {
       // INVESTMENT
-      if (inv.transactionType === "INVESTMENT") {
+      if (inv.transactionType?.toUpperCase() === "INVESTMENT") {
         return {
           ...inv,
           invested: Number(inv.invested ?? 0),
           investable: Number(inv.investable ?? inv.invested ?? 0),
+          reduceLeftOver: Number(inv.reduceLeftOver ?? 0),
         };
       }
 
       // WITHDRAW
-      if (inv.transactionType === "WITHDRAW") {
+      if (inv.transactionType?.toUpperCase() === "WITHDRAW") {
         return {
           ...inv,
           invested: 0,
@@ -143,7 +149,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       }
 
       // SOLD
-      if (inv.transactionType === "SOLD") {
+      if (inv.transactionType?.toUpperCase() === "SOLD") {
         return {
           ...inv,
           invested: 0,
@@ -159,22 +165,89 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   useEffect(() => {
     if (!visible || !investmentData?.length) return;
 
-    // 🔥 normalize ONCE when edit opens
-    const normalized = normalizeEditData(investmentData);
-    setInvestmentDataState(normalized);
+    console.log("=========== RAW investmentData ===========");
+    console.log("Total RAW records:", investmentData.length);
+    console.log("investmentData:", investmentData);
+    investmentData.forEach((inv, index) => {
+      console.log(
+        `RAW[${index}] -> partnerId: ${inv.partnerId}, partnerName: ${inv.partnerName}, type: ${inv.transactionType}`,
+      );
+    });
 
-    // header level values
-    setTotalAmount(String(investmentData[0]?.totalAmount ?? ""));
-    setDescription(investmentData[0]?.description ?? "");
+    // ✅ Remove ONLY INVESTMENT_WITHDRAW
+    const cleaned = investmentData.filter(
+      (inv) =>
+        inv.transactionType?.toUpperCase().trim() !== "INVESTMENT_WITHDRAW",
+    );
+
+    console.log("=========== AFTER FILTER ===========");
+    console.log("Total CLEANED records:", cleaned.length);
+    cleaned.forEach((inv, index) => {
+      console.log(
+        `CLEANED[${index}] -> partnerId: ${inv.partnerId}, partnerName: ${inv.partnerName}, type: ${inv.transactionType}`,
+      );
+    });
+
+    // ✅ Normalize remaining records (Investment, Sold, Withdraw)
+    const normalized = normalizeEditData(cleaned);
+
+    setInvestmentDataState(normalized);
+    console.log("=========== FINAL investmentDataState ===========");
+    console.log("Total FINAL records:", normalized.length);
+    normalized.forEach((inv, index) => {
+      console.log(
+        `FINAL[${index}] -> partnerId: ${inv.partnerId}, partnerName: ${inv.partnerName}, type: ${inv.transactionType}`,
+      );
+    });
+
+    // Header values from first valid record
+    const firstValid = cleaned[0];
+
+    setTotalAmount(String(firstValid?.totalAmount ?? ""));
+    setDescription(firstValid?.description ?? "");
+
     setTransactionType(
-      investmentData[0]?.transactionType === "WITHDRAW"
+      firstValid?.transactionType === "WITHDRAW"
         ? "Withdraw"
-        : investmentData[0]?.transactionType === "SOLD"
+        : firstValid?.transactionType === "SOLD"
           ? "Sold"
           : "Investment",
     );
 
     isInitialLoad.current = true;
+  }, [visible, investmentData]);
+
+  useEffect(() => {
+    if (!investmentDataState?.length) return;
+
+    const initialState: Record<number, boolean> = {};
+
+    investmentDataState.forEach((item, index) => {
+      if (
+        item.transactionType?.toUpperCase() === "INVESTMENT" &&
+        item.reduceLeftOverFlag === "Y"
+      ) {
+        initialState[index] = true;
+      } else {
+        initialState[index] = false;
+      }
+    });
+
+    setCheckedState(initialState);
+  }, [investmentDataState]);
+
+  useEffect(() => {
+    if (!visible || !investmentData?.length) return;
+
+    const map: Record<number, number> = {};
+
+    investmentData.forEach((item) => {
+      if (item.partnerId != null) {
+        map[item.partnerId] = Number(item.reduceLeftOver ?? 0);
+      }
+    });
+
+    setOriginalReduceMap(map);
   }, [visible, investmentData]);
 
   const handleSave = async () => {
@@ -608,7 +681,10 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
               contentContainerStyle={{ paddingVertical: 8 }}
             >
               {investmentDataState.map((r, i) => (
-                <View key={r.partnerId} style={{ marginBottom: 12 }}>
+                <View
+                  key={`${r.partnerId}-${r.transactionType}-${i}`}
+                  style={{ marginBottom: 12 }}
+                >
                   <View style={styles.partnerCard}>
                     {/* Top Row = Partner Left + Partner Right */}
                     <View
@@ -656,7 +732,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                           }}
                         >
                           <TouchableOpacity
-                            onPress={toggleCheckbox}
+                            onPress={() => toggleCheckbox(i)}
                             style={{
                               flexDirection: "row",
                               alignItems: "center",
@@ -664,7 +740,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                           >
                             <Ionicons
                               name={
-                                checkedState ? "checkbox" : "square-outline"
+                                checkedState[i] ? "checkbox" : "square-outline"
                               }
                               size={22}
                               color="#007AFF"
@@ -678,11 +754,14 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                               }}
                             >
                               Available Money to use: ₹
-                              {Number(r.reduceLeftOver).toFixed(2)}
+                              {(
+                                Number(r.availableMoney ?? 0) +
+                                Number(originalReduceMap[r.partnerId ?? 0] ?? 0)
+                              ).toFixed(2)}
                             </Text>
                           </TouchableOpacity>
 
-                          {checkedState && (
+                          {checkedState[i] && (
                             <TextInput
                               style={styles.leftOverInput}
                               keyboardType="numeric"

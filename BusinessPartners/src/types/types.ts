@@ -24,4 +24,5 @@ export interface InvestmentDTO {
   reduceLeftOverFlag?: string;
   transactionType?: string;
   images?: any[];
+  availableMoney?: number;
 }

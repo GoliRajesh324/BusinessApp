@@ -2,6 +2,20 @@
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
+## My Commands.
+
+npm start
+npx expo start --no-dev --minify
+
+## To create .aab file
+
+eas build -p android --profile production
+
+## To create .apk file
+
+eas build -p android --profile production
+Just change build type to "apk" from "app-bundle".
+
 ## Get started
 
 1. Install dependencies

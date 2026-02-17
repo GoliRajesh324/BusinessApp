@@ -164,7 +164,6 @@ export default function InvestmentDetail() {
         <View style={styles.headerIcons}>
           <TouchableOpacity
             onPress={() => {
-              setEditInvestments(normalizeForEditPopup(editInvestments));
               setEditVisible(true);
             }}
           >
@@ -292,7 +291,7 @@ export default function InvestmentDetail() {
           visible={editVisible}
           businessId={investmentGroupId || ""}
           businessName={businessName || ""}
-          investmentData={editInvestments}
+          investmentData={normalizeForEditPopup(editInvestments)} // ✅ normalize here
           onClose={() => setEditVisible(false)}
           onUpdated={fetchGroupInvestments}
         />

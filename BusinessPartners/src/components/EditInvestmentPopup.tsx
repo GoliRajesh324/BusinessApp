@@ -87,9 +87,8 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   const [description, setDescription] = useState<string>(
     first.description ?? "",
   );
-  const [transactionType, setTransactionType] = useState<string>(
-    first.transactionType ?? "Investment",
-  );
+  const [transactionType, setTransactionType] = useState<string>("Investment");
+
   const [images, setImages] = useState<any[]>(first.images ?? []);
 
   const [token, setToken] = useState<string | null>(null);
@@ -161,6 +160,38 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       return inv;
     });
   };
+  useEffect(() => {
+    if (!visible || !investmentData?.length) return;
+
+    const cleaned = investmentData.filter(
+      (inv) =>
+        inv.transactionType?.toUpperCase().trim() !== "INVESTMENT_WITHDRAW",
+    );
+
+    const normalized = normalizeEditData(cleaned);
+
+    setInvestmentDataState(normalized);
+
+    // ✅ FIXED TRANSACTION TYPE DETECTION
+    const firstValid = cleaned[0];
+
+    let detectedType = "Investment";
+
+    if (firstValid?.transactionType?.toUpperCase() === "SOLD") {
+      detectedType = "Sold";
+    } else if (firstValid?.transactionType?.toUpperCase() === "WITHDRAW") {
+      detectedType = "Withdraw";
+    } else {
+      detectedType = "Investment";
+    }
+
+    setTransactionType(detectedType);
+
+    setTotalAmount(String(firstValid?.totalAmount ?? ""));
+    setDescription(firstValid?.description ?? "");
+
+    isInitialLoad.current = true;
+  }, [visible, investmentData]);
 
   useEffect(() => {
     if (!visible || !investmentData?.length) return;
@@ -200,19 +231,32 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       );
     });
 
-    // Header values from first valid record
-    const firstValid = cleaned[0];
-
-    setTotalAmount(String(firstValid?.totalAmount ?? ""));
-    setDescription(firstValid?.description ?? "");
-
-    setTransactionType(
-      firstValid?.transactionType === "WITHDRAW"
-        ? "Withdraw"
-        : firstValid?.transactionType === "SOLD"
-          ? "Sold"
-          : "Investment",
+    // 🔥 Detect transaction type from RAW data (not cleaned)
+    const hasWithdraw = investmentData.some(
+      (inv) => inv.transactionType?.toUpperCase() === "WITHDRAW",
     );
+
+    const hasSold = investmentData.some(
+      (inv) => inv.transactionType?.toUpperCase() === "SOLD",
+    );
+
+    let detectedType = "Investment";
+
+    if (hasWithdraw) {
+      detectedType = "Withdraw";
+    } else if (hasSold) {
+      detectedType = "Sold";
+    } else {
+      // INVESTMENT or INVESTMENT_WITHDRAW
+      detectedType = "Investment";
+    }
+
+    setTransactionType(detectedType);
+
+    // header values
+    const firstRaw = investmentData[0];
+    setTotalAmount(String(firstRaw?.totalAmount ?? ""));
+    setDescription(firstRaw?.description ?? "");
 
     isInitialLoad.current = true;
   }, [visible, investmentData]);
@@ -293,41 +337,61 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
         description,
       );
       // ✅ Prepare list of updated investments matching backend InvestmentDTO
-      const updatedInvestments = investmentDataState.map((inv) => {
-        //const match = rows.find((r) => r.id === inv.partnerId?.toString());
-        return {
-          investmentId: inv.investmentId,
-          createdAt: inv.createdAt,
-          createdBy: inv.createdBy,
-          cropId: inv.cropId,
-          description: description || inv.description,
-          invested:
-            transactionType === "Investment" ? Number(inv.invested || 0) : 0,
-          investable:
-            transactionType === "Investment" ? Number(inv.investable || 0) : 0,
-          withdrawn:
-            transactionType === "Withdraw" ? Number(inv.withdrawn || 0) : 0,
-          soldAmount:
-            transactionType === "Sold" ? Number(inv.soldAmount || 0) : 0,
-          //      investable: Number(/* match?.actual ||  */ inv.investable || 0),
-          //    invested: Number(/* match?.investing ||  */ inv.invested || 0),
-          partnerId: inv.partnerId,
-          share: inv.share,
-          //  soldAmount: inv.soldAmount,
-          //withdrawn: inv.withdrawn,
-          comments: inv.comments,
-          partnerName: inv.partnerName,
-          investmentGroupId: inv.investmentGroupId,
-          totalAmount: Number(totalAmount || inv.totalAmount || 0),
-          imageUrl: inv.imageUrl,
-          splitType: inv.splitType?.toUpperCase(),
-          transactionType: inv.transactionType?.toUpperCase(),
-          supplierName: inv.supplierName,
-          supplierId: inv.supplierId,
-          updatedBy: userId,
-          reduceLeftOver: Number(/* match?. */ inv.reduceLeftOver || 0),
-        };
-      });
+      // 1️⃣ Update visible records (Investment, Sold, Withdraw)
+      const visibleUpdates = investmentDataState.map((inv) => ({
+        investmentId: inv.investmentId,
+        createdAt: inv.createdAt,
+        createdBy: inv.createdBy,
+        cropId: inv.cropId,
+        description: description || inv.description,
+        invested:
+          transactionType === "Investment" ? Number(inv.invested || 0) : 0,
+        investable:
+          transactionType === "Investment" ? Number(inv.investable || 0) : 0,
+        withdrawn:
+          transactionType === "Withdraw" ? Number(inv.withdrawn || 0) : 0,
+        soldAmount:
+          transactionType === "Sold" ? Number(inv.soldAmount || 0) : 0,
+        partnerId: inv.partnerId,
+        share: inv.share,
+        comments: inv.comments,
+        partnerName: inv.partnerName,
+        investmentGroupId: inv.investmentGroupId,
+        totalAmount: Number(totalAmount || inv.totalAmount || 0),
+        imageUrl: inv.imageUrl,
+        splitType: inv.splitType?.toUpperCase(),
+        transactionType: inv.transactionType?.toUpperCase(),
+        supplierName: inv.supplierName,
+        supplierId: inv.supplierId,
+        updatedBy: userId,
+        reduceLeftOver: Number(inv.reduceLeftOver || 0),
+      }));
+
+      // 2️⃣ Get hidden INVESTMENT_WITHDRAW records
+      const hiddenWithdrawRecords = investmentData
+        .filter(
+          (inv) =>
+            inv.transactionType?.toUpperCase().trim() === "INVESTMENT_WITHDRAW",
+        )
+        .map((hidden) => {
+          // find matching partner from visible state
+          const match = investmentDataState.find(
+            (r) => r.partnerId === hidden.partnerId,
+          );
+
+          const reduceValue = Number(match?.reduceLeftOver || 0);
+
+          return {
+            ...hidden,
+            transactionType: "INVESTMENT_WITHDRAW", // 👈 change type to Withdraw
+            withdrawn: reduceValue, // 👈 set withdrawn from entered amount
+            reduceLeftOver: reduceValue, // 👈 set reduceLeftOver same
+            updatedBy: userId,
+          };
+        });
+
+      // 3️⃣ Merge both
+      const updatedInvestments = [...visibleUpdates, ...hiddenWithdrawRecords];
 
       console.log("📤 Sending updated investments:", updatedInvestments);
 
@@ -351,6 +415,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       }
 
       Alert.alert("✅ Success", "Investment updated successfully");
+      setOriginalReduceMap({});
       onUpdated();
       onClose();
     } catch (err) {
@@ -722,7 +787,9 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
 
                     {/* ✅ Leftover section full width below */}
                     {transactionType === "Investment" &&
-                      Number(r.reduceLeftOver) > 0 && (
+                      Number(r.reduceLeftOver ?? 0) +
+                        Number(originalReduceMap[r.partnerId ?? 0]) >
+                        0 && (
                         <View
                           style={{
                             marginTop: 10,

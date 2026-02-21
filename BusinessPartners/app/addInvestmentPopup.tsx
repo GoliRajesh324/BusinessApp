@@ -557,11 +557,14 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.container}>
         {/* Header */}
+
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.headerLeft}>
-            <Ionicons name="arrow-back" size={28} color="#fff" />
+            <Ionicons name="arrow-back" size={28} color="#000" />
           </TouchableOpacity>
+
           <Text style={styles.headerTitle}>Add Transaction</Text>
+
           <TouchableOpacity
             onPress={handleSave}
             style={[
@@ -578,10 +581,42 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             <Text style={styles.saveText}>Save</Text>
           </TouchableOpacity>
         </View>
-
         <ScrollView
           contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 16 }}
         >
+          {/* Business + Transaction Type Row */}
+          <View style={styles.businessTypeRow}>
+            <Text style={styles.businessNameText}>{businessName}</Text>
+
+            <Animated.View
+              style={{
+                transform: [{ scale: shakeAnim }],
+              }}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.typeDropdownBtn,
+                  errorVisible && { borderColor: "red", borderWidth: 2 },
+                ]}
+                onPress={() => setTypeModalVisible(true)}
+              >
+                <Text
+                  style={{
+                    color: errorVisible ? "red" : "#333",
+                    fontWeight: "600",
+                  }}
+                >
+                  {transactionType ?? "Select Type"}
+                </Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={16}
+                  color={errorVisible ? "red" : "#333"}
+                  style={{ marginLeft: 4 }}
+                />
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Enter description</Text>
             <TextInput
@@ -792,73 +827,6 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             </ScrollView>
           </View>
         </ScrollView>
-
-        {/* Footer */}
-        <View
-          style={[
-            styles.footer,
-            { flexDirection: "row", justifyContent: "space-evenly" },
-          ]}
-        >
-          <TouchableOpacity
-            style={[
-              styles.footerOutlineBtn,
-              {
-                flex: 1,
-                marginRight: 8,
-                alignItems: "center",
-                justifyContent: "center",
-                height: 40,
-              },
-            ]}
-          >
-            <Text style={{ color: "#333", fontWeight: "500" }}>
-              {businessName}
-            </Text>
-          </TouchableOpacity>
-
-          <Animated.View
-            style={{
-              flex: 1,
-              marginLeft: 8,
-              alignItems: "center",
-              justifyContent: "center",
-              height: 40,
-              transform: [{ scale: shakeAnim }],
-            }}
-          >
-            <TouchableOpacity
-              style={[
-                styles.footerOutlineBtn,
-                {
-                  width: "100%",
-                  height: "100%",
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  alignItems: "center",
-                },
-                errorVisible && { borderColor: "red", borderWidth: 2 },
-              ]}
-              onPress={() => setTypeModalVisible(true)}
-            >
-              <Text
-                style={{
-                  color: errorVisible ? "red" : "#333",
-                  fontWeight: "500",
-                }}
-              >
-                {transactionType ?? "Select Type"}
-              </Text>
-              <Ionicons
-                name="chevron-down"
-                size={16}
-                color={errorVisible ? "red" : "#333"}
-                style={{ marginLeft: 4 }}
-              />
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-
         {errorVisible && (
           <Animated.View
             style={{
@@ -892,7 +860,6 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             }}
           />
         )}
-
         {/* Split Sheet */}
         <Modal visible={sheetVisible} animationType="slide" transparent>
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -992,7 +959,6 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
             </View>
           </TouchableWithoutFeedback>
         </Modal>
-
         {/* Type Modal */}
         <Modal visible={typeModalVisible} transparent animationType="fade">
           <TouchableOpacity
@@ -1029,18 +995,10 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 export default AddInvestmentPopup;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  /*   header: {
-    height:
-      Platform.OS === "android" ? 90 + (StatusBar.currentHeight || 0) : 110,
-    paddingTop:
-      Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
-    backgroundColor: "#4f93ff",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-  }, */
+  container: {
+    flex: 1,
+    backgroundColor: "#fff", // page background
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -1051,16 +1009,32 @@ const styles = StyleSheet.create({
     backgroundColor: "#4f93ff",
     elevation: 4,
   },
-  headerLeft: { width: 40, justifyContent: "center", alignItems: "flex-start" },
-  headerRight: { width: 60, justifyContent: "center", alignItems: "flex-end" },
+
+  headerLeft: {
+    width: 40,
+    justifyContent: "center",
+    alignItems: "flex-start",
+  },
+
+  headerRight: {
+    width: 40,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+
   headerTitle: {
+    flex: 1,
+    textAlign: "center",
     fontSize: 20,
     fontWeight: "700",
-    color: "#fff",
-    textAlign: "center",
-    flex: 1,
+    color: "#ffffff",
   },
-  saveText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+
+  saveText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 12,
+  },
   inputContainer: { marginVertical: 10 },
   inputLabel: {
     fontSize: 14,
@@ -1527,5 +1501,30 @@ smallNote: { fontSize: 10, color: "#666", marginTop: 4 },
     fontSize: 14,
     width: "100%", // ✅ full width inside card
     backgroundColor: "#fff",
+  },
+  businessTypeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 20,
+  },
+
+  businessNameText: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#000",
+    flex: 1,
+  },
+
+  typeDropdownBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    backgroundColor: "#f9f9f9",
   },
 });

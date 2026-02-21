@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 16,
+    padding: 30,
     borderTopWidth: 1,
     borderColor: "#eee",
     backgroundColor: "#fff",
@@ -202,11 +202,17 @@ const styles = StyleSheet.create({
   },
 
   addStockBtn: {
-    backgroundColor: "#28a745", // Green
+    backgroundColor: "#28a745",
+    justifyContent: "center",
+    position: "relative",
+    padding: 14,
   },
 
   consumeBtn: {
+    justifyContent: "center",
     backgroundColor: "#dc3545", // Red
+    position: "relative",
+    padding: 14,
   },
 
   footerBtnText: {

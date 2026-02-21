@@ -17,6 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
+import { generateBusinessStatementPDF } from "@/src/utils/BusinessStatementPDF";
 import { useFocusEffect } from "@react-navigation/native";
 import { Calendar, DateData } from "react-native-calendars";
 import InvestmentAudit from "../src/components/InvestmentAudit";
@@ -998,7 +999,7 @@ export default function BusinessDetail() {
 
         {/* --- FILTER SECTION --- */}
         <View style={{ marginVertical: 12, zIndex: 1000 }}>
-          {/* Row with text + filter icon */}
+          {/* 🔹 Row: Title + Icons */}
           <View
             style={{
               flexDirection: "row",
@@ -1010,38 +1011,62 @@ export default function BusinessDetail() {
               {currentLabel}
             </Text>
 
-            <TouchableOpacity onPress={() => setOpen((prev) => !prev)}>
-              <Ionicons
-                name={open ? "filter-circle" : "filter"}
-                size={24}
-                color="#333"
-              />
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              {/* PDF Button */}
+              <TouchableOpacity
+                onPress={() =>
+                  generateBusinessStatementPDF({
+                    businessName: safeBusinessName,
+                    downloadedBy: userName || "Unknown",
+                    transactions: filteredInvestments,
+                  })
+                }
+                style={{ marginRight: 12 }}
+              >
+                <Ionicons
+                  name="document-text-outline"
+                  size={24}
+                  color="#DC2626"
+                />
+              </TouchableOpacity>
+
+              {/* Filter Button */}
+              <TouchableOpacity onPress={() => setOpen((prev) => !prev)}>
+                <Ionicons
+                  name={open ? "filter-circle" : "filter"}
+                  size={24}
+                  color="#333"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Dropdown - only visible when open */}
+          {/* 🔹 Dropdown BELOW row (not inside row) */}
           {open && (
-            <DropDownPicker
-              open={open}
-              value={selectedFilter}
-              items={items}
-              setOpen={setOpen}
-              setItems={setItems}
-              setValue={() => {}}
-              onSelectItem={(item) => handleSelect(item.value ?? "")} // ✅ Works now
-              placeholder="Select Filter"
-              listMode="SCROLLVIEW"
-              style={{
-                marginTop: 8,
-                backgroundColor: "#fff",
-                borderColor: "#ccc",
-                borderRadius: 8,
-              }}
-              dropDownContainerStyle={{
-                backgroundColor: "#fff",
-                borderColor: "#ccc",
-              }}
-            />
+            <View style={{ marginTop: 8 }}>
+              <DropDownPicker
+                open={open}
+                value={selectedFilter}
+                items={items}
+                setOpen={setOpen}
+                setItems={setItems}
+                setValue={(callback) => {
+                  const value = callback(selectedFilter);
+                  setSelectedFilter(value);
+                }}
+                placeholder="Select Filter"
+                listMode="SCROLLVIEW"
+                style={{
+                  backgroundColor: "#fff",
+                  borderColor: "#ccc",
+                  borderRadius: 8,
+                }}
+                dropDownContainerStyle={{
+                  backgroundColor: "#fff",
+                  borderColor: "#ccc",
+                }}
+              />
+            </View>
           )}
         </View>
 
@@ -1354,24 +1379,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff", // page background
   },
 
-  // -------- Header --------
-  /*   header: {
-    height:
-      Platform.OS === "android" ? 80 + (StatusBar.currentHeight || 0) : 100,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop:
-      Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
-    backgroundColor: "#4f93ff",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    zIndex: 100,
-  }, */
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -1637,7 +1644,7 @@ const styles = StyleSheet.create({
   // -------- Floating Action Button --------
   fabContainer: {
     position: "absolute",
-    bottom: Platform.OS === "ios" ? 110 : 90, // ⬆️ lifted to sit nicely above bottom bar
+    bottom: 110, // ⬆️ lifted to sit nicely above bottom bar
     right: 25,
     zIndex: 1000,
     alignItems: "flex-end",
@@ -1695,7 +1702,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-evenly",
     alignItems: "center",
     paddingVertical: 8,
-    paddingBottom: Platform.OS === "ios" ? 30 : 16, // safe area spacing
+    paddingBottom: 30, // safe area spacing
     borderTopWidth: 1,
     borderColor: "#e0e0e0",
     backgroundColor: "#fff",

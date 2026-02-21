@@ -1,18 +1,18 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import * as Haptics from "expo-haptics";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Animated, Pressable } from "react-native";
-
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
   Image,
   Modal,
-  Platform,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -31,24 +31,20 @@ export default function Dashboard() {
   const [username, setUsername] = useState("User");
   const { t, i18n } = useTranslation();
   const [showPlusOnly, setShowPlusOnly] = useState(false);
-
+  const [activeMenu, setActiveMenu] = useState("Business");
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [longPressedId, setLongPressedId] = useState<number | null>(null);
+  const deleteTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
-  // Logout
-  const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem("token");
-      await AsyncStorage.removeItem("userId");
-      router.replace("/login"); // Navigate to login page
-    } catch (err) {
-      console.log("❌ Logout error:", err);
-      Alert.alert("Error", "Failed to logout");
-    }
-  };
-
-  // ✅ Load token & userId before fetching
+  useFocusEffect(
+    useCallback(() => {
+      setActiveMenu("Business");
+    }, []),
+  );
   useEffect(() => {
     const loadData = async () => {
       const t = await AsyncStorage.getItem("token");
@@ -56,6 +52,7 @@ export default function Dashboard() {
       const n = await AsyncStorage.getItem("userName");
       setToken(t);
       setUserId(u);
+
       if (n) {
         // Convert to Camel Case (Title Case)
         const formatted = n
@@ -199,10 +196,81 @@ export default function Dashboard() {
           <Ionicons name="notifications-outline" size={28} color="#fff" />
         </TouchableOpacity>
       </View>
+      {/* HEADER END */}
+
+      <View style={styles.menuTabsContainer}>
+        <TouchableOpacity
+          style={[
+            styles.menuTab,
+            activeMenu === "Business" && styles.activeMenuTab,
+          ]}
+          onPress={() => setActiveMenu("Business")}
+        >
+          <MaterialCommunityIcons
+            name="alpha-b-box"
+            size={18}
+            color={activeMenu === "Business" ? "#fff" : "#333"}
+          />
+          <Text
+            style={[
+              styles.menuTabText,
+              activeMenu === "Business" && styles.activeMenuTabText,
+            ]}
+          >
+            Business
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.menuTab,
+            activeMenu === "Interest" && styles.activeMenuTab,
+          ]}
+          onPress={() => {
+            setActiveMenu("Interest");
+            router.push("/simpleInterest");
+          }}
+        >
+          <MaterialCommunityIcons
+            name="alpha-i-box"
+            size={18}
+            color={activeMenu === "Interest" ? "#fff" : "#333"}
+          />
+          <Text
+            style={[
+              styles.menuTabText,
+              activeMenu === "Interest" && styles.activeMenuTabText,
+            ]}
+          >
+            Interest
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.menuTab,
+            activeMenu === "Settings" && styles.activeMenuTab,
+          ]}
+          onPress={() => setActiveMenu("Settings")}
+        >
+          <Ionicons
+            name="settings-outline"
+            size={18}
+            color={activeMenu === "Settings" ? "#fff" : "#333"}
+          />
+          <Text
+            style={[
+              styles.menuTabText,
+              activeMenu === "Settings" && styles.activeMenuTabText,
+            ]}
+          >
+            Settings
+          </Text>
+        </TouchableOpacity>
+      </View>
       <View style={{ padding: 16, backgroundColor: "#fff" }}>
         <Text>{t("YourBusinesses")}</Text>
       </View>
-
       {/* BUSINESS LIST */}
       <FlatList
         data={businesses}
@@ -284,21 +352,21 @@ export default function Dashboard() {
 
           return (
             <Pressable
-              onPressIn={onPressIn}
-              onPressOut={onPressOut}
-              android_ripple={{ color: "#dbeafe" }} // light blue ripple
-              onPress={() => {
-                if (item.cropInProgress) {
-                  router.push({
-                    pathname: "/businessDetail",
-                    params: {
-                      businessId: item.id.toString(),
-                      businessName: item.name,
-                    },
-                  });
-                } else {
-                  setConfirmStart(item);
+              onLongPress={async () => {
+                // Haptic feedback
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+                setLongPressedId(item.id);
+
+                // Clear existing timer
+                if (deleteTimeoutRef.current) {
+                  clearTimeout(deleteTimeoutRef.current);
                 }
+
+                // Auto hide after 4 seconds
+                deleteTimeoutRef.current = setTimeout(() => {
+                  setLongPressedId(null);
+                }, 2000);
               }}
             >
               <Animated.View
@@ -307,7 +375,21 @@ export default function Dashboard() {
                 <Text style={styles.bizName}>{item.name}</Text>
 
                 <View style={styles.bizActions}>
-                  {item.cropInProgress ? (
+                  {longPressedId === item.id ? (
+                    <TouchableOpacity
+                      style={styles.deleteBtn}
+                      onPress={() => {
+                        if (deleteTimeoutRef.current) {
+                          clearTimeout(deleteTimeoutRef.current);
+                        }
+
+                        Alert.alert("Delete", "Delete coming soon");
+                        setLongPressedId(null);
+                      }}
+                    >
+                      <Text style={styles.btnText}>Delete</Text>
+                    </TouchableOpacity>
+                  ) : item.cropInProgress ? (
                     <TouchableOpacity
                       style={styles.inprogressBtn}
                       onPress={() =>
@@ -336,88 +418,6 @@ export default function Dashboard() {
           );
         }}
       />
-
-      {/* FOOTER BAR */}
-      {/*   <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerItem}>
-          <Ionicons name="home" size={26} color="#2563eb" />
-          <Text style={styles.footerText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => {
-            setEditingBusiness(null);
-            setShowPopup(true);
-          }}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.footerItem}>
-          <MaterialIcons name="manage-history" size={26} color="#2563eb" />
-          <Text style={styles.footerText}>History</Text>
-        </TouchableOpacity>
-      </View> */}
-
-      {/* Bottom Footer Buttons */}
-      <View style={styles.bottomButtonsContainer}>
-        <TouchableOpacity
-          style={styles.floatingButton}
-          onPress={() => {
-            setEditingBusiness(null);
-            setShowPopup(true);
-          }}
-        >
-          <Text style={styles.floatingButtonText}>
-            {showPlusOnly ? "+" : "+ Add business"}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.bottomButtonIcon}
-          // onPress={()=>router.push("/dashboard")}
-        >
-          <MaterialCommunityIcons
-            name="alpha-b-box"
-            size={28}
-            color="#4f93ff"
-          />
-          <Text style={styles.bottomButtonText}>Business</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.bottomButtonIcon}
-          onPress={() => router.push("/simpleInterest")}
-          //onPress={() => alert("Interest Feature coming soon")}
-        >
-          <MaterialCommunityIcons
-            name="alpha-i-box"
-            size={28}
-            color="#4f93ff"
-          />
-          <Text style={styles.bottomButtonText}>Interest</Text>
-        </TouchableOpacity>
-
-        {/*       <TouchableOpacity
-          style={styles.bottomButtonIcon}
-          onPress={() => alert("SplitMoney Feature coming soon")}
-        >
-          <MaterialCommunityIcons
-            name="alpha-s-box"
-            size={28}
-            color="#4f93ff"
-          />
-          <Text style={styles.bottomButtonText}>SplitMoney</Text>
-        </TouchableOpacity> */}
-
-        <TouchableOpacity
-          style={styles.bottomButtonIcon}
-          onPress={() => alert("Settings Feature coming soon")}
-        >
-          <Ionicons name="settings" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>Settings</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* ADD BUSINESS POPUP */}
       {showPopup && (
         <AddBusinessPopup
@@ -427,7 +427,6 @@ export default function Dashboard() {
           editingBusiness={editingBusiness}
         />
       )}
-
       {/* CONFIRM START */}
       <Modal visible={!!confirmStart} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -453,7 +452,6 @@ export default function Dashboard() {
           </View>
         </View>
       </Modal>
-
       {/* CONFIRM DELETE */}
       <Modal visible={!!confirmDelete} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -637,37 +635,37 @@ const styles = StyleSheet.create({
   },
 
   // -------- Bottom Buttons --------
-  bottomButtonsContainer: {
+  menuTabsContainer: {
     flexDirection: "row",
-    justifyContent: "space-evenly",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: "#f9fafb",
+  },
+
+  menuTab: {
+    flexDirection: "row",
     alignItems: "center",
     paddingVertical: 8,
-    paddingBottom: Platform.OS === "ios" ? 30 : 16, // safe area spacing
-    borderTopWidth: 1,
-    borderColor: "#e0e0e0",
-    backgroundColor: "#fff",
-    position: "absolute",
-    bottom: Platform.OS === "ios" ? 0 : 0, // ⬅️ lifts bar a bit upward
-    left: 0,
-    right: 0,
-    elevation: 10, // Android shadow
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: -2 },
-    shadowRadius: 4,
+    paddingHorizontal: 14,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 20,
+    marginRight: 10,
   },
 
-  bottomButtonIcon: {
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
+  activeMenuTab: {
+    backgroundColor: "#4f93ff",
   },
 
-  bottomButtonText: {
-    fontSize: 13,
-    color: "#4f93ff",
-    marginTop: 2,
-    textAlign: "center",
+  menuTabText: {
+    fontSize: 14,
+    marginLeft: 6,
+    color: "#333",
+    fontWeight: "500",
+  },
+
+  activeMenuTabText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 
   emptyContainer: {
@@ -711,5 +709,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#fff",
     fontWeight: "600",
+  },
+  deleteBtn: {
+    backgroundColor: "#ef4444",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
 });

@@ -672,6 +672,39 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
         <ScrollView
           contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 16 }}
         >
+          {/* Business + Transaction Type Row */}
+          <View style={styles.businessTypeRow}>
+            <Text style={styles.businessNameText}>{businessName}</Text>
+
+            <Animated.View
+              style={{
+                transform: [{ scale: shakeAnim }],
+              }}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.typeDropdownBtn,
+                  errorVisible && { borderColor: "red", borderWidth: 2 },
+                ]}
+                onPress={() => setTypeModalVisible(true)}
+              >
+                <Text
+                  style={{
+                    color: errorVisible ? "red" : "#333",
+                    fontWeight: "600",
+                  }}
+                >
+                  {transactionType ?? "Select Type"}
+                </Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={16}
+                  color={errorVisible ? "red" : "#333"}
+                  style={{ marginLeft: 4 }}
+                />
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Enter description</Text>
             <TextInput
@@ -877,72 +910,6 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
             </ScrollView>
           </View>
         </ScrollView>
-
-        {/* Footer */}
-        <View
-          style={[
-            styles.footer,
-            { flexDirection: "row", justifyContent: "space-evenly" },
-          ]}
-        >
-          <TouchableOpacity
-            style={[
-              styles.footerOutlineBtn,
-              {
-                flex: 1,
-                marginRight: 8,
-                alignItems: "center",
-                justifyContent: "center",
-                height: 40,
-              },
-            ]}
-          >
-            <Text style={{ color: "#333", fontWeight: "500" }}>
-              {businessName}
-            </Text>
-          </TouchableOpacity>
-
-          <Animated.View
-            style={{
-              flex: 1,
-              marginLeft: 8,
-              alignItems: "center",
-              justifyContent: "center",
-              height: 40,
-              transform: [{ scale: shakeAnim }],
-            }}
-          >
-            <TouchableOpacity
-              style={[
-                styles.footerOutlineBtn,
-                {
-                  width: "100%",
-                  height: "100%",
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  alignItems: "center",
-                },
-                errorVisible && { borderColor: "red", borderWidth: 2 },
-              ]}
-              onPress={() => setTypeModalVisible(true)}
-            >
-              <Text
-                style={{
-                  color: errorVisible ? "red" : "#333",
-                  fontWeight: "500",
-                }}
-              >
-                {transactionType ?? "Select Type"}
-              </Text>
-              <Ionicons
-                name="chevron-down"
-                size={16}
-                color={errorVisible ? "red" : "#333"}
-                style={{ marginLeft: 4 }}
-              />
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
 
         {errorVisible && (
           <Animated.View
@@ -1600,5 +1567,30 @@ smallNote: { fontSize: 10, color: "#666", marginTop: 4 },
     fontSize: 14,
     width: "100%", // ✅ full width inside card
     backgroundColor: "#fff",
+  },
+  businessTypeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 20,
+  },
+
+  businessNameText: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#000",
+    flex: 1,
+  },
+
+  typeDropdownBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    backgroundColor: "#f9f9f9",
   },
 });

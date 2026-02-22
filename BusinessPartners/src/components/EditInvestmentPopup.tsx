@@ -821,7 +821,8 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                     {/* ✅ Leftover section full width below */}
                     {transactionType === "Investment" &&
                       Number(r.reduceLeftOver ?? 0) +
-                        Number(originalReduceMap[r.partnerId ?? 0]) >
+                        //Number(originalReduceMap[r.partnerId ?? 0]) >
+                        Number(r.availableMoney ?? 0) >
                         0 && (
                         <View
                           style={{
@@ -869,6 +870,21 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                               placeholderTextColor="#888"
                               value={String(r.reduceLeftOver) ?? ""}
                               onChangeText={(val) => {
+                                const entered = Number(val) || 0;
+
+                                const available =
+                                  Number(r.availableMoney ?? 0) +
+                                  Number(
+                                    originalReduceMap[r.partnerId ?? 0] ?? 0,
+                                  );
+
+                                if (entered > available) {
+                                  Alert.alert(
+                                    "Invalid Amount",
+                                    `Entered amount cannot exceed available money (₹${available.toFixed(2)})`,
+                                  );
+                                  return; // ⛔ stop here
+                                }
                                 setInvestmentDataState((prev) => {
                                   const next = [...prev];
                                   next[i] = {
@@ -1043,6 +1059,22 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
                   key={t}
                   onPress={() => {
                     setTransactionType(t);
+
+                    // ✅ Reset total amount to 0
+                    setTotalAmount("0");
+                    // ✅ Reset partner calculated amounts
+                    setInvestmentDataState((prev) =>
+                      prev.map((r) => ({
+                        ...r,
+                        invested: 0,
+                        withdrawn: 0,
+                        soldAmount: 0,
+                        investable: 0, // ✅ ADD THIS
+                      })),
+                    );
+
+                    // Reset split values
+                    setShareValues((prev) => prev.map(() => 0));
                     setTypeModalVisible(false);
                   }}
                   style={styles.typeOption}

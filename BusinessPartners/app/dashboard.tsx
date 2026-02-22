@@ -418,6 +418,44 @@ export default function Dashboard() {
           );
         }}
       />
+
+      {/* FOOTER BAR */}
+      {/*   <View style={styles.footer}>
+        <TouchableOpacity style={styles.footerItem}>
+          <Ionicons name="home" size={26} color="#2563eb" />
+          <Text style={styles.footerText}>Home</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => {
+            setEditingBusiness(null);
+            setShowPopup(true);
+          }}
+        >
+          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.footerItem}>
+          <MaterialIcons name="manage-history" size={26} color="#2563eb" />
+          <Text style={styles.footerText}>History</Text>
+        </TouchableOpacity>
+      </View> */}
+
+      {/* Bottom Footer Buttons */}
+      <View style={styles.menuTabsContainer}>
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={() => {
+            setEditingBusiness(null);
+            setShowPopup(true);
+          }}
+        >
+          <Text style={styles.floatingButtonText}>
+            {showPlusOnly ? "+" : "+ Add business"}
+          </Text>
+        </TouchableOpacity>
+      </View>
       {/* ADD BUSINESS POPUP */}
       {showPopup && (
         <AddBusinessPopup

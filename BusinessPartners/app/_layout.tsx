@@ -192,6 +192,12 @@ export default function RootLayout() {
               }}
             />
             <Stack.Screen
+              name="resetPasswordScreen"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
               name="partnerWiseDetails"
               options={{
                 headerShown: false,

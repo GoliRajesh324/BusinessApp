@@ -3,12 +3,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { PieChart } from "react-native-gifted-charts";
 import BASE_URL from "../src/config/config";
 
 export default function PartnerWiseDetails() {
@@ -36,7 +37,7 @@ export default function PartnerWiseDetails() {
       try {
         const res = await fetch(
           `${BASE_URL}/api/business/${businessId}/partners`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         const text = await res.text();
         if (!res.ok || !text) return;
@@ -58,7 +59,7 @@ export default function PartnerWiseDetails() {
       try {
         const response = await fetch(
           `${BASE_URL}/api/business/${businessId}/business-details-by-id`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         const text = await response.text();
         if (!response.ok || !text) return;
@@ -99,12 +100,93 @@ export default function PartnerWiseDetails() {
         <View style={styles.headerRight} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        nestedScrollEnabled={true}
+      >
+        {/* 🔵 Partner Share Pie Chart */}
+        {partners.length > 0 && (
+          <View style={styles.chartCard}>
+            <Text style={styles.chartTitle}>Partner Share Distribution</Text>
+
+            <View style={styles.pieContainer}>
+              <PieChart
+                data={partners.map((p, index) => ({
+                  value: Number(p.share || 0),
+                  text: `${p.share}%`,
+                  color: [
+                    "#4f93ff",
+                    "#22c55e",
+                    "#f97316",
+                    "#dc2626",
+                    "#a855f7",
+                    "#14b8a6",
+                    "#2563EB",
+                    "#DC2626",
+                    "#16A34A",
+                    "#9333EA",
+                    "#0EA5E9",
+                    "#E11D48",
+                    "#F59E0B",
+                    "#6366F1",
+                    "#EC4899",
+                  ][index % 15],
+                }))}
+                radius={110}
+                showText
+                textSize={12}
+                textColor="#000"
+                focusOnPress
+                strokeWidth={2}
+                strokeColor="#fff"
+              />
+            </View>
+
+            {/* 🔹 Color Legend Below Pie (2 Columns) */}
+            <View style={styles.legendContainer}>
+              {partners.map((p, index) => {
+                const colors = [
+                  "#4f93ff",
+                  "#22c55e",
+                  "#f97316",
+                  "#dc2626",
+                  "#a855f7",
+                  "#14b8a6",
+                  "#2563EB",
+                  "#DC2626",
+                  "#16A34A",
+                  "#9333EA",
+                  "#0EA5E9",
+                  "#E11D48",
+                  "#F59E0B",
+                  "#6366F1",
+                  "#EC4899",
+                ];
+
+                return (
+                  <View key={index} style={styles.legendItem}>
+                    <View
+                      style={[
+                        styles.legendColor,
+                        { backgroundColor: colors[index % 15] },
+                      ]}
+                    />
+                    <Text style={styles.legendText} numberOfLines={1}>
+                      {p.username} ({p.share}%)
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
         {investmentDetails.map((inv, index) => (
           <View key={index} style={styles.partnerCard}>
             {/* Header */}
             <View style={styles.partnerCardHeader}>
-              <Text style={styles.partnerCardName}>{inv?.partner?.username?.toUpperCase()}</Text>
+              <Text style={styles.partnerCardName}>
+                {inv?.partner?.username?.toUpperCase()}
+              </Text>
               <Text style={styles.partnerCardShare}>
                 Share: {inv.partner.share}%
               </Text>
@@ -121,8 +203,8 @@ export default function PartnerWiseDetails() {
                     inv.leftOver < 0
                       ? { color: "#DC2626" } // red
                       : inv.leftOver > 0
-                      ? { color: "#16A34A" } // green
-                      : { color: "#000" }, // zero
+                        ? { color: "#16A34A" } // green
+                        : { color: "#000" }, // zero
                   ]}
                 >
                   ₹{formatAmount(inv.leftOver)}
@@ -281,5 +363,56 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#111827",
+  },
+
+  chartCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  },
+
+  chartTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#000", // bold black
+    textAlign: "center",
+    marginBottom: 16,
+  },
+
+  pieContainer: {
+    alignItems: "center", // centers horizontally
+    justifyContent: "center",
+  },
+  legendContainer: {
+    marginTop: 18,
+    flexDirection: "row",
+    flexWrap: "wrap", // 🔥 allows wrapping
+    justifyContent: "space-between",
+  },
+
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "48%", // 🔥 2 columns
+    marginBottom: 12,
+  },
+
+  legendColor: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginRight: 8,
+  },
+
+  legendText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#111",
+    flexShrink: 1, // 🔥 prevents overflow
   },
 });

@@ -64,6 +64,11 @@ export default function ProfileScreen() {
       action: () => setRateModalVisible(true),
     },
     {
+      icon: "lock-closed-outline",
+      text: "Reset Password",
+      action: () => router.push("/resetPasswordScreen"),
+    },
+    {
       icon: "help-circle-outline",
       text: "Help & Support",
       action: () => router.push("/helpandSupportScreen"),

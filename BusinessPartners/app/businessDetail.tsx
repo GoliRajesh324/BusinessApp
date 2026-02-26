@@ -552,7 +552,7 @@ export default function BusinessDetail() {
         },
       );
       // Refresh and navigate
-      router.push("/dashboard");
+      router.back();
     } catch (err: any) {
       console.log("❌ Restart crop error:", err);
       if (err.response?.status === 400) alert("Invalid partner data.");
@@ -1153,7 +1153,7 @@ export default function BusinessDetail() {
       <View style={styles.bottomButtonsContainer}>
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() => router.push("/dashboard")}
+          onPress={() => router.back()}
         >
           <Ionicons name="home" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>Home</Text>

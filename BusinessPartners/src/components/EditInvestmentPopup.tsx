@@ -360,7 +360,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
         totalAmount: Number(totalAmount || inv.totalAmount || 0),
         imageUrl: inv.imageUrl,
         splitType: inv.splitType?.toUpperCase(),
-        transactionType: inv.transactionType?.toUpperCase(),
+        transactionType: transactionType.toUpperCase(),
         supplierName: inv.supplierName,
         supplierId: inv.supplierId,
         updatedBy: userId,

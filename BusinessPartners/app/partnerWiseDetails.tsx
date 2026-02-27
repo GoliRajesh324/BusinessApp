@@ -101,8 +101,12 @@ export default function PartnerWiseDetails() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        nestedScrollEnabled={true}
+        contentContainerStyle={{
+          paddingHorizontal: 14,
+          paddingVertical: 16,
+          paddingBottom: 150,
+        }}
+        showsVerticalScrollIndicator={false}
       >
         {/* 🔵 Partner Share Pie Chart */}
         {partners.length > 0 && (
@@ -253,7 +257,6 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingBottom: 12,
     backgroundColor: "#4f93ff",
-    elevation: 4,
   },
   headerTitle: {
     flex: 1,
@@ -274,7 +277,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,
-    elevation: 2,
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 3,
@@ -307,7 +309,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     marginBottom: 14,
-    elevation: 5,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 6,

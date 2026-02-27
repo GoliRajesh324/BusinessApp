@@ -65,7 +65,7 @@ export default function ProfileScreen() {
     },
     {
       icon: "lock-closed-outline",
-      text: "Reset Password",
+      text: "Change Password",
       action: () => router.push("/resetPasswordScreen"),
     },
     {

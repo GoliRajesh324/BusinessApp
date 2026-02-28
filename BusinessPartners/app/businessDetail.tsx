@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  FlatList,
   Image,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -102,6 +103,11 @@ export default function BusinessDetail() {
 
   const [selectedTime, setSelectedTime] = useState(null);
   const [openTime, setOpenTime] = useState(false);
+
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingInvestments, setLoadingInvestments] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [items, setItems] = useState([
     { label: "Your Transactions", value: "byLoggedInUser" },
@@ -402,16 +408,15 @@ export default function BusinessDetail() {
   // --- NEW: fetch investments when businessId or token changes ---
   const [allInvestments, setAllInvestments] = useState<any[]>([]);
 
-  // fetch once
-  useEffect(() => {
-    if (safeBusinessId && token) fetchInvestments();
-    //businessDetails();
-  }, [safeBusinessId, token]);
+  const fetchInvestments = async (pageNumber = 0, reset = false) => {
+    if (!token || !safeBusinessId) return;
+    if (!reset && loadingInvestments) return;
 
-  const fetchInvestments = async () => {
     try {
+      setLoadingInvestments(true);
+
       const response = await fetch(
-        `${BASE_URL}/api/investment/all-investments/${safeBusinessId}`,
+        `${BASE_URL}/api/investment/all-investments/${safeBusinessId}?page=${pageNumber}&size=20`,
         {
           method: "GET",
           headers: {
@@ -420,15 +425,32 @@ export default function BusinessDetail() {
           },
         },
       );
+
       if (!response.ok) throw new Error("Failed to fetch investments");
-      const data = await response.json();
-      //console.log("➡️ Fetched investments:", data);
-      setAllInvestments(Array.isArray(data) ? data : []);
+
+      const text = await response.text();
+      if (!text) return;
+
+      const data = JSON.parse(text);
+
+      const content = data?.content || [];
+
+      if (reset) {
+        setAllInvestments(content);
+      } else {
+        setAllInvestments((prev) => [...prev, ...content]);
+      }
+
+      setHasMore(!data?.last);
+      setPage(pageNumber);
     } catch (err) {
-      //console.log(err);
       Alert.alert("Error", "Error fetching investments");
+    } finally {
+      setLoadingInvestments(false);
+      setRefreshing(false);
     }
   };
+
   const fetchBusinessDetails = async () => {
     if (!token || !safeBusinessId) return;
     try {
@@ -457,15 +479,23 @@ export default function BusinessDetail() {
     React.useCallback(() => {
       if (!token) return;
 
-      fetchInvestments();
+      setPage(0);
+      setHasMore(true);
+      setAllInvestments([]);
+
+      fetchInvestments(0, true);
       fetchSuppliers();
 
-      if (summaryFilter === "ALL") {
-        fetchBusinessDetails();
-      }
-    }, [safeBusinessId, token, summaryFilter]),
+      // if (summaryFilter === "ALL") {
+      fetchBusinessDetails();
+      //}
+    }, [safeBusinessId, token]),
   );
-
+  const loadMoreInvestments = () => {
+    if (hasMore && !loadingInvestments) {
+      fetchInvestments(page + 1);
+    }
+  };
   const filteredInvestments = useMemo(() => {
     if (!allInvestments) return [];
 
@@ -783,6 +813,53 @@ export default function BusinessDetail() {
     setSelectedFilter(val);
     setOpen(false); // ✅ closes the dropdown when selected
   };
+  useEffect(() => {
+    if (open) return;
+  }, [selectedFilter]);
+  const renderHeader = () => (
+    <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+      {/* SUMMARY CARD */}
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() =>
+          router.push({
+            pathname: "/partnerWiseDetails",
+            params: {
+              businessId: safeBusinessId,
+              businessName: safeBusinessName,
+              investmentDetails: investmentDetails,
+            },
+          })
+        }
+        style={styles.summaryCardNew}
+      >
+        {/* === KEEP YOUR EXISTING SUMMARY JSX EXACTLY AS IS === */}
+      </TouchableOpacity>
+
+      {/* SUPPLIERS */}
+      {suppliers.length > 0 && (
+        <View style={{ marginTop: 20 }}>
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: "700",
+              marginBottom: 10,
+              color: "#000",
+            }}
+          >
+            Suppliers
+          </Text>
+
+          {suppliers.map((s) => renderSupplierCard(s))}
+        </View>
+      )}
+
+      {/* FILTER SECTION */}
+      <View style={{ marginVertical: 12, zIndex: 1000 }}>
+        {/* === KEEP YOUR FILTER JSX EXACTLY AS IS === */}
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -800,263 +877,272 @@ export default function BusinessDetail() {
         </TouchableOpacity>
       </View>
 
-      {/* Scrollable content */}
-      <ScrollView
-        contentContainerStyle={{
-          paddingBottom: 180,
-          paddingHorizontal: 16,
-          paddingTop: 16, // spacing from header
-        }}
-      >
-        {/* Summary Card (tap to expand/collapse) */}
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() =>
-            router.push({
-              pathname: "/partnerWiseDetails",
-              params: {
-                businessId: safeBusinessId,
-                businessName: safeBusinessName,
-                investmentDetails: investmentDetails,
-              },
-            })
-          }
-          style={styles.summaryCardNew}
-        >
-          {/* Header */}
-          <View style={styles.summaryHeaderRow}>
-            <Text style={styles.summaryTitle}>Business Summary</Text>
-
-            {/* 📌 ICON + DROPDOWN BUTTON */}
-            <TouchableOpacity
-              onPress={() => setSummaryDropdownOpen(!summaryDropdownOpen)}
-              style={{ flexDirection: "row", alignItems: "center" }}
-            >
-              <Text
-                style={{
-                  marginLeft: 6,
-                  fontSize: 12,
-                  fontWeight: "600",
-                  color: "#2563eb",
-                  flexShrink: 0, // IMPORTANT FIX
-                }}
-              >
-                {summaryFilter.toLowerCase()}
-              </Text>
-
-              <Ionicons
-                name={summaryDropdownOpen ? "chevron-up" : "chevron-down"}
-                size={18}
-                color="#2563eb"
-                style={{ marginLeft: 4 }}
-              />
-            </TouchableOpacity>
+      {open && (
+        <View style={styles.filterOverlay}>
+          <View style={styles.filterBox}>
+            <DropDownPicker
+              open={open}
+              value={selectedFilter}
+              items={items}
+              setOpen={setOpen}
+              setItems={setItems}
+              setValue={setSelectedFilter}
+              listMode="SCROLLVIEW"
+              dropDownDirection="BOTTOM"
+              style={{
+                backgroundColor: "#fff",
+                borderColor: "#ccc",
+                borderRadius: 8,
+              }}
+              dropDownContainerStyle={{
+                backgroundColor: "#fff",
+                borderColor: "#ccc",
+              }}
+            />
           </View>
+        </View>
+      )}
+      {/* Investment Cards */}
+      <FlatList
+        data={filteredInvestments}
+        keyExtractor={(item, index) => `${item.investmentId}-${index}`}
+        renderItem={({ item, index }) => renderInvestmentCard(item, index)}
+        ListHeaderComponent={
+          <View style={{ paddingHorizontal: 16, paddingTop: 16, zIndex: 10 }}>
+            {/* 🔹 SUMMARY CARD */}
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() =>
+                router.push({
+                  pathname: "/partnerWiseDetails",
+                  params: {
+                    businessId: safeBusinessId,
+                    businessName: safeBusinessName,
+                    investmentDetails: investmentDetails,
+                  },
+                })
+              }
+              style={styles.summaryCardNew}
+            >
+              {/* Header */}
+              <View style={styles.summaryHeaderRow}>
+                <Text style={styles.summaryTitle}>Business Summary</Text>
 
-          {/* 📌 SMALL DROPDOWN LIST */}
-          {summaryDropdownOpen && (
-            <View style={styles.summaryDropdownBox}>
-              {summaryOptions.map((opt, index) => (
+                {/* 📌 ICON + DROPDOWN BUTTON */}
                 <TouchableOpacity
-                  key={index}
-                  onPress={() => {
-                    setSummaryDropdownOpen(false);
-
-                    if (opt === "SELECT DATES") {
-                      setCalendarVisible(true);
-                      setCustomStartDate(null);
-                      setCustomEndDate(null);
-                      setSelectingStart(true);
-                    } else {
-                      setSummaryFilter(opt);
-                    }
-                  }}
-                  style={styles.summaryDropdownItem}
+                  onPress={() => setSummaryDropdownOpen(!summaryDropdownOpen)}
+                  style={{ flexDirection: "row", alignItems: "center" }}
                 >
                   <Text
-                    style={[
-                      styles.summaryDropdownText,
-                      { color: opt === summaryFilter ? "#2563eb" : "#000" },
-                    ]}
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 12,
+                      fontWeight: "600",
+                      color: "#2563eb",
+                      flexShrink: 0, // IMPORTANT FIX
+                    }}
                   >
-                    {opt}
+                    {summaryFilter.toLowerCase()}
                   </Text>
+
+                  <Ionicons
+                    name={summaryDropdownOpen ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color="#2563eb"
+                    style={{ marginLeft: 4 }}
+                  />
                 </TouchableOpacity>
-              ))}
-            </View>
-          )}
+              </View>
 
-          {/* Row 1 */}
-          <View style={styles.summaryRowNew}>
-            <View style={styles.summaryBlock}>
-              <Text style={styles.summaryLabelNew}>Total Investment</Text>
-              <Text style={styles.summaryValuePrimary}>
-                ₹{formatAmount(totalInvestment)}
-              </Text>
-            </View>
+              {/* 📌 SMALL DROPDOWN LIST */}
+              {summaryDropdownOpen && (
+                <View style={styles.summaryDropdownBox}>
+                  {summaryOptions.map((opt, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => {
+                        setSummaryDropdownOpen(false);
 
-            <View style={styles.summaryBlock}>
-              <Text style={styles.summaryLabelNew}>Total Sold</Text>
-              <Text style={styles.summaryValuePrimary}>
-                ₹{formatAmount(totalSoldAmount)}
-              </Text>
-            </View>
-          </View>
+                        if (opt === "SELECT DATES") {
+                          setCalendarVisible(true);
+                          setCustomStartDate(null);
+                          setCustomEndDate(null);
+                          setSelectingStart(true);
+                        } else {
+                          setSummaryFilter(opt);
+                        }
+                      }}
+                      style={styles.summaryDropdownItem}
+                    >
+                      <Text
+                        style={[
+                          styles.summaryDropdownText,
+                          { color: opt === summaryFilter ? "#2563eb" : "#000" },
+                        ]}
+                      >
+                        {opt}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
 
-          {/* Divider */}
-          <View style={styles.summaryDivider} />
-
-          {/* Row 2 */}
-          {summaryFilter === "ALL" && (
-            <>
+              {/* Row 1 */}
               <View style={styles.summaryRowNew}>
                 <View style={styles.summaryBlock}>
-                  <Text style={styles.summaryLabelNew}>Available Money</Text>
-                  <Text
-                    style={[
-                      styles.summaryValueSecondary,
-                      {
-                        color:
-                          leftOver < 0
-                            ? "#DC2626"
-                            : leftOver > 0
-                              ? "#16A34A"
-                              : "#000000",
-                      },
-                    ]}
-                  >
-                    ₹{formatAmount(leftOver)}
+                  <Text style={styles.summaryLabelNew}>Total Investment</Text>
+                  <Text style={styles.summaryValuePrimary}>
+                    ₹{formatAmount(totalInvestment)}
                   </Text>
                 </View>
 
                 <View style={styles.summaryBlock}>
-                  <Text style={styles.summaryLabelNew}>Your Investment</Text>
-                  <Text
-                    style={[styles.summaryValueSecondary, { color: "#2563eb" }]}
-                  >
-                    ₹{formatAmount(yourInvestment)}
+                  <Text style={styles.summaryLabelNew}>Total Sold</Text>
+                  <Text style={styles.summaryValuePrimary}>
+                    ₹{formatAmount(totalSoldAmount)}
                   </Text>
                 </View>
               </View>
-            </>
-          )}
-        </TouchableOpacity>
 
-        {/* SUPPLIER CONTRIBUTIONS SECTION */}
-        {/* ✅ Suppliers Section */}
-        {suppliers.length > 0 && (
-          <View style={{ marginTop: 20 }}>
-            <Text
+              {/* Divider */}
+              <View style={styles.summaryDivider} />
+
+              {/* Row 2 */}
+              {summaryFilter === "ALL" && (
+                <>
+                  <View style={styles.summaryRowNew}>
+                    <View style={styles.summaryBlock}>
+                      <Text style={styles.summaryLabelNew}>
+                        Available Money
+                      </Text>
+                      <Text
+                        style={[
+                          styles.summaryValueSecondary,
+                          {
+                            color:
+                              leftOver < 0
+                                ? "#DC2626"
+                                : leftOver > 0
+                                  ? "#16A34A"
+                                  : "#000000",
+                          },
+                        ]}
+                      >
+                        ₹{formatAmount(leftOver)}
+                      </Text>
+                    </View>
+
+                    <View style={styles.summaryBlock}>
+                      <Text style={styles.summaryLabelNew}>
+                        Your Investment
+                      </Text>
+                      <Text
+                        style={[
+                          styles.summaryValueSecondary,
+                          { color: "#2563eb" },
+                        ]}
+                      >
+                        ₹{formatAmount(yourInvestment)}
+                      </Text>
+                    </View>
+                  </View>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* 🔹 SUPPLIERS */}
+            {suppliers.length > 0 && (
+              <View style={{ marginTop: 20 }}>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "700",
+                    marginBottom: 10,
+                    color: "#000",
+                  }}
+                >
+                  Suppliers
+                </Text>
+                {suppliers.map((s) => renderSupplierCard(s))}
+              </View>
+            )}
+
+            {/* 🔹 FILTER SECTION */}
+            <View
               style={{
-                fontSize: 18,
-                fontWeight: "700",
-                marginBottom: 10,
-                color: "#000",
+                marginBottom: 12,
+                zIndex: 2000,
+                elevation: 2000,
               }}
             >
-              Suppliers
-            </Text>
-
-            {suppliers.map((s) => renderSupplierCard(s))}
-          </View>
-        )}
-
-        {/* --- FILTER SECTION --- */}
-        <View style={{ marginVertical: 12, zIndex: 1000 }}>
-          {/* 🔹 Row: Title + Icons */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Text style={{ fontSize: 16, fontWeight: "600" }}>
-              {currentLabel}
-            </Text>
-
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              {/* PDF Button */}
-              <TouchableOpacity
-                onPress={() =>
-                  generateBusinessStatementPDF({
-                    businessName: safeBusinessName,
-                    downloadedBy: userName || "Unknown",
-                    transactions: filteredInvestments,
-                  })
-                }
-                style={{ marginRight: 12 }}
-              >
-                <Ionicons
-                  name="document-text-outline"
-                  size={24}
-                  color="#DC2626"
-                />
-              </TouchableOpacity>
-
-              {/* Filter Button */}
-              <TouchableOpacity onPress={() => setOpen((prev) => !prev)}>
-                <Ionicons
-                  name={open ? "filter-circle" : "filter"}
-                  size={24}
-                  color="#333"
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* 🔹 Dropdown BELOW row (not inside row) */}
-          {open && (
-            <View style={{ marginTop: 8 }}>
-              <DropDownPicker
-                open={open}
-                value={selectedFilter}
-                items={items}
-                setOpen={setOpen}
-                setItems={setItems}
-                setValue={(callback) => {
-                  const value = callback(selectedFilter);
-                  setSelectedFilter(value);
-                }}
-                placeholder="Select Filter"
-                listMode="SCROLLVIEW"
+              <View
                 style={{
-                  backgroundColor: "#fff",
-                  borderColor: "#ccc",
-                  borderRadius: 8,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
                 }}
-                dropDownContainerStyle={{
-                  backgroundColor: "#fff",
-                  borderColor: "#ccc",
-                }}
-              />
-            </View>
-          )}
-        </View>
+              >
+                <Text style={{ fontSize: 16, fontWeight: "600" }}>
+                  {currentLabel}
+                </Text>
 
-        {/* --- New section: list of investment cards --- */}
-        {/* Investment Cards */}
-        <View style={{ marginTop: 12 }}>
-          {filteredInvestments.length === 0 ? (
-            <View style={styles.noDataContainer}>
-              <Image
-                source={require("../assets/stickers/no-transaction.png")}
-                style={styles.sticker}
-                resizeMode="contain"
-              />
-              <Text style={styles.noDataText}>No Transaction's found</Text>
-              <Text style={styles.noDataText}>
-                Tap the “+ Add” button below to add Transaction
-              </Text>
-            </View>
-          ) : (
-            filteredInvestments.map((inv, idx) =>
-              renderInvestmentCard(inv, idx),
-            )
-          )}
-        </View>
-      </ScrollView>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      generateBusinessStatementPDF({
+                        businessName: safeBusinessName,
+                        downloadedBy: userName || "Unknown",
+                        transactions: filteredInvestments,
+                      })
+                    }
+                    style={{ marginRight: 12 }}
+                  >
+                    <Ionicons
+                      name="document-text-outline"
+                      size={24}
+                      color="#DC2626"
+                    />
+                  </TouchableOpacity>
 
+                  <TouchableOpacity onPress={() => setOpen((prev) => !prev)}>
+                    <Ionicons
+                      name={open ? "filter-circle" : "filter"}
+                      size={24}
+                      color="#333"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        }
+        contentContainerStyle={{
+          paddingBottom: 180,
+        }}
+        onEndReached={loadMoreInvestments}
+        onEndReachedThreshold={0.4}
+        refreshing={refreshing}
+        onRefresh={() => {
+          setRefreshing(true);
+          fetchInvestments(0, true);
+        }}
+        ListFooterComponent={
+          loadingInvestments ? (
+            <ActivityIndicator size="small" color="#4f93ff" />
+          ) : null
+        }
+        ListEmptyComponent={
+          <View style={styles.noDataContainer}>
+            <Image
+              source={require("../assets/stickers/no-transaction.png")}
+              style={styles.sticker}
+              resizeMode="contain"
+            />
+            <Text style={styles.noDataText}>No Transaction's found</Text>
+          </View>
+        }
+        removeClippedSubviews={false}
+      />
       <View style={styles.fabContainer}>
         <TouchableOpacity
           style={styles.fab}
@@ -1659,6 +1745,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
+    marginHorizontal: 16,
     elevation: 3,
     shadowColor: "#000",
     shadowOpacity: 0.08,
@@ -1837,5 +1924,23 @@ const styles = StyleSheet.create({
   summaryDropdownText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  filterOverlay: {
+    position: "absolute",
+    top: 200, // adjust if needed
+    left: 16,
+    right: 16,
+    zIndex: 9999,
+    elevation: 9999,
+  },
+
+  filterBox: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 10,
   },
 });

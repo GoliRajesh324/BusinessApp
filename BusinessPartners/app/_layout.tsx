@@ -14,7 +14,6 @@ import {
   AppState,
   StyleSheet,
   Text,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import "../src/i18n/i18n";
@@ -153,110 +152,112 @@ export default function RootLayout() {
 
   // 6️⃣ Normal app content
   return (
-    <TouchableWithoutFeedback onPress={handleTouch}>
-      <View style={{ flex: 1 }}>
-        <ThemeProvider
-          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-        >
-          <Stack>
-            <Stack.Screen
-              name="dashboard"
-              options={{
-                headerShown: false,
-                title: "Business Dashboard",
-              }}
-            />
-            <Stack.Screen
-              name="businessDetail"
-              options={{
-                headerShown: false,
-                title: "Business Details",
-              }}
-            />
-            <Stack.Screen
-              name="profileScreen"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="settingsScreen"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="helpandSupportScreen"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="resetPasswordScreen"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="partnerWiseDetails"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="investmentDetail"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="inventoryScreen"
-              options={{
-                headerShown: false,
-              }}
-            />
+    <View style={{ flex: 1 }} onTouchStart={handleTouch}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen
+            name="dashboard"
+            options={{
+              headerShown: false,
+              title: "Business Dashboard",
+            }}
+          />
+          <Stack.Screen
+            name="businessDetail"
+            options={{
+              headerShown: false,
+              title: "Business Details",
+            }}
+          />
+          <Stack.Screen
+            name="profileScreen"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="settingsScreen"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="helpandSupportScreen"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="resetPasswordScreen"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="partnerWiseDetails"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="investmentDetail"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="inventoryScreen"
+            options={{
+              headerShown: false,
+            }}
+          />
 
-            <Stack.Screen
-              name="addCategory"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="categoryDetails"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="addStock"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="consumeStock"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="simpleInterest"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="modal"
-              options={{ presentation: "modal", title: "Modal" }}
-            />
-          </Stack>
+          <Stack.Screen
+            name="addCategory"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="categoryDetails"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="addStock"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="consumeStock"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="simpleInterest"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="businessNews"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="modal"
+            options={{ presentation: "modal", title: "Modal" }}
+          />
+        </Stack>
 
-          <StatusBar style="auto" />
-        </ThemeProvider>
-      </View>
-    </TouchableWithoutFeedback>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </View>
   );
 }
 

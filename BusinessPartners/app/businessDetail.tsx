@@ -123,16 +123,12 @@ export default function BusinessDetail() {
       const u = await AsyncStorage.getItem("userId");
       const uName = await AsyncStorage.getItem("userName");
       setUserName(uName);
-      console.log("📌 Loaded username:", uName);
+      //console.log("📌 Loaded username:", uName);
       setToken(t);
       setUserId(u);
     };
     loadData();
   }, []);
-
-  /*   useEffect(() => {
-    AsyncStorage.getItem("token").then(setToken);
-  }, []); */
 
   // 🏷 Get label text dynamically based on selected value
   const currentLabel =
@@ -149,10 +145,6 @@ export default function BusinessDetail() {
     }
   }, []);
 
-  /*   useEffect(() => {
-    fetchBusinessDetails();
-  }, [safeBusinessId, token, userName]);
- */
   const fetchSuppliers = async () => {
     try {
       const res = await fetch(
@@ -266,7 +258,7 @@ export default function BusinessDetail() {
     if (!token || !safeBusinessId) return;
 
     try {
-      console.log(`📅 Fetching summary for range: ${startDate} to ${endDate}`);
+      //console.log(`📅 Fetching summary for range: ${startDate} to ${endDate}`);
 
       const response = await fetch(
         `${BASE_URL}/api/business/${safeBusinessId}/business-details-by-id-and-date?startDate=${startDate}&endDate=${endDate}`,
@@ -290,15 +282,15 @@ export default function BusinessDetail() {
     if (!token || !safeBusinessId) return;
 
     if (summaryFilter === "ALL") {
-      console.log(
+      /* console.log(
         "🔄 Summary filter ALL selected → fetching overall business details",
-      );
+      ); */
       fetchBusinessDetails(); // existing method
       return;
     }
-    console.log(
+    /* console.log(
       `🔄 Summary filter ${summaryFilter} selected → fetching filtered summary`,
-    );
+    ); */
     const range = getDateRange(summaryFilter);
     if (!range) return;
 
@@ -351,6 +343,8 @@ export default function BusinessDetail() {
             cropNumber: data.crop.cropNumber,
           });
         }
+        console.log("📊 Business id:", safeBusinessId);
+        console.log("📊 Business details fetched:", data.crop);
       } catch (err) {
         console.log("❌ Error fetching business info:", err);
       }
@@ -383,7 +377,7 @@ export default function BusinessDetail() {
           );
         }
       } catch (err) {
-        console.log("❌ Error fetching partners:", err);
+        //console.log("❌ Error fetching partners:", err);
       }
     };
 
@@ -428,10 +422,10 @@ export default function BusinessDetail() {
       );
       if (!response.ok) throw new Error("Failed to fetch investments");
       const data = await response.json();
-      console.log("➡️ Fetched investments:", data);
+      //console.log("➡️ Fetched investments:", data);
       setAllInvestments(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       Alert.alert("Error", "Error fetching investments");
     }
   };
@@ -455,7 +449,7 @@ export default function BusinessDetail() {
 
       setInvestmentDetails(data.investmentDetails || []);
     } catch (err) {
-      console.log("❌ Error fetching business details:", err);
+      //console.log("❌ Error fetching business details:", err);
     }
   };
 
@@ -554,7 +548,7 @@ export default function BusinessDetail() {
       // Refresh and navigate
       router.back();
     } catch (err: any) {
-      console.log("❌ Restart crop error:", err);
+      //console.log("❌ Restart crop error:", err);
       if (err.response?.status === 400) alert("Invalid partner data.");
       else if (err.response?.status === 403) alert("Access forbidden!");
       else alert("Error restarting crop.");
@@ -618,34 +612,13 @@ export default function BusinessDetail() {
         { headers: { Authorization: `Bearer ${token}` } },
       );
       const investmentGroupId = response?.data;
-      console.log("➡️ Investment Group ID:", investmentGroupId);
+      //console.log("➡️ Investment Group ID:", investmentGroupId);
 
-      /* 
-      const res = await fetch(
-        `${BASE_URL}/api/business/${businessId}/business-details-by-id`,
-        { method: "GET", headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      const data = await res.json();
-      setTotalInvestment(data.totalInvestment);
-      setTotalSoldAmount(data.totalSoldAmount);
-      setCropDetails(data.crop);
-      setInvestmentDetails(data.investmentDetails);
-
-      investmentDetails.forEach((item) => {
-        const partner = item.partner; // partner object
-        console.log("➡️ Your investment item:", item);
-        if (partner.username === userName) {
-          console.log("➡️ Your investment item:", item);
-          setYourInvestment(item.yourInvestment);
-          setLeftOver(item.leftOver);
-        }
-      }); */
       // refresh investments list
       await fetchBusinessDetails();
       fetchInvestments();
     } catch (error) {
-      console.log(error);
+      //console.log(error);
     }
   };
 
@@ -988,15 +961,6 @@ export default function BusinessDetail() {
           </View>
         )}
 
-        {/* Expanded table area */}
-        {/* {expanded && (
-          <View style={[styles.tableContainer, { maxHeight: tableMaxHeight }]}>
-            <ScrollView nestedScrollEnabled>
-              <InvestmentTable investmentDetails={investmentDetails} />
-            </ScrollView>
-          </View>
-        )} */}
-
         {/* --- FILTER SECTION --- */}
         <View style={{ marginVertical: 12, zIndex: 1000 }}>
           {/* 🔹 Row: Title + Icons */}
@@ -1093,50 +1057,6 @@ export default function BusinessDetail() {
         </View>
       </ScrollView>
 
-      {/* Floating Action Button */}
-      {/*       <View style={styles.fabContainer}>
-        {fabOpen && (
-          <View style={styles.fabOptions}>
-            <TouchableOpacity
-              style={[styles.fabOption, { backgroundColor: "#ff9900" }]}
-              onPress={() => {
-                setSoldPopup(true);
-                setFabOpen(false);
-              }}
-            >
-              <Text style={styles.fabOptionText}>Sold</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.fabOption, { backgroundColor: "#4f93ff" }]}
-              onPress={() => {
-                setShowPopup(true);
-                setFabOpen(false);
-              }}
-            >
-              <Text style={styles.fabOptionText}>Add Expense</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.fabOption, { backgroundColor: "#f44336" }]}
-              onPress={() => {
-                setWithdrawPopup(true);
-                setFabOpen(false);
-              }}
-            >
-              <Text style={styles.fabOptionText}>Withdraw</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => setFabOpen(!fabOpen)}
-        >
-          <Text style={styles.fabText}>{fabOpen ? "×" : "+"}</Text>
-        </TouchableOpacity>
-      </View> */}
-
       <View style={styles.fabContainer}>
         <TouchableOpacity
           style={styles.fab}
@@ -1160,10 +1080,19 @@ export default function BusinessDetail() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() => alert("Charts Feature coming soon")}
+          onPress={() =>
+            router.push({
+              pathname: "/businessNews",
+              params: {
+                businessId: safeBusinessId,
+                businessName: safeBusinessName,
+                cropId: cropDetails?.id,
+              },
+            })
+          }
         >
-          <Ionicons name="bar-chart" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>Charts</Text>
+          <Ionicons name="newspaper" size={28} color="#4f93ff" />
+          <Text style={styles.bottomButtonText}>News</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -1183,18 +1112,10 @@ export default function BusinessDetail() {
           <Text style={styles.bottomButtonText}>Inventory</Text>
         </TouchableOpacity>
 
-        {/*  <TouchableOpacity
-          style={styles.bottomButtonIcon}
-          onPress={() => alert("All Investments Feature coming soon")}
-        >
-          <Ionicons name="cash-outline" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>Investments</Text>
-        </TouchableOpacity> */}
-
         <TouchableOpacity
           style={styles.bottomButtonIcon}
-          onPress={() => alert("History Feature coming soon")}
-          /*   onPress={() => setShowAuditPopup(true)} */
+          //onPress={() => alert("History Feature coming soon")}
+          onPress={() => setShowAuditPopup(true)}
         >
           <Ionicons name="time" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>History</Text>
@@ -1218,30 +1139,7 @@ export default function BusinessDetail() {
           }}
         />
       )}
-      {/* 
-      {withdrawPopup && (
-        <WithdrawAmountPopup
-          partners={partners}
-          cropDetails={cropDetails}
-          investmentDetails={investmentDetails}
-          visible={withdrawPopup}
-          onClose={() => setWithdrawPopup(false)}
-          onSave={handlePopupSave}
-        />
-      )}
-      {soldPopup && (
-        <SoldAmountPopup
-          partners={partners}
-          cropDetails={cropDetails}
-          visible={soldPopup}
-          onClose={() => setSoldPopup(false)}
-          onSave={(data) => {
-            handlePopupSave(data);
-            setSoldPopup(false);
-          }}
-        />
-      )}
- */}
+
       {showAuditPopup && (
         <InvestmentAudit
           businessId={String(businessId || "")}

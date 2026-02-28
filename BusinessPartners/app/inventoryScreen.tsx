@@ -114,7 +114,7 @@ export default function InventoryScreen() {
             });
           }}
         >
-          <Text style={styles.footerBtnText}>Add Stock</Text>
+          <Text style={styles.footerBtnText}>Add</Text>
         </TouchableOpacity>
 
         {/* Consume Stock */}
@@ -139,7 +139,7 @@ export default function InventoryScreen() {
             });
           }}
         >
-          <Text style={styles.footerBtnText}>Consume Stock</Text>
+          <Text style={styles.footerBtnText}>Consume</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -48,19 +48,6 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     Record<number, number>
   >({});
 
-  /* const [checkedState, setCheckedState] = useState<Record<number, boolean>>({});
-
-  useEffect(() => {
-    if (investmentDataState?.length) {
-      const initialState: Record<number, boolean> = {};
-
-      investmentDataState.forEach((item, index) => {
-        initialState[index] = Number(item.reduceLeftOver) > 0; // default: checked if > 0
-      });
-
-      setCheckedState(initialState);
-    }
-  }, [investmentDataState]); */
   const [checkedState, setCheckedState] = useState<Record<number, boolean>>({});
 
   const toggleCheckbox = (index: number) => {
@@ -88,16 +75,8 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     first.description ?? "",
   );
   const [transactionType, setTransactionType] = useState<string>("Investment");
-
-  const [images, setImages] = useState<any[]>(first.images ?? []);
-
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-
-  /*  const [transactionType, setTransactionType] = useState<
-    "Investment" | "Sold" | "Withdraw" | null
-  >(initialTransactionType || "Investment"); */
-
   const [errorVisible, setErrorVisible] = useState(false);
   const shakeAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -113,8 +92,16 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
   >("share");
   const [shareValues, setShareValues] = useState<number[]>([]);
 
-  /*   const [remaining, setRemaining] = useState<number>(0);
-  const [showSupplierPopup, setShowSupplierPopup] = useState(false); */
+  useEffect(() => {
+    const loadToken = async () => {
+      const t = await AsyncStorage.getItem("token");
+      const u = await AsyncStorage.getItem("userName");
+      setToken(t);
+      setUserId(u);
+    };
+    loadToken();
+  }, []);
+
   // ✅ Restore saved split type when editing an existing investment
   useEffect(() => {
     if (first?.splitType) {
@@ -160,6 +147,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
       return inv;
     });
   };
+
   useEffect(() => {
     if (!visible || !investmentData?.length) return;
 
@@ -494,71 +482,52 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
 
     setSheetTempMode(splitMode);
 
-    // ✅ Prepare temp values correctly for EDIT
-    if (splitMode === "share") {
-      // load current invested values
-      setShareValues(investmentDataState.map((r) => Number(r.invested ?? 0)));
-    } else if (splitMode === "equal") {
-      const per = expected / investmentDataState.length;
-      setShareValues(investmentDataState.map(() => Number(per.toFixed(2))));
-    } else {
-      // ✅ MANUAL → load existing values (NOT zero)
-      setShareValues(investmentDataState.map((r) => Number(r.invested ?? 0)));
+    if (first.transactionType?.toUpperCase() === "INVESTMENT") {
+      // ✅ Prepare temp values correctly for EDIT
+      if (splitMode === "share") {
+        // load current invested values
+        setShareValues(investmentDataState.map((r) => Number(r.invested ?? 0)));
+      } else if (splitMode === "equal") {
+        const per = expected / investmentDataState.length;
+        setShareValues(investmentDataState.map(() => Number(per.toFixed(2))));
+      } else {
+        // ✅ MANUAL → load existing values (NOT zero)
+        setShareValues(investmentDataState.map((r) => Number(r.invested ?? 0)));
+      }
+    } else if (first.transactionType?.toUpperCase() === "WITHDRAW") {
+      if (splitMode === "share") {
+        // load current invested values
+        setShareValues(
+          investmentDataState.map((r) => Number(r.withdrawn ?? 0)),
+        );
+      } else if (splitMode === "equal") {
+        const per = expected / investmentDataState.length;
+        setShareValues(investmentDataState.map(() => Number(per.toFixed(2))));
+      } else {
+        // ✅ MANUAL → load existing values (NOT zero)
+        setShareValues(
+          investmentDataState.map((r) => Number(r.withdrawn ?? 0)),
+        );
+      }
+    } else if (first.transactionType?.toUpperCase() === "SOLD") {
+      if (splitMode === "share") {
+        // load current invested values
+        setShareValues(
+          investmentDataState.map((r) => Number(r.soldAmount ?? 0)),
+        );
+      } else if (splitMode === "equal") {
+        const per = expected / investmentDataState.length;
+        setShareValues(investmentDataState.map(() => Number(per.toFixed(2))));
+      } else {
+        // ✅ MANUAL → load existing values (NOT zero)
+        setShareValues(
+          investmentDataState.map((r) => Number(r.soldAmount ?? 0)),
+        );
+      }
     }
 
     setSheetVisible(true);
   };
-
-  /*   const applySheet = () => {
-    // Apply split values based on sheetTempMode
-    setSplitMode(sheetTempMode);
-
-    if (sheetTempMode === "share") {
-      // Use shareValues (which may have been edited by user)
-      setInvestmentDataState((prev) =>
-        prev.map((r, idx) => {
-          const actualAmount = shareValues[idx] ?? 0;
-      
-          return {
-            ...r,
-            actual: actualAmount.toFixed(2), // investable amount
-            investing: r.invested ? r.invested : actualAmount.toFixed(2),
-
-            // Do NOT touch share %
-          };
-        })
-      );
-    } else if (sheetTempMode === "equal") {
-      // Prefer shareValues (user may have edited the equal values).
-      const per = expected / partners.length;
-      setInvestmentDataState((prev) =>
-        prev.map((r, idx) => {
-          const val = shareValues[idx] ?? per;
-          const updated = {
-            ...r,
-            actual: Number(val).toFixed(2),
-            investing: r.invested ? r.invested : Number(val).toFixed(2),
-          };
-     
-          return updated;
-        })
-      );
-    } else {
-      // Manual: apply user-entered values from shareValues (don't overwrite with old share)
-      setInvestmentDataState((prev) =>
-        prev.map((r, idx) => {
-          const val = shareValues[idx] ?? parseFloat(String(r.invested || "0")) ?? 0;
-          return {
-            ...r,
-            actual: Number(val).toFixed(2),
-            investing: String(val),
-          };
-          })
-        );
-    }
-
-    setSheetVisible(false);
-  }; */
 
   const applySheet = () => {
     setSplitMode(sheetTempMode);
@@ -578,6 +547,25 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
         } else {
           val = Number(r.invested) || 0;
         }
+        const finalValue = Number(val.toFixed(2));
+
+        // 🔹 Withdraw
+        if (transactionType === "Withdraw") {
+          return {
+            ...r,
+            withdrawn: finalValue,
+            splitType: sheetTempMode,
+          };
+        }
+
+        // 🔹 Sold
+        if (transactionType === "Sold") {
+          return {
+            ...r,
+            soldAmount: finalValue,
+            splitType: sheetTempMode,
+          };
+        }
 
         // ✅ Keep investable (expected) value as-is
         // ✅ Update invested and actual only
@@ -594,37 +582,8 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     setSheetVisible(false);
   };
 
-  useEffect(() => {
-    const loadToken = async () => {
-      const t = await AsyncStorage.getItem("token");
-      const u = await AsyncStorage.getItem("userName");
-      setToken(t);
-      setUserId(u);
-    };
-    loadToken();
-  }, []);
-
-  /*     useEffect(() => {
-    if (!investmentData || investmentData.length === 0) return;
-    const freshRows =
-      investmentData?.map((inv) => ({
-        id: inv.partnerId?.toString() || "",
-        username: inv.partnerName || "",
-        share: inv.share ?? 0,
-        invested: inv.invested?.toString() ?? "0",
-        investable: inv.investable?.toString() ?? "0",
-      })) ?? [];
-    setRows(freshRows);
-  }, [investmentData]); */
-
-  /*   const handleInvestingChange = (index: number, value: string) => {
-    setRows((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], investing: value, actual: value };
-      return next;
-    });
-  }; */
   const extraText = (r: InvestmentDTO) => {
+    if (transactionType !== "Investment") return "";
     const investableNum = parseFloat((r.investable ?? "0").toString()) || 0;
     const investedNum = parseFloat((r.invested ?? "0").toString()) || 0;
     const diff = Math.round((investedNum - investableNum) * 100) / 100;
@@ -632,9 +591,7 @@ const EditInvestmentPopup: React.FC<EditInvestmentScreenProps> = ({
     if (diff < 0) return `Pending - ${Math.abs(diff).toFixed(2)}`;
     return "Settled";
   };
-  /* 
-  useEffect(() => {}, [investmentData]);
- */
+
   useEffect(() => {
     if (visible) {
       isInitialLoad.current = true; // Reset when popup opens again
@@ -1100,17 +1057,6 @@ export default EditInvestmentPopup;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-  /*   header: {
-    height:
-      Platform.OS === "android" ? 90 + (StatusBar.currentHeight || 0) : 110,
-    paddingTop:
-      Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
-    backgroundColor: "#4f93ff",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-  }, */
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -1165,7 +1111,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: "italic",
     marginTop: 4,
-    // paddingHorizontal: 12,
     paddingVertical: 5,
     color: "#666",
   },
@@ -1174,23 +1119,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontWeight: "600",
     fontSize: 16,
-  } /* 
-  partnerCard: {
-    width: "100%",
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-    marginBottom: 10,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  }, */,
+  },
   partnerPercent: { fontSize: 12, color: "#666", marginTop: 4 },
   partnerAmount: { fontSize: 16, fontWeight: "700", color: "#111" },
   smallNote: { fontSize: 10, color: "#666", marginTop: 4 },
@@ -1259,15 +1188,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 14,
     paddingVertical: 12,
   },
-  /*   sheetHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderColor: "#eee",
-    paddingBottom: 10,
-  }, */
   sheetModeBtn: {
     paddingVertical: 8,
     paddingHorizontal: 14,
@@ -1327,30 +1247,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: "#f0f0f0",
   },
-  /* splitModeButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    backgroundColor: "#fff",
-  },
-  splitModeButtonActive: {
-    backgroundColor: "#007bff",
-    borderColor: "#007bff",
-  },
-  sheetContainer: {
-  backgroundColor: "#fff",
-  borderTopLeftRadius: 16,
-  borderTopRightRadius: 16,
-  paddingTop: 12,
-  paddingBottom: Platform.OS === "ios" ? 20 : 10,
-  shadowColor: "#000",
-  shadowOpacity: 0.1,
-  shadowOffset: { width: 0, height: -2 },
-  shadowRadius: 5,
-  elevation: 10,
-}, */
   sheetOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -1444,12 +1340,6 @@ const styles = StyleSheet.create({
   col1: { flex: 2 },
   col2: { flex: 1, alignItems: "center" },
   col3: { flex: 1, alignItems: "flex-end" },
-
-  /* partnerName: { fontWeight: "600", fontSize: 14 },
-partnerPercent: { fontSize: 12, color: "#666", marginTop: 2 },
-partnerAmount: { fontSize: 16, fontWeight: "700", color: "#111" },
-smallNote: { fontSize: 10, color: "#666", marginTop: 4 },
- */
   expandedRow: {
     marginTop: 8,
     padding: 8,
@@ -1459,33 +1349,6 @@ smallNote: { fontSize: 10, color: "#666", marginTop: 4 },
     alignItems: "center",
     justifyContent: "space-between",
   },
-  /* inputBox: {
-  borderWidth: 1,
-  borderColor: "#ccc",
-  borderRadius: 4,
-  padding: 6,
-  minWidth: 80,
-  textAlign: "right",
-} */
-
-  /*   partnerCard: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-  }, */
-  //col1: { flex: 1 },
-  //col2: { justifyContent: "center", alignItems: "center", width: 80 },
-  //col3: { justifyContent: "center", alignItems: "flex-end", flex: 1 },
-  //partnerName: { fontWeight: "bold", fontSize: 14 },
-  //partnerPercent: { fontSize: 12, color: "#666" },
-  //partnerAmount: { fontSize: 14, fontWeight: "600" },
-  //smallNote: { fontSize: 12, color: "#999" },
   expandedRowCard: {
     backgroundColor: "#f9f9f9",
     padding: 12,
@@ -1495,13 +1358,6 @@ smallNote: { fontSize: 10, color: "#666", marginTop: 4 },
     borderWidth: 1,
     borderColor: "#eee",
   },
-  /*   inputBox: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 8,
-    fontSize: 14,
-  }, */
   expandedSection: {
     marginTop: 6,
     backgroundColor: "#f9f9f9",

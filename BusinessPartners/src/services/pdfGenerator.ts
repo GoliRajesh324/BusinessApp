@@ -1,14 +1,8 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { File, Paths } from "expo-file-system";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Alert } from "react-native";
-
-const downloadedOn = new Date().toLocaleString("en-IN", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
 
 export async function generateInterestPDF(
   grouped: Record<string, any[]>,
@@ -16,18 +10,30 @@ export async function generateInterestPDF(
   totalTakenAll: number,
   totalGivenAll: number,
   formatAmountIndian: (n: number) => string,
-  formatDateForDisplay: (d: string) => string
+  formatDateForDisplay: (d: string) => string,
+  personName?: string, // 👈 NEW (optional for individual PDF)
 ) {
   try {
+    const loggedUser = await AsyncStorage.getItem("userName");
+    const safeUser = (loggedUser || "User").replace(/[^a-zA-Z0-9]/g, "_");
+
+    const now = new Date();
+    const downloadedOn = now.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const fileDate = now.toISOString().split("T")[0];
+    const fileTime = now.toTimeString().split(" ")[0].replace(/:/g, "-");
+
     let html = `
     <html>
     <head>
       <style>
-        body {
-          font-family: Arial;
-          padding: 20px;
-        }
-
+        body { font-family: Arial; padding: 20px; }
         .pdf-header {
           display: flex;
           justify-content: space-between;
@@ -38,42 +44,26 @@ export async function generateInterestPDF(
           font-size: 12px;
           color: #444;
         }
-
-        h2, h3 {
-          margin-bottom: 10px;
-        }
-
+        h2, h3 { margin-bottom: 10px; }
         table {
           width: 100%;
           border-collapse: collapse;
           font-size: 14px;
           page-break-inside: auto;
         }
-
-        thead {
-          display: table-header-group;
-        }
-
-        tr {
-          page-break-inside: avoid;
-          page-break-after: auto;
-        }
-
+        thead { display: table-header-group; }
+        tr { page-break-inside: avoid; }
         th, td {
           padding: 8px;
           border: 1px solid #ccc;
           text-align: left;
           vertical-align: top;
           word-break: break-word;
-          white-space: pre-wrap;
         }
-
-        /* iOS ignores background on <tr>, so put on <th> */
         th {
           background: #1e88e5 !important;
           color: white !important;
         }
-
         .summary-table td {
           padding: 8px;
           border: 1px solid #ccc;
@@ -83,9 +73,8 @@ export async function generateInterestPDF(
 
     <body>
 
-      <!-- HEADER -->
       <div class="pdf-header">
-        <div><b>Downloaded By:</b> </div>
+        <div><b>Downloaded By:</b> ${safeUser}</div>
         <div><b>Downloaded On:</b> ${downloadedOn}</div>
       </div>
 
@@ -107,22 +96,19 @@ export async function generateInterestPDF(
       </table>
     `;
 
-    // CONTINUOUS PERSON-WISE DETAILS
     Object.keys(grouped).forEach((name) => {
       html += `
         <h3>${name.toUpperCase()}</h3>
-
         <table>
           <thead>
-  <tr>
+            <tr>
               <th style="width:20%">Type</th>
               <th style="width:15%">Amount</th>
               <th style="width:10%">Interest %</th>
               <th style="width:15%">Start Date</th>
               <th style="width:40%">Comment</th>
-  </tr>
-</thead>
-
+            </tr>
+          </thead>
           <tbody>
       `;
 
@@ -150,12 +136,30 @@ export async function generateInterestPDF(
     </html>
     `;
 
-    const { uri } = await Print.printToFileAsync({ html });
+    const result = await Print.printToFileAsync({ html });
+
+    if (!result?.uri) {
+      throw new Error("PDF generation failed");
+    }
+
+    // ✅ FILE NAMING LOGIC
+    let newFileName = `${safeUser.toUpperCase()}_Interest_Summary_${fileDate}_${fileTime}.pdf`;
+
+    if (personName) {
+      const safePerson = personName.replace(/[^a-zA-Z0-9]/g, "_");
+      newFileName = `${safeUser.toUpperCase()}_${safePerson.toUpperCase()}_Interest_Summary_${fileDate}_${fileTime}.pdf`;
+    }
+
+    const originalFile = new File(result.uri);
+    const destinationFile = new File(Paths.cache, newFileName);
+    originalFile.copy(destinationFile);
 
     if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri);
+      await Sharing.shareAsync(destinationFile.uri, {
+        mimeType: "application/pdf",
+      });
     } else {
-      Alert.alert("File Saved", uri);
+      Alert.alert("File Saved", destinationFile.uri);
     }
   } catch (e) {
     console.log("PDF Error:", e);

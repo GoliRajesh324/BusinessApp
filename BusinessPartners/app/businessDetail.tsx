@@ -23,7 +23,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Calendar, DateData } from "react-native-calendars";
 import InvestmentAudit from "../src/components/InvestmentAudit";
 import BASE_URL from "../src/config/config";
-import AddInvestmentPopup from "./addInvestmentPopup";
 
 type Partner = {
   partnerId: number;
@@ -1147,8 +1146,14 @@ export default function BusinessDetail() {
         <TouchableOpacity
           style={styles.fab}
           onPress={() => {
-            setShowPopup(true);
-            setFabOpen(false);
+            router.push({
+              pathname: "/AddTransactionScreen",
+              params: {
+                businessId: safeBusinessId,
+                businessName: safeBusinessName,
+                cropDetails: JSON.stringify(cropDetails),
+              },
+            });
           }}
         >
           <Text style={styles.fabText}>+</Text>
@@ -1201,30 +1206,20 @@ export default function BusinessDetail() {
         <TouchableOpacity
           style={styles.bottomButtonIcon}
           //onPress={() => alert("History Feature coming soon")}
-          onPress={() => setShowAuditPopup(true)}
+          onPress={() =>
+            router.push({
+              pathname: "/ChangeHistoryScreen",
+              params: {
+                businessId,
+                businessName,
+              },
+            })
+          }
         >
           <Ionicons name="time" size={28} color="#4f93ff" />
           <Text style={styles.bottomButtonText}>History</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Popups */}
-      {/* inside BusinessDetail */}
-
-      {showPopup && (
-        <AddInvestmentPopup
-          visible={showPopup}
-          businessId={String(businessId || "")}
-          businessName={String(businessName || "")}
-          partners={partners}
-          cropDetails={cropDetails}
-          onClose={() => setShowPopup(false)}
-          onSave={(data) => {
-            handlePopupSave(data);
-            setShowPopup(false);
-          }}
-        />
-      )}
 
       {showAuditPopup && (
         <InvestmentAudit

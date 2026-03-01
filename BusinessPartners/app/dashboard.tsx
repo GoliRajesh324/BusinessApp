@@ -249,22 +249,24 @@ export default function Dashboard() {
         <TouchableOpacity
           style={[
             styles.menuTab,
-            activeMenu === "Settings" && styles.activeMenuTab,
+            activeMenu === "Emi Calc" && styles.activeMenuTab,
           ]}
-          onPress={() => setActiveMenu("Settings")}
+          // onPress={() => setActiveMenu("Emi Calc")}
+          //onPress={() => alert("Emi Calc coming soon")}
+          onPress={() => router.push("/EmiCalculatorScreen")}
         >
           <Ionicons
-            name="settings-outline"
+            name="calculator-outline"
             size={18}
-            color={activeMenu === "Settings" ? "#fff" : "#333"}
+            color={activeMenu === "Emi Calc" ? "#fff" : "#333"}
           />
           <Text
             style={[
               styles.menuTabText,
-              activeMenu === "Settings" && styles.activeMenuTabText,
+              activeMenu === "Emi Calc" && styles.activeMenuTabText,
             ]}
           >
-            Settings
+            EMi Calc
           </Text>
         </TouchableOpacity>
       </View>

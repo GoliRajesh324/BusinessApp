@@ -1,7 +1,8 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -10,7 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import EditInvestmentPopup from "../src/components/EditInvestmentPopup";
 import BASE_URL from "../src/config/config";
 import { InvestmentDTO } from "../src/types/types";
 
@@ -25,42 +25,56 @@ export default function InvestmentDetail() {
   const [token, setToken] = useState<string | null>(null);
   const [investments, setInvestments] = useState<InvestmentDTO[]>([]);
   const [editInvestments, setEditInvestments] = useState<InvestmentDTO[]>([]);
-  const [editVisible, setEditVisible] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-  useEffect(() => {
-    AsyncStorage.getItem("token").then(setToken);
-  }, []);
+      const loadData = async () => {
+        try {
+          const storedToken = await AsyncStorage.getItem("token");
+          if (!storedToken || !investmentGroupId) return;
 
-  useEffect(() => {
-    if (!token || !investmentGroupId) return;
-    fetchGroupInvestments();
-  }, [token, investmentGroupId]);
+          if (!isActive) return;
 
-  const fetchGroupInvestments = async () => {
-    try {
-      const res = await fetch(
-        `${BASE_URL}/api/investment/all-group-investments/${investmentGroupId}`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      //   console.log("Fetching business name:", businessName);
-      if (!res.ok) throw new Error("Failed to fetch group investments");
-      const data = await res.json();
-      setInvestments(Array.isArray(data) ? data : []);
-      // ✅ Filter using data (not state)
-      const editInvestmentDetails = data.filter(
-        (inv: InvestmentDTO) =>
-          !(
-            inv.transactionType === "WITHDRAW" && inv.reduceLeftOverFlag === "Y"
-          ),
-      );
-      setEditInvestments(editInvestmentDetails);
-      console.log("Fetched investments for group:", editInvestmentDetails);
-    } catch (err) {
-      console.log(err);
-      Alert.alert("Error", "Failed to fetch group investments");
-    }
-  };
+          setToken(storedToken);
 
+          const res = await fetch(
+            `${BASE_URL}/api/investment/all-group-investments/${investmentGroupId}`,
+            {
+              headers: { Authorization: `Bearer ${storedToken}` },
+            },
+          );
+
+          if (!res.ok) throw new Error("Failed to fetch group investments");
+
+          const data = await res.json();
+
+          if (!isActive) return;
+
+          setInvestments(Array.isArray(data) ? data : []);
+
+          const editInvestmentDetails = data.filter(
+            (inv: InvestmentDTO) =>
+              !(
+                inv.transactionType === "WITHDRAW" &&
+                inv.reduceLeftOverFlag === "Y"
+              ),
+          );
+
+          setEditInvestments(editInvestmentDetails);
+        } catch (err) {
+          console.log(err);
+          Alert.alert("Error", "Failed to fetch group investments");
+        }
+      };
+
+      loadData();
+
+      return () => {
+        isActive = false;
+      };
+    }, [investmentGroupId]),
+  );
   const normalizeForEditPopup = (rows: InvestmentDTO[]) => {
     if (!rows.length) return [];
 
@@ -164,7 +178,18 @@ export default function InvestmentDetail() {
         <View style={styles.headerIcons}>
           <TouchableOpacity
             onPress={() => {
-              setEditVisible(true);
+              if (!investmentGroupId) return;
+
+              router.push({
+                pathname: "/EditTransactionScreen",
+                params: {
+                  businessId: businessId || "",
+                  businessName: businessName || "",
+                  investmentData: JSON.stringify(
+                    normalizeForEditPopup(editInvestments),
+                  ),
+                },
+              });
             }}
           >
             <MaterialIcons name="edit" size={26} color="#fff" />
@@ -284,18 +309,6 @@ export default function InvestmentDetail() {
           })
         )}
       </ScrollView>
-
-      {/* Popup */}
-      {editVisible && investmentGroupId && (
-        <EditInvestmentPopup
-          visible={editVisible}
-          businessId={investmentGroupId || ""}
-          businessName={businessName || ""}
-          investmentData={normalizeForEditPopup(editInvestments)} // ✅ normalize here
-          onClose={() => setEditVisible(false)}
-          onUpdated={fetchGroupInvestments}
-        />
-      )}
     </View>
   );
 }

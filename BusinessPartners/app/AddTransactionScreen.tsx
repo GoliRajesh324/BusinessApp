@@ -1,9 +1,12 @@
 // AddInvestmentPopup.tsx
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated } from "react-native";
 
+import SupplierPopup from "@/src/components/SupplierPopup";
+import axios from "axios";
 import {
   Alert,
   Keyboard,
@@ -18,31 +21,9 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import SupplierPopup from "../src/components/SupplierPopup";
 import BASE_URL from "../src/config/config";
 import { numberToWords } from "../src/utils/numberToWords";
 
-type Partner = {
-  id: string;
-  username: string;
-  share?: number;
-};
-
-type CropDetails = {
-  id: string;
-  businessId?: string;
-  [key: string]: any;
-};
-
-interface AddInvestmentPopupProps {
-  visible: boolean;
-  businessId: string;
-  businessName: string;
-  partners: Partner[];
-  cropDetails?: CropDetails;
-  onSave: (data: { investmentData: any[] }) => void;
-  onClose: () => void;
-}
 interface PartnerRow {
   id: string;
   name: string;
@@ -59,16 +40,16 @@ interface PartnerRow {
 }
 
 const SLIDER_THUMB_SIZE = 18;
+const AddTransactionScreen = () => {
+  const router = useRouter();
+  const params = useLocalSearchParams();
 
-const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
-  visible,
-  businessId,
-  businessName,
-  partners,
-  cropDetails,
-  onSave,
-  onClose,
-}) => {
+  const businessId = params.businessId as string;
+  const businessName = params.businessName as string;
+
+  const cropDetails = params.cropDetails
+    ? JSON.parse(params.cropDetails as string)
+    : undefined;
   const shakeAnimations = useRef<Record<string, Animated.Value>>({}).current;
   const [splitMode, setSplitMode] = useState<"share" | "equal" | "manual">(
     "share",
@@ -82,7 +63,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   const [remaining, setRemaining] = useState<number>(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  //const [token, setToken] = useState<string | null>(null);
 
   const [sheetVisible, setSheetVisible] = useState(false);
   const [sheetTempMode, setSheetTempMode] = useState<
@@ -97,6 +78,49 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   const [errorVisible, setErrorVisible] = useState(false);
   const shakeAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current; // for fade in/out
+  const redTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [partners, setPartners] = useState<any[]>([]);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const t = await AsyncStorage.getItem("token");
+      setToken(t);
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    if (!token || !businessId) return;
+
+    const fetchPartners = async () => {
+      try {
+        const response = await fetch(
+          `${BASE_URL}/api/business/${businessId}/partners`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+
+        const text = await response.text();
+        if (!response.ok || !text) return;
+
+        const data = JSON.parse(text);
+
+        if (data?.partners) {
+          setPartners(
+            data.partners.map((p: any) => ({
+              id: p.partnerId,
+              username: p.username,
+              share: p.share,
+            })),
+          );
+        }
+      } catch (err) {
+        console.log("Error fetching partners", err);
+      }
+    };
+
+    fetchPartners();
+  }, [businessId, token]);
   // Load user data
   useEffect(() => {
     const loadData = async () => {
@@ -167,15 +191,20 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
   // Initialize rows for partners
   useEffect(() => {
+    if (rows.length > 0) return; // ✅ VERY IMPORTANT
+
     const initial = partners.map((p) => ({
       id: p.id,
       name: p.username,
       share: p.share ?? 0,
       actual: "",
       investing: "",
+      leftOver: 0,
+      checked: false,
+      reduceLeftOver: "",
     }));
+
     setRows(initial);
-    console.log("Initialized rows for partners:", rows);
     setShareValues(partners.map((p) => p.share ?? 0));
   }, [partners]);
 
@@ -183,40 +212,45 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
   useEffect(() => {
     if (!partners.length) return;
-    console.log("Before updating rows for splitMode:", rows);
+
     setRows((prev) =>
       partners.map((p, idx) => {
         const prevRow = prev[idx] || {};
-        if (!totalAmount) return { ...prevRow, actual: "", investing: "" };
+
+        const base = {
+          ...prevRow, // ✅ PRESERVE checked, reduceLeftOver, leftOver
+          id: p.id,
+          name: p.username,
+          share: p.share ?? 0,
+        };
+
+        if (!totalAmount) {
+          return { ...base, actual: "", investing: "" };
+        }
 
         if (splitMode === "share") {
           const percent = p.share ?? 0;
           const actual = ((percent / 100) * expected).toFixed(2);
-          return { ...prevRow, actual, investing: actual, share: percent };
+          return { ...base, actual, investing: actual, share: percent };
         }
 
         if (splitMode === "equal") {
           const per = (expected / partners.length).toFixed(2);
-          console.log({ per, expected, len: partners.length, rows });
-          return {
-            ...prevRow,
-            actual: per,
-            investing: per,
-            /* share: Math.round((1 / partners.length) * 100), */
-          };
+          return { ...base, actual: per, investing: per };
         }
+
         if (splitMode === "manual") {
-          console.log({ prevRow });
           return {
-            ...prevRow,
+            ...base,
             actual: prevRow.investing || "",
             investing: prevRow.investing || "",
           };
         }
+
+        return base;
       }),
     );
-    console.log("Updated rows for splitMode:", rows);
-  }, [splitMode, totalAmount, partners, shareValues]);
+  }, [splitMode, totalAmount, partners]);
 
   // Inside AddInvestmentPopup.tsx, only update split options logic
 
@@ -315,7 +349,72 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
       return;
     }
+    // 🚨 Withdraw validation: cannot exceed available money
+    if (transactionType === "Withdraw") {
+      const withdrawErrors: Record<string, string> = {};
 
+      rows.forEach((r) => {
+        const entered = Number(r.investing || 0); // withdraw amount entered
+        const available = Number(r.leftOver || 0); // available money
+
+        if (entered > available) {
+          withdrawErrors[r.id] = `Withdraw ₹${entered.toFixed(
+            2,
+          )} exceeds available ₹${available.toFixed(2)}`;
+        }
+      });
+
+      if (Object.keys(withdrawErrors).length > 0) {
+        setRowErrors(withdrawErrors);
+
+        // 🔥 CLEAR OLD TIMEOUT
+        if (redTimeoutRef.current) {
+          clearTimeout(redTimeoutRef.current);
+        }
+
+        // 🔥 AUTO CLEAR AFTER 5 SECONDS
+        redTimeoutRef.current = setTimeout(() => {
+          setRowErrors({});
+        }, 5000);
+
+        // 🔥 Shake invalid cards (same animation logic you use above)
+        Object.keys(withdrawErrors).forEach((id) => {
+          if (!shakeAnimations[id]) {
+            shakeAnimations[id] = new Animated.Value(0);
+          }
+
+          Animated.sequence([
+            Animated.timing(shakeAnimations[id], {
+              toValue: 10,
+              duration: 50,
+              useNativeDriver: true,
+            }),
+            Animated.timing(shakeAnimations[id], {
+              toValue: -10,
+              duration: 50,
+              useNativeDriver: true,
+            }),
+            Animated.timing(shakeAnimations[id], {
+              toValue: 6,
+              duration: 50,
+              useNativeDriver: true,
+            }),
+            Animated.timing(shakeAnimations[id], {
+              toValue: 0,
+              duration: 50,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        });
+
+        Alert.alert(
+          "Invalid Withdraw Amount",
+          "Withdraw amount cannot be greater than available money.",
+        );
+
+        return; // ⛔ STOP SAVE
+      }
+    }
     // ❌ Validate leftover usage
     const errors: Record<string, string> = {};
 
@@ -335,6 +434,16 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
     // ⛔ Stop save if any error
     if (Object.keys(errors).length > 0) {
       setRowErrors(errors);
+
+      // 🔥 CLEAR OLD TIMEOUT
+      if (redTimeoutRef.current) {
+        clearTimeout(redTimeoutRef.current);
+      }
+
+      // 🔥 AUTO CLEAR AFTER 5 SECONDS
+      redTimeoutRef.current = setTimeout(() => {
+        setRowErrors({});
+      }, 5000);
 
       // 🔥 Trigger shake for invalid cards
       Object.keys(errors).forEach((id) => {
@@ -394,74 +503,9 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
       saveInvestment(null);
       return;
     }
-    /*  const investmentData = rows.map((r) => {
-      const reduceLeftOverValue =
-        transactionType === "Investment"
-          ? parseFloat(r.reduceLeftOver || "0") || 0
-          : 0;
-      console.log(" New reduceLeftOverValue ", { reduceLeftOverValue });
-      const reduceLeftOverFlag =
-        r.reduceLeftOver && Number(r.reduceLeftOver) > 0 ? "Y" : "N";
-      if (transactionType === "Investment")
-        return {
-          partnerId: r.id,
-          cropId: cropDetails?.id,
-          description: description || "",
-          comments: description || "",
-          totalAmount: expected,
-          investable: parseFloat(r.investing || 0),
-          invested: parseFloat(r.actual || 0),
-          soldAmount: 0,
-          withdrawn: 0,
-          transactionType: "INVESTMENT",
-          splitType: splitMode.toUpperCase(),
-          reduceLeftOver: reduceLeftOverValue, // 👈 only for investment
-          reduceLeftOverFlag: reduceLeftOverFlag,
-          createdBy,
-        };
-      if (transactionType === "Sold")
-        return {
-          partnerId: r.id,
-          cropId: cropDetails?.id,
-          description: description || "",
-          comments: description || "",
-          totalAmount: expected,
-          investable: 0,
-          invested: 0,
-          soldAmount: parseFloat(r.investing || 0),
-          withdrawn: 0,
-           transactionType: "SOLD",
-          splitType: splitMode.toUpperCase(),
-          reduceLeftOver: 0, // 👈 only for investment
-          reduceLeftOverFlag: "N",
-          createdBy,
-        };
-      if (transactionType === "Withdraw")
-        return {
-          partnerId: r.id,
-          cropId: cropDetails?.id,
-          description: description || "",
-          comments: description || "",
-          totalAmount: expected,
-          investable: 0,
-          invested: 0,
-          soldAmount: 0,
-          withdrawn: parseFloat(r.investing || 0),
-          transactionType: "WITHDRAW",
-          splitType: splitMode.toUpperCase(),
-          reduceLeftOver: 0, // 👈 only for investment
-          reduceLeftOverFlag: "N",
-          createdBy,
-        };
-      return {};
-    });
-
-    onSave({ investmentData, images });
-    onClose();
- */
   };
 
-  const saveInvestment = (supplierName: string | null) => {
+  const saveInvestment = async (supplierName: string | null) => {
     const investmentData = rows.map((r) => {
       const reduceLeftOverValue =
         transactionType === "Investment"
@@ -470,7 +514,7 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
       const reduceLeftOverFlag =
         r.reduceLeftOver && Number(r.reduceLeftOver) > 0 ? "Y" : "N";
-
+      console.log("CropDetails in saveInvestment:", cropDetails);
       if (transactionType === "Investment")
         return {
           partnerId: r.id,
@@ -530,9 +574,28 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
 
       return {};
     });
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/api/investment/add-investment`,
+        investmentData,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
 
-    onSave({ investmentData });
-    onClose();
+      console.log("✅ Success:", response.data);
+      router.back();
+    } catch (error: any) {
+      console.log("❌ FULL ERROR:", error);
+
+      if (error.response) {
+        console.log("❌ Status:", error.response.status);
+        console.log("❌ Backend Message:", error.response.data);
+      }
+
+      Alert.alert(
+        "Server Error",
+        error.response?.data?.message || "Something went wrong",
+      );
+    }
   };
 
   const extraText = (r: any) => {
@@ -554,171 +617,213 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.container}>
-        {/* Header */}
+    <View style={styles.container}>
+      {/* Header */}
 
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.headerLeft}>
-            <Ionicons name="arrow-back" size={28} color="#000" />
-          </TouchableOpacity>
-
-          <Text style={styles.headerTitle}>Add Transaction</Text>
-
-          <TouchableOpacity
-            onPress={handleSave}
-            style={[
-              styles.headerRight,
-              {
-                opacity:
-                  !totalAmount || Number(totalAmount) <= 0 || hasRowErrors
-                    ? 0.5
-                    : 1,
-              },
-            ]}
-            disabled={!totalAmount || Number(totalAmount) <= 0 || hasRowErrors}
-          >
-            <Text style={styles.saveText}>Save</Text>
-          </TouchableOpacity>
-        </View>
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 16 }}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.headerLeft}
         >
-          {/* Business + Transaction Type Row */}
-          <View style={styles.businessTypeRow}>
-            <Text style={styles.businessNameText}>{businessName}</Text>
+          <Ionicons name="arrow-back" size={28} color="#000" />
+        </TouchableOpacity>
 
-            <Animated.View
-              style={{
-                transform: [{ scale: shakeAnim }],
-              }}
+        <Text style={styles.headerTitle}>Add Transaction</Text>
+
+        <TouchableOpacity
+          onPress={handleSave}
+          style={[
+            styles.headerRight,
+            {
+              opacity:
+                !totalAmount || Number(totalAmount) <= 0 || hasRowErrors
+                  ? 0.5
+                  : 1,
+            },
+          ]}
+          disabled={!totalAmount || Number(totalAmount) <= 0 || hasRowErrors}
+        >
+          <Text style={styles.saveText}>Save</Text>
+        </TouchableOpacity>
+      </View>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 16 }}
+      >
+        {/* Business + Transaction Type Row */}
+        <View style={styles.businessTypeRow}>
+          <Text style={styles.businessNameText}>{businessName}</Text>
+
+          <Animated.View
+            style={{
+              transform: [{ scale: shakeAnim }],
+            }}
+          >
+            <TouchableOpacity
+              style={[
+                styles.typeDropdownBtn,
+                errorVisible && { borderColor: "red", borderWidth: 2 },
+              ]}
+              onPress={() => setTypeModalVisible(true)}
             >
-              <TouchableOpacity
-                style={[
-                  styles.typeDropdownBtn,
-                  errorVisible && { borderColor: "red", borderWidth: 2 },
-                ]}
-                onPress={() => setTypeModalVisible(true)}
+              <Text
+                style={{
+                  color: errorVisible ? "red" : "#333",
+                  fontWeight: "600",
+                }}
               >
-                <Text
-                  style={{
-                    color: errorVisible ? "red" : "#333",
-                    fontWeight: "600",
-                  }}
-                >
-                  {transactionType ?? "Select Type"}
-                </Text>
-                <Ionicons
-                  name="chevron-down"
-                  size={16}
-                  color={errorVisible ? "red" : "#333"}
-                  style={{ marginLeft: 4 }}
-                />
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Enter description</Text>
-            <TextInput
-              style={styles.inputBox}
-              placeholder="Enter description"
-              value={description}
-              onChangeText={setDescription}
-            />
-          </View>
-
-          <View style={[styles.inputContainer, { marginBottom: 6 }]}>
-            <Text style={styles.inputLabel}>Enter amount</Text>
-            <View style={styles.amountRow}>
-              <TextInput
-                style={[styles.inputBox, styles.amountInput]}
-                placeholder="Enter amount"
-                keyboardType="numeric"
-                value={totalAmount}
-                onChangeText={setTotalAmount}
+                {transactionType ?? "Select Type"}
+              </Text>
+              <Ionicons
+                name="chevron-down"
+                size={16}
+                color={errorVisible ? "red" : "#333"}
+                style={{ marginLeft: 4 }}
               />
-              <TouchableOpacity
-                style={styles.splitDropdownBtn}
-                onPress={openSheet}
-              >
-                <Text style={styles.splitDropdownText}>
-                  {splitMode.toUpperCase()}
-                </Text>
-                <Ionicons name="chevron-down" size={18} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          </View>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Enter description</Text>
+          <TextInput
+            style={styles.inputBox}
+            placeholder="Enter description"
+            value={description}
+            onChangeText={setDescription}
+          />
+        </View>
 
-          {!!totalAmount && (
-            <Text style={styles.amountWords}>
-              {numberToWords(Number(totalAmount))}
-            </Text>
-          )}
-
-          {/* Partner Cards */}
-          <View style={{ marginTop: 12 }}>
-            <Text style={styles.sectionTitle}>Partners</Text>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingVertical: 8 }}
+        <View style={[styles.inputContainer, { marginBottom: 6 }]}>
+          <Text style={styles.inputLabel}>Enter amount</Text>
+          <View style={styles.amountRow}>
+            <TextInput
+              style={[styles.inputBox, styles.amountInput]}
+              placeholder="Enter amount"
+              keyboardType="numeric"
+              value={totalAmount}
+              onChangeText={setTotalAmount}
+            />
+            <TouchableOpacity
+              style={styles.splitDropdownBtn}
+              onPress={openSheet}
             >
-              {rows.map((r, i) => (
-                <View key={r.id} style={{ marginBottom: 12 }}>
-                  <Animated.View
-                    style={[
-                      styles.partnerCard,
-                      rowErrors[r.id] && {
-                        borderColor: "red",
-                        borderWidth: 2,
-                        backgroundColor: "#fff5f5",
-                      },
-                      {
-                        transform: [
-                          {
-                            translateX:
-                              shakeAnimations[r.id] || new Animated.Value(0),
-                          },
-                        ],
-                      },
-                    ]}
-                  >
-                    {/* Top Row = Partner Left + Partner Right */}
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <View style={styles.partnerLeftBox}>
-                        <Text style={styles.partnerName}>
-                          {(r.name || "Unknown").toUpperCase()}
-                        </Text>
-                        <Text style={styles.partnerShareText}>
-                          {r.share ?? 0}%
-                        </Text>
-                      </View>
+              <Text style={styles.splitDropdownText}>
+                {splitMode.toUpperCase()}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-                      <View style={styles.partnerRightBox}>
-                        <Text style={styles.partnerInvestedText}>
-                          {r.actual || "0.00"}
-                        </Text>
-                        <Text style={styles.partnerStatusText}>
-                          {extraText(r)}
-                        </Text>
-                      </View>
+        {!!totalAmount && (
+          <Text style={styles.amountWords}>
+            {numberToWords(Number(totalAmount))}
+          </Text>
+        )}
+
+        {/* Partner Cards */}
+        <View style={{ marginTop: 12 }}>
+          <Text style={styles.sectionTitle}>Partners</Text>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingVertical: 8 }}
+          >
+            {rows.map((r, i) => (
+              <View key={r.id} style={{ marginBottom: 12 }}>
+                <Animated.View
+                  style={[
+                    styles.partnerCard,
+                    rowErrors[r.id] && {
+                      borderColor: "red",
+                      borderWidth: 2,
+                      backgroundColor: "#fff5f5",
+                    },
+                    {
+                      transform: [
+                        {
+                          translateX:
+                            shakeAnimations[r.id] || new Animated.Value(0),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  {/* Top Row = Partner Left + Partner Right */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <View style={styles.partnerLeftBox}>
+                      <Text style={styles.partnerName}>
+                        {(r.name || "Unknown").toUpperCase()}
+                      </Text>
+                      <Text style={styles.partnerShareText}>
+                        {r.share ?? 0}%
+                      </Text>
                     </View>
 
-                    {transactionType === "Withdraw" &&
-                      Number(r.leftOver) > 0 && (
-                        <View
+                    <View style={styles.partnerRightBox}>
+                      <Text style={styles.partnerInvestedText}>
+                        {r.actual || "0.00"}
+                      </Text>
+                      <Text style={styles.partnerStatusText}>
+                        {extraText(r)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {transactionType === "Withdraw" && Number(r.leftOver) > 0 && (
+                    <View
+                      style={{
+                        marginTop: 10,
+                        borderTopWidth: 0.6,
+                        borderTopColor: "#ccc",
+                        paddingTop: 8,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          marginLeft: 8,
+                          fontSize: 14,
+                          fontWeight: "500",
+                        }}
+                      >
+                        Available Money to use: ₹{Number(r.leftOver).toFixed(2)}
+                      </Text>
+                    </View>
+                  )}
+                  {/* ✅ Leftover section full width below */}
+                  {transactionType === "Investment" &&
+                    Number(r.leftOver) > 0 && (
+                      <View
+                        style={{
+                          marginTop: 10,
+                          borderTopWidth: 0.6,
+                          borderTopColor: "#ccc",
+                          paddingTop: 8,
+                        }}
+                      >
+                        <TouchableOpacity
+                          onPress={() =>
+                            setRows((prev) => {
+                              const next = [...prev];
+                              next[i].checked = !next[i].checked;
+                              return next;
+                            })
+                          }
                           style={{
-                            marginTop: 10,
-                            borderTopWidth: 0.6,
-                            borderTopColor: "#ccc",
-                            paddingTop: 8,
+                            flexDirection: "row",
+                            alignItems: "center",
                           }}
                         >
+                          <Ionicons
+                            name={r.checked ? "checkbox" : "square-outline"}
+                            size={22}
+                            color="#007AFF"
+                          />
+
                           <Text
                             style={{
                               marginLeft: 8,
@@ -729,270 +834,226 @@ const AddInvestmentPopup: React.FC<AddInvestmentPopupProps> = ({
                             Available Money to use: ₹
                             {Number(r.leftOver).toFixed(2)}
                           </Text>
-                        </View>
-                      )}
-                    {/* ✅ Leftover section full width below */}
-                    {transactionType === "Investment" &&
-                      Number(r.leftOver) > 0 && (
-                        <View
-                          style={{
-                            marginTop: 10,
-                            borderTopWidth: 0.6,
-                            borderTopColor: "#ccc",
-                            paddingTop: 8,
-                          }}
-                        >
-                          <TouchableOpacity
-                            onPress={() =>
-                              setRows((prev) => {
-                                const next = [...prev];
-                                next[i].checked = !next[i].checked;
-                                return next;
-                              })
-                            }
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                            }}
-                          >
-                            <Ionicons
-                              name={r.checked ? "checkbox" : "square-outline"}
-                              size={22}
-                              color="#007AFF"
-                            />
+                        </TouchableOpacity>
 
-                            <Text
-                              style={{
-                                marginLeft: 8,
-                                fontSize: 14,
-                                fontWeight: "500",
-                              }}
-                            >
-                              Available Money to use: ₹
-                              {Number(r.leftOver).toFixed(2)}
-                            </Text>
-                          </TouchableOpacity>
+                        {r.checked && (
+                          <>
+                            <TextInput
+                              style={styles.leftOverInput}
+                              keyboardType="numeric"
+                              placeholder="Enter amount to use..."
+                              placeholderTextColor="#888"
+                              value={r.reduceLeftOver ?? ""}
+                              onChangeText={(val) => {
+                                setRows((prev) => {
+                                  const next = [...prev];
+                                  next[i] = {
+                                    ...next[i],
+                                    reduceLeftOver: val,
+                                  };
+                                  return next;
+                                });
 
-                          {r.checked && (
-                            <>
-                              <TextInput
-                                style={styles.leftOverInput}
-                                keyboardType="numeric"
-                                placeholder="Enter amount to use..."
-                                placeholderTextColor="#888"
-                                value={r.reduceLeftOver ?? ""}
-                                onChangeText={(val) => {
-                                  setRows((prev) => {
-                                    const next = [...prev];
-                                    next[i] = {
-                                      ...next[i],
-                                      reduceLeftOver: val,
-                                    };
-                                    return next;
+                                // ✅ Auto-clear error when value becomes valid
+                                const used = Number(val || 0);
+                                const available = Number(r.leftOver || 0);
+
+                                if (used <= available) {
+                                  setRowErrors((prev) => {
+                                    const copy = { ...prev };
+                                    delete copy[r.id];
+                                    return copy;
                                   });
-
-                                  // ✅ Auto-clear error when value becomes valid
-                                  const used = Number(val || 0);
-                                  const available = Number(r.leftOver || 0);
-
-                                  if (used <= available) {
-                                    setRowErrors((prev) => {
-                                      const copy = { ...prev };
-                                      delete copy[r.id];
-                                      return copy;
-                                    });
-                                  }
+                                }
+                              }}
+                            />
+                            {/* ❌ Inline error message */}
+                            {rowErrors[r.id] && (
+                              <Text
+                                style={{
+                                  color: "red",
+                                  fontSize: 12,
+                                  marginTop: 4,
+                                  marginLeft: 6,
                                 }}
-                              />
-                              {/* ❌ Inline error message */}
-                              {rowErrors[r.id] && (
-                                <Text
-                                  style={{
-                                    color: "red",
-                                    fontSize: 12,
-                                    marginTop: 4,
-                                    marginLeft: 6,
-                                  }}
-                                >
-                                  {rowErrors[r.id]}
-                                </Text>
-                              )}
-                            </>
-                          )}
-                        </View>
-                      )}
-                  </Animated.View>
+                              >
+                                {rowErrors[r.id]}
+                              </Text>
+                            )}
+                          </>
+                        )}
+                      </View>
+                    )}
+                </Animated.View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </ScrollView>
+      {errorVisible && (
+        <Animated.View
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: [{ translateX: -100 }, { translateY: -20 }],
+            backgroundColor: "rgba(0,0,0,0.8)",
+            paddingHorizontal: 20,
+            paddingVertical: 10,
+            borderRadius: 10,
+            opacity: fadeAnim,
+            zIndex: 999,
+          }}
+        >
+          <Text style={{ color: "white", fontWeight: "600", fontSize: 14 }}>
+            Please select a type
+          </Text>
+        </Animated.View>
+      )}
+      {showSupplierPopup && (
+        <SupplierPopup
+          visible={showSupplierPopup}
+          totalAmount={expected}
+          rows={rows}
+          remaining={remaining}
+          onClose={() => setShowSupplierPopup(false)}
+          onConfirm={(supplierName) => {
+            setShowSupplierPopup(false);
+            saveInvestment(supplierName); // ✅ call final save with name
+          }}
+        />
+      )}
+      {/* Split Sheet */}
+      <Modal visible={sheetVisible} animationType="slide" transparent>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.sheetOverlay}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              style={{ flex: 1, justifyContent: "flex-end" }}
+            >
+              <View style={styles.sheetContainer}>
+                {/* Header */}
+                <View style={styles.sheetHeader}>
+                  <Text style={styles.sheetHeaderTitle}>Split Options</Text>
+                  <TouchableOpacity onPress={applySheet}>
+                    <Text style={styles.sheetDone}>Done</Text>
+                  </TouchableOpacity>
                 </View>
-              ))}
-            </ScrollView>
-          </View>
-        </ScrollView>
-        {errorVisible && (
-          <Animated.View
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: [{ translateX: -100 }, { translateY: -20 }],
-              backgroundColor: "rgba(0,0,0,0.8)",
-              paddingHorizontal: 20,
-              paddingVertical: 10,
-              borderRadius: 10,
-              opacity: fadeAnim,
-              zIndex: 999,
-            }}
-          >
-            <Text style={{ color: "white", fontWeight: "600", fontSize: 14 }}>
-              Please select a type
-            </Text>
-          </Animated.View>
-        )}
-        {showSupplierPopup && (
-          <SupplierPopup
-            visible={showSupplierPopup}
-            totalAmount={expected}
-            rows={rows}
-            remaining={remaining}
-            onClose={() => setShowSupplierPopup(false)}
-            onConfirm={(supplierName) => {
-              setShowSupplierPopup(false);
-              saveInvestment(supplierName); // ✅ call final save with name
-            }}
-          />
-        )}
-        {/* Split Sheet */}
-        <Modal visible={sheetVisible} animationType="slide" transparent>
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.sheetOverlay}>
-              <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={{ flex: 1, justifyContent: "flex-end" }}
-              >
-                <View style={styles.sheetContainer}>
-                  {/* Header */}
-                  <View style={styles.sheetHeader}>
-                    <Text style={styles.sheetHeaderTitle}>Split Options</Text>
-                    <TouchableOpacity onPress={applySheet}>
-                      <Text style={styles.sheetDone}>Done</Text>
-                    </TouchableOpacity>
+
+                {/* Body */}
+                <ScrollView
+                  style={{ maxHeight: "70%", paddingHorizontal: 12 }}
+                  keyboardShouldPersistTaps="handled"
+                  contentContainerStyle={{ paddingBottom: 40 }}
+                >
+                  {/* Mode Buttons */}
+                  <View style={styles.splitModeRow}>
+                    {(["share", "equal", "manual"] as const).map((m) => (
+                      <TouchableOpacity
+                        key={m}
+                        onPress={() => {
+                          setSheetTempMode(m);
+                          if (m === "equal") {
+                            const per = expected / partners.length;
+                            setShareValues(partners.map(() => per));
+                          } else if (m === "share") {
+                            const shareBased = partners.map(
+                              (p, i) =>
+                                ((p.share ?? 100 / partners.length) / 100) *
+                                expected,
+                            );
+                            setShareValues(shareBased);
+                          } else {
+                            // When user chooses manual mode show current invested/investing values so user can edit them
+                            setShareValues(rows.map((r) => parseFloat("0")));
+                          }
+                        }}
+                        style={[
+                          styles.splitModeButton,
+                          sheetTempMode === m && styles.splitModeButtonActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.splitModeText,
+                            sheetTempMode === m && styles.splitModeTextActive,
+                          ]}
+                        >
+                          {m.toUpperCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
 
-                  {/* Body */}
-                  <ScrollView
-                    style={{ maxHeight: "70%", paddingHorizontal: 12 }}
-                    keyboardShouldPersistTaps="handled"
-                    contentContainerStyle={{ paddingBottom: 40 }}
-                  >
-                    {/* Mode Buttons */}
-                    <View style={styles.splitModeRow}>
-                      {(["share", "equal", "manual"] as const).map((m) => (
-                        <TouchableOpacity
-                          key={m}
-                          onPress={() => {
-                            setSheetTempMode(m);
-                            if (m === "equal") {
-                              const per = expected / partners.length;
-                              setShareValues(partners.map(() => per));
-                            } else if (m === "share") {
-                              const shareBased = partners.map(
-                                (p, i) =>
-                                  ((p.share ?? 100 / partners.length) / 100) *
-                                  expected,
-                              );
-                              setShareValues(shareBased);
-                            } else {
-                              // When user chooses manual mode show current invested/investing values so user can edit them
-                              setShareValues(rows.map((r) => parseFloat("0")));
-                            }
+                  {/* Partner List */}
+                  {partners.map((p, idx) => {
+                    const val = shareValues[idx] ?? 0;
+                    return (
+                      <View
+                        key={p.id}
+                        style={[
+                          styles.partnerRow,
+                          {
+                            backgroundColor: idx % 2 === 0 ? "#f8f9ff" : "#fff",
+                          },
+                        ]}
+                      >
+                        <Text style={styles.partnerName}>{p.username}</Text>
+                        <TextInput
+                          style={styles.partnerAmountInput}
+                          keyboardType="numeric"
+                          value={val.toString()}
+                          onChangeText={(txt) => {
+                            const num = Number(txt) || 0;
+                            setShareValues((prev) => {
+                              const copy = [...prev];
+                              copy[idx] = num;
+                              return copy;
+                            });
                           }}
-                          style={[
-                            styles.splitModeButton,
-                            sheetTempMode === m && styles.splitModeButtonActive,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.splitModeText,
-                              sheetTempMode === m && styles.splitModeTextActive,
-                            ]}
-                          >
-                            {m.toUpperCase()}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-
-                    {/* Partner List */}
-                    {partners.map((p, idx) => {
-                      const val = shareValues[idx] ?? 0;
-                      return (
-                        <View
-                          key={p.id}
-                          style={[
-                            styles.partnerRow,
-                            {
-                              backgroundColor:
-                                idx % 2 === 0 ? "#f8f9ff" : "#fff",
-                            },
-                          ]}
-                        >
-                          <Text style={styles.partnerName}>{p.username}</Text>
-                          <TextInput
-                            style={styles.partnerAmountInput}
-                            keyboardType="numeric"
-                            value={val.toString()}
-                            onChangeText={(txt) => {
-                              const num = Number(txt) || 0;
-                              setShareValues((prev) => {
-                                const copy = [...prev];
-                                copy[idx] = num;
-                                return copy;
-                              });
-                            }}
-                          />
-                        </View>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              </KeyboardAvoidingView>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
-        {/* Type Modal */}
-        <Modal visible={typeModalVisible} transparent animationType="fade">
-          <TouchableOpacity
-            style={styles.typeModalOverlay}
-            onPress={() => setTypeModalVisible(false)}
-          >
-            <View style={styles.typeModal}>
-              {(["Investment", "Sold", "Withdraw"] as const).map((t) => (
-                <TouchableOpacity
-                  key={t}
-                  onPress={() => {
-                    setTransactionType(t);
-                    setTypeModalVisible(false);
+                        />
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </KeyboardAvoidingView>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+      {/* Type Modal */}
+      <Modal visible={typeModalVisible} transparent animationType="fade">
+        <TouchableOpacity
+          style={styles.typeModalOverlay}
+          onPress={() => setTypeModalVisible(false)}
+        >
+          <View style={styles.typeModal}>
+            {(["Investment", "Sold", "Withdraw"] as const).map((t) => (
+              <TouchableOpacity
+                key={t}
+                onPress={() => {
+                  setTransactionType(t);
+                  setTypeModalVisible(false);
+                }}
+                style={styles.typeOption}
+              >
+                <Text
+                  style={{
+                    fontWeight: transactionType === t ? "700" : "400",
                   }}
-                  style={styles.typeOption}
                 >
-                  <Text
-                    style={{
-                      fontWeight: transactionType === t ? "700" : "400",
-                    }}
-                  >
-                    {t}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </TouchableOpacity>
-        </Modal>
-      </View>
-    </Modal>
+                  {t}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
   );
 };
 
-export default AddInvestmentPopup;
+export default AddTransactionScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -1033,7 +1094,7 @@ const styles = StyleSheet.create({
   saveText: {
     color: "#ffffff",
     fontWeight: "700",
-    fontSize: 12,
+    fontSize: 14,
   },
   inputContainer: { marginVertical: 10 },
   inputLabel: {

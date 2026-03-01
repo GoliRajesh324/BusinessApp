@@ -113,16 +113,31 @@ export default function AddBusinessPopup({
   };
 
   const handleAddOrUpdatePartner = () => {
-    if (!partnerName.trim() || !share.trim()) {
+    const trimmedName = partnerName.trim().toLowerCase();
+
+    if (!trimmedName || !share.trim()) {
       Alert.alert("Error", "Enter partner name and share %");
       return;
     }
+
     const shareNum = Number(share);
     if (isNaN(shareNum) || shareNum <= 0) {
       Alert.alert("Error", "Share % must be positive");
       return;
     }
+    // ✅ DUPLICATE NAME CHECK
+    const isDuplicate = partners.some((p, index) => {
+      if (editingIndex !== null && index === editingIndex) return false;
+      return p.name.trim().toLowerCase() === trimmedName;
+    });
 
+    if (isDuplicate) {
+      Alert.alert(
+        "Duplicate Partner",
+        "Partner name already exists. Please enter a different name.",
+      );
+      return;
+    }
     const totalShare =
       partners.reduce((sum, p, idx) => {
         if (idx === editingIndex) return sum;
@@ -273,7 +288,7 @@ export default function AddBusinessPopup({
                 style={[styles.headerSaveBtn, saveDisabled && { opacity: 0.5 }]}
               >
                 <Text style={styles.headerSaveText}>
-                  {loading ? "..." : "Save"}
+                  {loading ? "Saving.." : "Save"}
                 </Text>
               </TouchableOpacity>
 

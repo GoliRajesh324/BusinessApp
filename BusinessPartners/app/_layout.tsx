@@ -193,6 +193,31 @@ export default function RootLayout() {
               headerShown: false,
             }}
           />
+
+          <Stack.Screen
+            name="EmiCalculatorScreen"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="AddTransactionScreen"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="EditTransactionScreen"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="ChangeHistoryScreen"
+            options={{
+              headerShown: false,
+            }}
+          />
           <Stack.Screen
             name="partnerWiseDetails"
             options={{

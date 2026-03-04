@@ -1,3 +1,4 @@
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 
 export interface ImageFile {
@@ -7,38 +8,55 @@ export interface ImageFile {
   existing?: boolean; // ✅ ADD THIS
 }
 
+async function compressImage(uri: string) {
+  const result = await ImageManipulator.manipulateAsync(
+    uri,
+    [], // no resize needed usually
+    {
+      compress: 0.6, // 60% quality (best balance)
+      format: ImageManipulator.SaveFormat.JPEG,
+    },
+  );
+
+  return result.uri;
+}
+
 export const pickImageFromGallery = async (): Promise<ImageFile | null> => {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ["images"],
-    quality: 0.7,
+    allowsEditing: false,
+    quality: 1, // keep original first
   });
 
-  if (result.canceled) return null;
+  if (!result.canceled) {
+    const compressedUri = await compressImage(result.assets[0].uri);
 
-  const asset = result.assets[0];
+    return {
+      uri: compressedUri,
+      name: "image.jpg",
+      type: "image/jpeg",
+    };
+  }
 
-  return {
-    uri: asset.uri,
-    name: asset.fileName || `image_${Date.now()}.jpg`,
-    type: asset.type || "image/jpeg",
-  };
+  return null;
 };
 
 export const pickImageFromCamera = async (): Promise<ImageFile | null> => {
-  const permission = await ImagePicker.requestCameraPermissionsAsync();
-  if (!permission.granted) return null;
-
   const result = await ImagePicker.launchCameraAsync({
-    quality: 0.7,
+    mediaTypes: ["images"],
+    allowsEditing: false,
+    quality: 1,
   });
 
-  if (result.canceled) return null;
+  if (!result.canceled) {
+    const compressedUri = await compressImage(result.assets[0].uri);
 
-  const asset = result.assets[0];
+    return {
+      uri: compressedUri,
+      name: "image.jpg",
+      type: "image/jpeg",
+    };
+  }
 
-  return {
-    uri: asset.uri,
-    name: asset.fileName || `camera_${Date.now()}.jpg`,
-    type: asset.type || "image/jpeg",
-  };
+  return null;
 };

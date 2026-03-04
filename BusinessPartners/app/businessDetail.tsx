@@ -19,6 +19,7 @@ import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { generateBusinessStatementPDF } from "@/src/utils/BusinessStatementPDF";
+import { normalizeInvestmentForEdit } from "@/src/utils/InvestmentNormalizer";
 import { useFocusEffect } from "@react-navigation/native";
 import { Calendar, DateData } from "react-native-calendars";
 import InvestmentAudit from "../src/components/InvestmentAudit";
@@ -149,6 +150,50 @@ export default function BusinessDetail() {
       UIManager.setLayoutAnimationEnabledExperimental(true);
     }
   }, []);
+
+  const handleSupplierClick = async (supplier: Supplier) => {
+    try {
+      if (!token) {
+        Alert.alert("Error", "User not authenticated");
+        return;
+      }
+
+      const response = await fetch(
+        `${BASE_URL}/api/supplier/supplier-group-investments/${supplier.supplierId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch supplier investments");
+      }
+
+      const data = await response.json();
+
+      if (!data || data.length === 0) {
+        Alert.alert("No transactions found for this supplier");
+        return;
+      }
+
+      // 🚀 Navigate to Edit Screen
+      router.push({
+        pathname: "/EditTransactionScreen",
+        params: {
+          businessId: safeBusinessId,
+          businessName: safeBusinessName,
+          investmentData: JSON.stringify(normalizeInvestmentForEdit(data)), // 🔥 important
+        },
+      });
+    } catch (error) {
+      console.log("Supplier click error:", error);
+      Alert.alert("Error", "Unable to open supplier transaction");
+    }
+  };
 
   const fetchSuppliers = async () => {
     try {
@@ -593,8 +638,10 @@ export default function BusinessDetail() {
 
   const renderSupplierCard = (supplier: Supplier) => {
     return (
-      <View
+      <TouchableOpacity
         key={supplier.supplierId}
+        activeOpacity={0.8}
+        onPress={() => handleSupplierClick(supplier)}
         style={{
           backgroundColor: "#fff",
           padding: 14,
@@ -629,7 +676,7 @@ export default function BusinessDetail() {
             </View>
           ))}
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -836,7 +883,8 @@ export default function BusinessDetail() {
       </TouchableOpacity>
 
       {/* SUPPLIERS */}
-      {suppliers.length > 0 && (
+      {/* 🔹 SUPPLIERS */}
+      {suppliers.filter((s) => Number(s.pendingAmount ?? 0) > 0).length > 0 && (
         <View style={{ marginTop: 20 }}>
           <Text
             style={{
@@ -849,7 +897,9 @@ export default function BusinessDetail() {
             Suppliers
           </Text>
 
-          {suppliers.map((s) => renderSupplierCard(s))}
+          {suppliers
+            .filter((s) => Number(s.pendingAmount ?? 0) > 0)
+            .map((s) => renderSupplierCard(s))}
         </View>
       )}
 

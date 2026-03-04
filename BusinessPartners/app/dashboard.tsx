@@ -1,3 +1,4 @@
+import ScreenHelpVideo from "@/src/components/ScreenHelpVideo";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -189,7 +190,9 @@ export default function Dashboard() {
             <Text style={styles.username}>{username}</Text>
           </View>
         </TouchableOpacity>
-
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <ScreenHelpVideo videoId="ogns8WiacUI" />
+        </View>
         <TouchableOpacity
           onPress={() => alert("Notifications feature coming soon")}
         >
@@ -374,7 +377,15 @@ export default function Dashboard() {
               <Animated.View
                 style={[styles.businessCard, { transform: [{ scale }] }]}
               >
-                <Text style={styles.bizName}>{item.name}</Text>
+                <View style={{ flex: 1, marginRight: 10 }}>
+                  <Text
+                    style={styles.bizName}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.name}
+                  </Text>
+                </View>
 
                 <View style={styles.bizActions}>
                   {longPressedId === item.id ? (

@@ -695,30 +695,28 @@ const EditTransactionScreen = () => {
         )}
 
         {/* Supplier Name */}
+        {/* Supplier Name */}
         {supplierName?.trim() !== "" && (
-          <TextInput
-            style={{
-              borderWidth: 1,
-              borderColor: "#ccc",
-              padding: 8,
-              borderRadius: 6,
-              fontSize: 14,
-              backgroundColor: "#fff",
-            }}
-            value={supplierName}
-            placeholder="Enter supplier name"
-            onChangeText={(val) => {
-              setSupplierName(val);
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Supplier Details</Text>
 
-              // ✅ Update inside investmentDataState as well
-              setInvestmentDataState((prev) =>
-                prev.map((inv) => ({
-                  ...inv,
-                  supplierName: val,
-                })),
-              );
-            }}
-          />
+            <TextInput
+              style={styles.inputBox}
+              placeholder="Enter supplier name"
+              value={supplierName}
+              onChangeText={(val) => {
+                setSupplierName(val);
+
+                // ✅ Update inside investmentDataState as well
+                setInvestmentDataState((prev) =>
+                  prev.map((inv) => ({
+                    ...inv,
+                    supplierName: val,
+                  })),
+                );
+              }}
+            />
+          </View>
         )}
 
         {/* Partner Cards */}

@@ -486,18 +486,18 @@ const AddTransactionScreen = () => {
       0,
     );
     console.log({ totalEntered, expected });
-    if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
+    /* if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
       Alert.alert("Error", "Total entered does not match expected amount");
       return;
-    }
+    } */
 
-    /* if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
+    if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
       console.log("Need supplier popup, diff:", expected - totalEntered);
       console.log(rows);
       setRemaining(expected - totalEntered);
       setShowSupplierPopup(true);
       return;
-    } */
+    }
     // ✅ If perfect match (no supplier needed)
     if (Math.round((totalEntered - expected) * 100) / 100 === 0) {
       saveInvestment(null);

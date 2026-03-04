@@ -5,6 +5,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
+  Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -25,6 +27,8 @@ export default function InvestmentDetail() {
   const [token, setToken] = useState<string | null>(null);
   const [investments, setInvestments] = useState<InvestmentDTO[]>([]);
   const [editInvestments, setEditInvestments] = useState<InvestmentDTO[]>([]);
+  const [images, setImages] = useState<string[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -48,6 +52,10 @@ export default function InvestmentDetail() {
           if (!res.ok) throw new Error("Failed to fetch group investments");
 
           const data = await res.json();
+
+          if (data.length > 0 && data[0].images) {
+            setImages(data[0].images);
+          }
 
           if (!isActive) return;
 
@@ -188,6 +196,7 @@ export default function InvestmentDetail() {
                   investmentData: JSON.stringify(
                     normalizeForEditPopup(editInvestments),
                   ),
+                  images: JSON.stringify(images),
                 },
               });
             }}
@@ -308,6 +317,45 @@ export default function InvestmentDetail() {
             );
           })
         )}
+        {images.length > 0 && (
+          <View style={{ marginTop: 10 }}>
+            <Text style={{ fontWeight: "600", marginBottom: 6 }}>Images</Text>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {images.map((img, i) => (
+                <TouchableOpacity key={i} onPress={() => setPreviewImage(img)}>
+                  <Image
+                    source={{ uri: img }}
+                    style={{
+                      width: 70,
+                      height: 70,
+                      borderRadius: 8,
+                      marginRight: 8,
+                    }}
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+        {previewImage && (
+          <Modal transparent animationType="fade">
+            <View style={styles.previewContainer}>
+              <Image
+                source={{ uri: previewImage }}
+                style={styles.fullPreview}
+              />
+
+              {/* Close Button */}
+              <TouchableOpacity
+                style={styles.closeBtn}
+                onPress={() => setPreviewImage(null)}
+              >
+                <Ionicons name="close" size={30} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </Modal>
+        )}
       </ScrollView>
     </View>
   );
@@ -404,5 +452,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: "#111",
+  },
+  previewContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  fullPreview: {
+    width: "90%",
+    height: "70%",
+    resizeMode: "contain",
+    borderRadius: 12,
+  },
+
+  closeBtn: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 20,
+    padding: 6,
   },
 });

@@ -1,9 +1,12 @@
+import CommonImagePicker from "@/src/components/CommonImagePicker";
 import BASE_URL from "@/src/config/config";
 import { InvestmentDTO } from "@/src/types/types";
+import { ImageFile } from "@/src/utils/ImagePickerService";
 import { numberToWords } from "@/src/utils/numberToWords";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+
 import {
   Alert,
   Animated,
@@ -22,6 +25,7 @@ import {
 
 const SLIDER_THUMB_SIZE = 18;
 
+import SupplierPopup from "@/src/components/SupplierPopup";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 const EditTransactionScreen = () => {
@@ -30,7 +34,8 @@ const EditTransactionScreen = () => {
 
   const businessId = params.businessId as string;
   const businessName = params.businessName as string;
-
+  const [showSupplierPopup, setShowSupplierPopup] = useState(false);
+  const [remaining, setRemaining] = useState<number>(0);
   const investmentData: InvestmentDTO[] = useMemo(() => {
     return params.investmentData
       ? JSON.parse(params.investmentData as string)
@@ -83,6 +88,7 @@ const EditTransactionScreen = () => {
   const expected = useMemo(() => parseFloat(totalAmount) || 0, [totalAmount]);
   const [invalidPartnerIds, setInvalidPartnerIds] = useState<number[]>([]);
   const redTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [images, setImages] = useState<ImageFile[]>([]);
 
   const [splitMode, setSplitMode] = useState<"share" | "equal" | "manual">(
     "share",
@@ -93,6 +99,18 @@ const EditTransactionScreen = () => {
   >("share");
   const [shareValues, setShareValues] = useState<number[]>([]);
 
+  useEffect(() => {
+    if (params.images) {
+      const imgs = JSON.parse(params.images as string);
+
+      setImages(
+        imgs.map((url: string) => ({
+          uri: url,
+          existing: true,
+        })),
+      );
+    }
+  }, []);
   useEffect(() => {
     const loadToken = async () => {
       const t = await AsyncStorage.getItem("token");
@@ -220,11 +238,7 @@ const EditTransactionScreen = () => {
   }, [investmentData]);
 
   const handleSave = async () => {
-    if (isUpdating) return; // 🛑 safety guard
-
     try {
-      setIsUpdating(true); // 🔒 lock button
-
       investmentData.map((inv) =>
         console.log("Investment to update:", inv.invested),
       );
@@ -241,16 +255,25 @@ const EditTransactionScreen = () => {
         return sum + Number(r.invested ?? 0);
       }, 0);
 
-      console.log("handleSave called with: ", totalEntered, expected);
       const enteredTotal = Number(totalAmount);
+      const diff = Math.round((totalEntered - enteredTotal) * 100) / 100;
 
-      if (
+      if (diff !== 0) {
+        setRemaining(enteredTotal - totalEntered);
+        setShowSupplierPopup(true);
+        return;
+      }
+
+      console.log("handleSave called with: ", totalEntered, expected);
+      // const enteredTotal = Number(totalAmount);
+
+      /*  if (
         first.supplierId == null &&
         Math.round((totalEntered - enteredTotal) * 100) / 100 !== 0
       ) {
         Alert.alert("Error", "Total entered does not match expected amount");
         return;
-      }
+      } */
 
       if (!token) {
         Alert.alert("Error", "User not authenticated");
@@ -386,16 +409,36 @@ const EditTransactionScreen = () => {
       const updatedInvestments = [...visibleUpdates, ...hiddenWithdrawRecords];
 
       console.log("📤 Sending updated investments:", updatedInvestments);
+      setIsUpdating(true); // 🔒 lock button
+
+      const formData = new FormData();
+
+      formData.append("investmentData", JSON.stringify(updatedInvestments));
+
+      const existingImages = images
+        .filter((img) => img.existing)
+        .map((img) => img.uri);
+
+      formData.append("existingImages", JSON.stringify(existingImages));
+
+      images.forEach((img) => {
+        if (!img.existing) {
+          formData.append("files", {
+            uri: img.uri,
+            name: `image_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`,
+            type: "image/jpeg",
+          } as any);
+        }
+      });
 
       const response = await fetch(
         `${BASE_URL}/api/investment/edit-investment`,
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(updatedInvestments),
+          body: formData,
         },
       );
 
@@ -468,6 +511,31 @@ const EditTransactionScreen = () => {
 
     setInvestmentDataState(updated);
   }, [totalAmount, transactionType]);
+
+  const supplierRows = investmentDataState.map((inv) => {
+    const expectedValue =
+      splitMode === "equal"
+        ? expected / investmentDataState.length
+        : (expected * Number(inv.share ?? 0)) / 100;
+
+    const actualValue =
+      transactionType === "Withdraw"
+        ? Number(inv.withdrawn ?? 0)
+        : transactionType === "Sold"
+          ? Number(inv.soldAmount ?? 0)
+          : Number(inv.invested ?? 0);
+
+    return {
+      id: Number(inv.partnerId ?? 0),
+      name: inv.partnerName || "Unknown",
+      share: inv.share ?? 0,
+      actual: String(actualValue),
+      investing: String(expectedValue),
+      leftOver: Number(inv.availableMoney ?? 0),
+      checked: false,
+      reduceLeftOver: String(inv.reduceLeftOver ?? ""),
+    };
+  });
 
   const openSheet = () => {
     // 🔒 Block for Withdraw / Sold
@@ -579,16 +647,34 @@ const EditTransactionScreen = () => {
     setSheetVisible(false);
   };
 
-  const extraText = (r: InvestmentDTO) => {
-    if (transactionType !== "Investment") return "";
-    const investableNum = parseFloat((r.investable ?? "0").toString()) || 0;
-    const investedNum = parseFloat((r.invested ?? "0").toString()) || 0;
-    const diff = Math.round((investedNum - investableNum) * 100) / 100;
-    if (diff > 0) return `Extra  + ${diff.toFixed(2)}`;
-    if (diff < 0) return `Pending - ${Math.abs(diff).toFixed(2)}`;
-    return "Settled";
-  };
+  const getStatusInfo = (r: InvestmentDTO) => {
+    if (transactionType !== "Investment") {
+      return { text: "", color: "#000" };
+    }
 
+    const investableNum = Number(r.investable ?? 0);
+    const investedNum = Number(r.invested ?? 0);
+    const diff = Math.round((investedNum - investableNum) * 100) / 100;
+
+    if (diff > 0) {
+      return {
+        text: `Extra + ${diff.toFixed(2)}`,
+        color: "green",
+      };
+    }
+
+    if (diff < 0) {
+      return {
+        text: `Pending - ${Math.abs(diff).toFixed(2)}`,
+        color: "red",
+      };
+    }
+
+    return {
+      text: "Settled",
+      color: "#666",
+    };
+  };
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -781,9 +867,19 @@ const EditTransactionScreen = () => {
                         ).toFixed(2)}
                       </Text>
 
-                      <Text style={styles.partnerStatusText}>
-                        {extraText(r)}
-                      </Text>
+                      {(() => {
+                        const status = getStatusInfo(r);
+                        return (
+                          <Text
+                            style={[
+                              styles.partnerStatusText,
+                              { color: status.color },
+                            ]}
+                          >
+                            {status.text}
+                          </Text>
+                        );
+                      })()}
                     </View>
                   </View>
 
@@ -895,8 +991,36 @@ const EditTransactionScreen = () => {
             ))}
           </ScrollView>
         </View>
+        <CommonImagePicker
+          images={images}
+          onChange={setImages}
+          title="Transaction Images"
+          maxImages={10}
+        />
       </ScrollView>
+      {showSupplierPopup && (
+        <SupplierPopup
+          visible={showSupplierPopup}
+          totalAmount={expected}
+          rows={supplierRows}
+          remaining={remaining}
+          onClose={() => setShowSupplierPopup(false)}
+          onConfirm={(supplierName) => {
+            setShowSupplierPopup(false);
 
+            // update supplier in state
+            setInvestmentDataState((prev) =>
+              prev.map((inv) => ({
+                ...inv,
+                supplierName,
+              })),
+            );
+
+            // continue save
+            handleSave();
+          }}
+        />
+      )}
       {errorVisible && (
         <Animated.View
           style={{
@@ -1134,15 +1258,7 @@ const styles = StyleSheet.create({
   partnerPercent: { fontSize: 12, color: "#666", marginTop: 4 },
   partnerAmount: { fontSize: 16, fontWeight: "700", color: "#111" },
   smallNote: { fontSize: 10, color: "#666", marginTop: 4 },
-  cameraBtn: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    backgroundColor: "#007bff",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
+
   imagePreview: { position: "relative", marginRight: 10 },
   previewThumb: { width: 60, height: 60, borderRadius: 8 },
   deleteBtn: {

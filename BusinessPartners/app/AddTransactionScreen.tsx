@@ -6,9 +6,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated } from "react-native";
 
 import SupplierPopup from "@/src/components/SupplierPopup";
+import { InvestmentDTO } from "@/src/types/types";
 import axios from "axios";
+import * as ImagePicker from "expo-image-picker";
 import {
   Alert,
+  Image,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -82,6 +85,8 @@ const AddTransactionScreen = () => {
   const [partners, setPartners] = useState<any[]>([]);
   const [token, setToken] = useState<string | null>(null);
 
+  const [images, setImages] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   useEffect(() => {
     const load = async () => {
       const t = await AsyncStorage.getItem("token");
@@ -506,6 +511,7 @@ const AddTransactionScreen = () => {
   };
 
   const saveInvestment = async (supplierName: string | null) => {
+    setIsSaving(true);
     const investmentData = rows.map((r) => {
       const reduceLeftOverValue =
         transactionType === "Investment"
@@ -575,14 +581,41 @@ const AddTransactionScreen = () => {
       return {};
     });
     try {
+      // 1️⃣ Create form data
+      const formData = new FormData();
+
+      // 2️⃣ Append investment JSON
+      formData.append("investmentData", JSON.stringify(investmentData));
+
+      // 3️⃣ Append images
+      images.forEach((img, index) => {
+        formData.append("files", {
+          uri: img.uri,
+          name: img.fileName || `image_${Date.now()}_${index}.jpg`,
+          type: img.mimeType || "image/jpeg",
+        } as any);
+      });
+
+      // 4️⃣ Send request
       const response = await axios.post(
         `${BASE_URL}/api/investment/add-investment`,
-        investmentData,
-        { headers: { Authorization: `Bearer ${token}` } },
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        },
       );
 
       console.log("✅ Success:", response.data);
-      router.back();
+      //setImages([]); // clear images
+      Alert.alert("Success", "Transaction saved successfully", [
+        {
+          text: "OK",
+          onPress: () => router.back(),
+        },
+      ]);
     } catch (error: any) {
       console.log("❌ FULL ERROR:", error);
 
@@ -595,25 +628,71 @@ const AddTransactionScreen = () => {
         "Server Error",
         error.response?.data?.message || "Something went wrong",
       );
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const extraText = (r: any) => {
-    console.log(
-      "Calculating extraText for Name:",
-      r.name,
-      r.actual,
-      r.investing,
-    );
-    console.log("Calculating extraText for actual:", r.actual);
-    console.log("Calculating extraText for investing:", r.investing);
-    const actualNum = parseFloat(r.actual) || 0;
-    const investNum = parseFloat(r.investing) || 0;
-    const diff = Math.round((actualNum - investNum) * 100) / 100;
-    if (!actualNum && !investNum) return "";
-    if (diff > 0) return `Extra +${diff.toFixed(2)}`;
-    if (diff < 0) return `Pending -${Math.abs(diff).toFixed(2)}`;
-    return "Settled";
+  const getStatusInfo = (r: InvestmentDTO) => {
+    if (transactionType !== "Investment") {
+      return { text: "", color: "#000" };
+    }
+
+    const investableNum = Number(r.investable ?? 0);
+    const investedNum = Number(r.invested ?? 0);
+    const diff = Math.round((investedNum - investableNum) * 100) / 100;
+
+    if (diff > 0) {
+      return {
+        text: `Extra + ${diff.toFixed(2)}`,
+        color: "green",
+      };
+    }
+
+    if (diff < 0) {
+      return {
+        text: `Pending - ${Math.abs(diff).toFixed(2)}`,
+        color: "red",
+      };
+    }
+
+    return {
+      text: "Settled",
+      color: "#666",
+    };
+  };
+
+  const pickFromGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      setImages((prev) => [...prev, result.assets[0]]);
+    }
+  };
+
+  const pickFromCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission required", "Camera permission is required");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      setImages((prev) => [...prev, result.assets[0]]);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const updated = [...images];
+    updated.splice(index, 1);
+    setImages(updated);
   };
 
   return (
@@ -643,7 +722,7 @@ const AddTransactionScreen = () => {
           ]}
           disabled={!totalAmount || Number(totalAmount) <= 0 || hasRowErrors}
         >
-          <Text style={styles.saveText}>Save</Text>
+          <Text style={styles.saveText}>{isSaving ? "Saving..." : "Save"}</Text>
         </TouchableOpacity>
       </View>
       <ScrollView
@@ -768,9 +847,19 @@ const AddTransactionScreen = () => {
                       <Text style={styles.partnerInvestedText}>
                         {r.actual || "0.00"}
                       </Text>
-                      <Text style={styles.partnerStatusText}>
-                        {extraText(r)}
-                      </Text>
+                      {(() => {
+                        const status = getStatusInfo(r);
+                        return (
+                          <Text
+                            style={[
+                              styles.partnerStatusText,
+                              { color: status.color },
+                            ]}
+                          >
+                            {status.text}
+                          </Text>
+                        );
+                      })()}
                     </View>
                   </View>
 
@@ -889,6 +978,40 @@ const AddTransactionScreen = () => {
             ))}
           </ScrollView>
         </View>
+        {/* Images Section */}
+        <Text style={styles.sectionTitle}>Images</Text>
+
+        <View style={{ flexDirection: "row", marginBottom: 10 }}>
+          <TouchableOpacity style={styles.cameraBtn} onPress={pickFromCamera}>
+            <Ionicons name="camera" size={28} color="white" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.cameraBtn, { backgroundColor: "#28a745" }]}
+            onPress={pickFromGallery}
+          >
+            <Ionicons name="image" size={28} color="white" />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {images.map((img, idx) => (
+            <TouchableOpacity
+              key={idx}
+              style={styles.imagePreview}
+              onPress={() => setPreviewImage(img.uri)}
+            >
+              <Image source={{ uri: img.uri }} style={styles.previewThumb} />
+
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={() => removeImage(idx)}
+              >
+                <Text style={styles.deleteText}>X</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </ScrollView>
       {errorVisible && (
         <Animated.View
@@ -923,6 +1046,19 @@ const AddTransactionScreen = () => {
           }}
         />
       )}
+      {/* Image Preview */}
+      <Modal visible={!!previewImage} transparent>
+        <View style={styles.previewContainer}>
+          <Image source={{ uri: previewImage! }} style={styles.fullPreview} />
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={() => setPreviewImage(null)}
+          >
+            <Ionicons name="close" size={36} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
       {/* Split Sheet */}
       <Modal visible={sheetVisible} animationType="slide" transparent>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>

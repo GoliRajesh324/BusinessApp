@@ -13,11 +13,12 @@ import {
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 
-import { Entypo, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
+import ScreenHelpVideo from "@/src/components/ScreenHelpVideo";
 import { generateBusinessStatementPDF } from "@/src/utils/BusinessStatementPDF";
 import { normalizeInvestmentForEdit } from "@/src/utils/InvestmentNormalizer";
 import { useFocusEffect } from "@react-navigation/native";
@@ -922,7 +923,8 @@ export default function BusinessDetail() {
           style={styles.headerRight}
           onPress={() => alert("Header actions comming soon")}
         >
-          <Entypo name="dots-three-vertical" size={24} color="#000" />
+          <ScreenHelpVideo videoId="ogns8WiacUI" />
+          {/* <Entypo name="dots-three-vertical" size={24} color="#000" /> */}
         </TouchableOpacity>
       </View>
 

@@ -14,6 +14,7 @@ import {
   Image,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -190,88 +191,98 @@ export default function Dashboard() {
             <Text style={styles.username}>{username}</Text>
           </View>
         </TouchableOpacity>
+
+        {/* RIGHT SIDE ICONS */}
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <ScreenHelpVideo videoId="ogns8WiacUI" />
+          <View style={{ marginRight: 25 }}>
+            <ScreenHelpVideo videoId="ogns8WiacUI" />
+          </View>
+
+          <TouchableOpacity
+            onPress={() => alert("Notifications feature coming soon")}
+          >
+            <Ionicons name="notifications-outline" size={28} color="#fff" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          onPress={() => alert("Notifications feature coming soon")}
-        >
-          <Ionicons name="notifications-outline" size={28} color="#fff" />
-        </TouchableOpacity>
       </View>
       {/* HEADER END */}
-
-      <View style={styles.menuTabsContainer}>
-        <TouchableOpacity
-          style={[
-            styles.menuTab,
-            activeMenu === "Business" && styles.activeMenuTab,
-          ]}
-          onPress={() => setActiveMenu("Business")}
+      <View style={styles.tabsWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsScrollContainer}
         >
-          <MaterialCommunityIcons
-            name="alpha-b-box"
-            size={18}
-            color={activeMenu === "Business" ? "#fff" : "#333"}
-          />
-          <Text
+          <TouchableOpacity
             style={[
-              styles.menuTabText,
-              activeMenu === "Business" && styles.activeMenuTabText,
+              styles.menuTab,
+              activeMenu === "Business" && styles.activeMenuTab,
             ]}
+            onPress={() => setActiveMenu("Business")}
           >
-            Business
-          </Text>
-        </TouchableOpacity>
+            <MaterialCommunityIcons
+              name="alpha-b-box"
+              size={18}
+              color={activeMenu === "Business" ? "#fff" : "#333"}
+            />
+            <Text
+              style={[
+                styles.menuTabText,
+                activeMenu === "Business" && styles.activeMenuTabText,
+              ]}
+            >
+              Business
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.menuTab,
-            activeMenu === "Interest" && styles.activeMenuTab,
-          ]}
-          onPress={() => {
-            setActiveMenu("Interest");
-            router.push("/simpleInterest");
-          }}
-        >
-          <MaterialCommunityIcons
-            name="alpha-i-box"
-            size={18}
-            color={activeMenu === "Interest" ? "#fff" : "#333"}
-          />
-          <Text
+          <TouchableOpacity
             style={[
-              styles.menuTabText,
-              activeMenu === "Interest" && styles.activeMenuTabText,
+              styles.menuTab,
+              activeMenu === "Interest" && styles.activeMenuTab,
             ]}
+            onPress={() => {
+              setActiveMenu("Interest");
+              router.push("/simpleInterest");
+            }}
           >
-            Interest
-          </Text>
-        </TouchableOpacity>
+            <MaterialCommunityIcons
+              name="alpha-i-box"
+              size={18}
+              color={activeMenu === "Interest" ? "#fff" : "#333"}
+            />
+            <Text
+              style={[
+                styles.menuTabText,
+                activeMenu === "Interest" && styles.activeMenuTabText,
+              ]}
+            >
+              Interest
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.menuTab,
-            activeMenu === "Emi Calc" && styles.activeMenuTab,
-          ]}
-          // onPress={() => setActiveMenu("Emi Calc")}
-          //onPress={() => alert("Emi Calc coming soon")}
-          onPress={() => router.push("/EmiCalculatorScreen")}
-        >
-          <Ionicons
-            name="calculator-outline"
-            size={18}
-            color={activeMenu === "Emi Calc" ? "#fff" : "#333"}
-          />
-          <Text
+          <TouchableOpacity
             style={[
-              styles.menuTabText,
-              activeMenu === "Emi Calc" && styles.activeMenuTabText,
+              styles.menuTab,
+              activeMenu === "Emi Calc" && styles.activeMenuTab,
             ]}
+            // onPress={() => setActiveMenu("Emi Calc")}
+            //onPress={() => alert("Emi Calc coming soon")}
+            onPress={() => router.push("/EmiCalculatorScreen")}
           >
-            EMi Calc
-          </Text>
-        </TouchableOpacity>
+            <Ionicons
+              name="calculator-outline"
+              size={18}
+              color={activeMenu === "Emi Calc" ? "#fff" : "#333"}
+            />
+            <Text
+              style={[
+                styles.menuTabText,
+                activeMenu === "Emi Calc" && styles.activeMenuTabText,
+              ]}
+            >
+              EMi Calc
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
       <View style={{ padding: 16, backgroundColor: "#fff" }}>
         <Text>{t("YourBusinesses")}</Text>
@@ -685,33 +696,38 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 
+  tabsScrollContainer: {
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+  },
   // -------- Bottom Buttons --------
   menuTabsContainer: {
-    flexDirection: "row",
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     backgroundColor: "#f9fafb",
+    alignItems: "center",
+    marginBottom: 6, // prevents overlap with next section
   },
-
   menuTab: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     backgroundColor: "#e5e7eb",
     borderRadius: 20,
     marginRight: 10,
   },
-
   activeMenuTab: {
     backgroundColor: "#4f93ff",
+    elevation: 3,
   },
-
   menuTabText: {
     fontSize: 14,
     marginLeft: 6,
     color: "#333",
     fontWeight: "500",
+    flexShrink: 0,
   },
 
   activeMenuTabText: {
@@ -738,7 +754,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: "center",
   },
-
+  tabsWrapper: {
+    height: 60,
+    justifyContent: "center",
+    backgroundColor: "#f9fafb",
+  },
   // ------------------------------Floating Add business button ------------------------------
   floatingButton: {
     position: "absolute",

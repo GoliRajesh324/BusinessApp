@@ -3,13 +3,13 @@ import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function EmiCalculatorScreen() {
@@ -71,9 +71,12 @@ export default function EmiCalculatorScreen() {
         <Text style={styles.label}>Loan Amount</Text>
 
         <View style={styles.valueBox}>
-          <Text style={styles.valueText}>
-            ₹ {loanAmount.toLocaleString("en-IN")}
-          </Text>
+          <TextInput
+            style={styles.valueText}
+            keyboardType="numeric"
+            value={String(loanAmount)}
+            onChangeText={(t) => setLoanAmount(Number(t) || 0)}
+          />
         </View>
 
         <Slider
@@ -94,7 +97,7 @@ export default function EmiCalculatorScreen() {
             <TextInput
               style={styles.input}
               keyboardType="numeric"
-              value={String(interestValue)}
+              value={interestValue.toFixed(2)}
               onChangeText={(t) => setInterestValue(Number(t) || 0)}
             />
             {interestMode === "percent" && <Text style={styles.suffix}>%</Text>}
@@ -119,7 +122,7 @@ export default function EmiCalculatorScreen() {
           maximumValue={interestMode === "percent" ? 30 : 3}
           step={0.1}
           value={interestValue}
-          onValueChange={(val) => setInterestValue(val)}
+          onValueChange={(val) => setInterestValue(Number(val.toFixed(2)))}
           minimumTrackTintColor="#16a34a"
         />
 

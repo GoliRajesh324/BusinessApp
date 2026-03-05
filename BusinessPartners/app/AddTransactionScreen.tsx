@@ -6,7 +6,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated } from "react-native";
 
 import SupplierPopup from "@/src/components/SupplierPopup";
-import { InvestmentDTO } from "@/src/types/types";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -633,14 +632,19 @@ const AddTransactionScreen = () => {
     }
   };
 
-  const getStatusInfo = (r: InvestmentDTO) => {
+  const getStatusInfo = (r: any) => {
     if (transactionType !== "Investment") {
       return { text: "", color: "#000" };
     }
 
-    const investableNum = Number(r.investable ?? 0);
-    const investedNum = Number(r.invested ?? 0);
+    const investableNum = Number(r.investing ?? 0);
+    const investedNum = Number(r.actual ?? 0);
+
     const diff = Math.round((investedNum - investableNum) * 100) / 100;
+
+    if (!investableNum && !investedNum) {
+      return { text: "", color: "#000" };
+    }
 
     if (diff > 0) {
       return {

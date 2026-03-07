@@ -1,4 +1,5 @@
 // app/login.tsx
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Stack, useRouter } from "expo-router";
@@ -43,18 +44,37 @@ export default function LoginScreen() {
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false); // ✅ new state
-
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const handleSubmit = async () => {
     if (loading) return; // prevent double clicks
     setMessage("");
     setLoading(true); // start loading
+    if (!isLogin) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+      if (!emailRegex.test(email)) {
+        setMessage("Invalid email format");
+        setLoading(false);
+        return;
+      }
+
+      if (phone.length !== 10) {
+        setMessage("Phone must be 10 digits");
+        setLoading(false);
+        return;
+      }
+    }
     const url = isLogin
       ? `${BASE_URL}/api/auth/login`
       : `${BASE_URL}/api/auth/register`;
 
     try {
-      const res = await axios.post(url, { username, password });
+      const payload = isLogin
+        ? { username, password }
+        : { username, password, email, phone };
+
+      const res = await axios.post(url, payload);
 
       if (isLogin) {
         const token = res?.data?.token || null;
@@ -65,9 +85,11 @@ export default function LoginScreen() {
           return;
         }
 
-        await AsyncStorage.setItem("token", token);
-        await AsyncStorage.setItem("userName", username);
-        await AsyncStorage.setItem("userId", String(userId));
+        await AsyncStorage.setItem("token", res?.data?.token);
+        await AsyncStorage.setItem("userId", res?.data?.userId.toString());
+        await AsyncStorage.setItem("userName", res?.data?.username);
+        await AsyncStorage.setItem("email", res?.data?.email);
+        await AsyncStorage.setItem("phone", res?.data?.phone);
 
         setMessage("Login successful!");
         router.replace("/dashboard"); // ✅ route to dashboard
@@ -76,6 +98,8 @@ export default function LoginScreen() {
         setIsLogin(true);
         setUsername("");
         setPassword("");
+        setEmail("");
+        setPhone("");
       }
 
       setUsername("");
@@ -105,35 +129,81 @@ export default function LoginScreen() {
             {/* Username */}
             <View style={styles.inputGroup}>
               <ConnectionStatus />
-              <Text style={styles.label}>Username</Text>
-              <TextInput
-                style={styles.input}
-                value={username}
-                onChangeText={(t) =>
-                  setUsername(t.replace(/\s+/g, "").toLowerCase())
-                }
-                placeholderTextColor="#847575ff"
-                autoCapitalize="none"
-                placeholder="Enter username"
-              />
-            </View>
+              <Text style={styles.label}>
+                {isLogin ? "Login ID" : "Username"}
+              </Text>
 
+              <View style={styles.inputRow}>
+                <Ionicons name="person-outline" size={18} color="#555" />
+                <TextInput
+                  style={styles.inputFlex}
+                  value={username}
+                  onChangeText={(t) => setUsername(t.trim())}
+                  placeholder={
+                    isLogin
+                      ? "Enter username / email / phone"
+                      : "Choose a username"
+                  }
+                  placeholderTextColor="#847575ff"
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
+            {/* Email (Register only) */}
+            {!isLogin && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email</Text>
+
+                <View style={styles.inputRow}>
+                  <Ionicons name="mail-outline" size={18} color="#555" />
+                  <TextInput
+                    style={styles.inputFlex}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Enter email"
+                    placeholderTextColor="#847575ff"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+              </View>
+            )}
+            {/* Phone (Register only) */}
+            {!isLogin && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Phone</Text>
+
+                <View style={styles.inputRow}>
+                  <Ionicons name="call-outline" size={18} color="#555" />
+                  <TextInput
+                    style={styles.inputFlex}
+                    value={phone}
+                    onChangeText={(t) => setPhone(t.replace(/[^0-9]/g, ""))}
+                    placeholder="Enter phone number"
+                    placeholderTextColor="#847575ff"
+                    keyboardType="numeric"
+                    maxLength={10}
+                  />
+                </View>
+              </View>
+            )}
             {/* Password */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordRow}>
+
+              <View style={styles.inputRow}>
+                <Ionicons name="lock-closed-outline" size={18} color="#555" />
+
                 <TextInput
-                  style={[styles.input, { flex: 1 }]}
+                  style={styles.inputFlex}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
                   placeholder="Enter password"
                   placeholderTextColor="#847575ff"
                 />
-                <Pressable
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.showBtn}
-                >
+
+                <Pressable onPress={() => setShowPassword(!showPassword)}>
                   <Text style={styles.showBtnText}>
                     {showPassword ? "Hide" : "Show"}
                   </Text>
@@ -247,4 +317,19 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
   message: { marginTop: 12, marginBottom: 8, textAlign: "center" },
   link: { color: "#2563eb", marginTop: 6, fontWeight: "600" },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    paddingHorizontal: 10,
+  },
+
+  inputFlex: {
+    flex: 1,
+    padding: 10,
+    fontSize: 16,
+    color: "#000",
+  },
 });

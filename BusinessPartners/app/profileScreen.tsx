@@ -2,7 +2,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -17,11 +17,15 @@ import { RateUsModal } from "../src/components/RateUsModal";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [userName, setUserName] = React.useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+  const [phone, setPhone] = useState<string | null>(null);
   const [rateModalVisible, setRateModalVisible] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     AsyncStorage.getItem("userName").then((name) => setUserName(name));
+    AsyncStorage.getItem("email").then((mail) => setEmail(mail));
+    AsyncStorage.getItem("phone").then((p) => setPhone(p));
   }, []);
 
   const handleLogout = async () => {
@@ -109,6 +113,9 @@ export default function ProfileScreen() {
             style={styles.avatar}
           />
           <Text style={styles.name}>{userName?.toUpperCase()}</Text>
+          <Text style={styles.subname}>{email}</Text>
+          <Text style={styles.subname}>+91 {phone}</Text>
+
           <View style={styles.infoRow}>
             <Ionicons name="cash-outline" size={18} color="#fff" />
             <Text style={styles.infoText}>₹ (INR)</Text>
@@ -201,6 +208,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginVertical: 8,
     fontWeight: "bold",
+  },
+  subname: {
+    fontSize: 16,
+    color: "#fff",
+    marginVertical: 4,
   },
   infoRow: {
     flexDirection: "row",

@@ -78,18 +78,18 @@ export default function LoginScreen() {
 
       if (isLogin) {
         const token = res?.data?.token || null;
-        const userId = res?.data?.userId || null;
+        // const userId = res?.data?.userId || null;
 
         if (!token) {
           setMessage("No token received from server");
           return;
         }
 
-        await AsyncStorage.setItem("token", res.data.token);
+        await AsyncStorage.setItem("token", String(res.data.token));
         await AsyncStorage.setItem("userId", String(res.data.userId));
-        await AsyncStorage.setItem("userName", res.data.username);
-        await AsyncStorage.setItem("email", res.data.email);
-        await AsyncStorage.setItem("phone", res.data.phone);
+        await AsyncStorage.setItem("userName", String(res.data.username));
+        await AsyncStorage.setItem("email", String(res.data.email || ""));
+        await AsyncStorage.setItem("phone", String(res.data.phone || ""));
 
         setMessage("Login successful!");
         router.replace("/dashboard"); // ✅ route to dashboard

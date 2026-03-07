@@ -86,7 +86,6 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* HEADER */}
       <View style={styles.headerCurve}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -114,7 +113,7 @@ export default function ProfileScreen() {
           />
           <Text style={styles.name}>{userName?.toUpperCase()}</Text>
           <Text style={styles.subname}>{email}</Text>
-          <Text style={styles.subname}>+91 {phone}</Text>
+          <Text style={styles.subname}>+91 {phone?.toUpperCase()}</Text>
 
           <View style={styles.infoRow}>
             <Ionicons name="cash-outline" size={18} color="#fff" />

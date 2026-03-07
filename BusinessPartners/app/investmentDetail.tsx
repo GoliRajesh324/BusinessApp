@@ -1,7 +1,9 @@
+import AppHeader from "@/src/components/AppHeader";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
@@ -13,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import BASE_URL from "../src/config/config";
 import { InvestmentDTO } from "../src/types/types";
 
@@ -174,190 +177,196 @@ export default function InvestmentDetail() {
   }, [investments]);
  */
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={26} color="#fff" />
-        </TouchableOpacity>
+    <>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
+        <AppHeader
+          title={String("Transaction Details")}
+          videoId="ogns8WiacUI"
+          rightComponent={
+            <TouchableOpacity
+              onPress={() => {
+                if (!investmentGroupId) return;
 
-        <Text style={styles.headerTitle}>Transaction Details</Text>
-
-        <View style={styles.headerIcons}>
-          <TouchableOpacity
-            onPress={() => {
-              if (!investmentGroupId) return;
-
-              router.push({
-                pathname: "/EditTransactionScreen",
-                params: {
-                  businessId: businessId || "",
-                  businessName: businessName || "",
-                  investmentData: JSON.stringify(
-                    normalizeForEditPopup(editInvestments),
-                  ),
-                  images: JSON.stringify(images),
-                },
-              });
-            }}
-          >
-            <MaterialIcons name="edit" size={26} color="#fff" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => Alert.alert("Delete feature coming soon")}
-          >
-            <MaterialIcons name="delete" size={26} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Meta Section */}
-      <View style={styles.metaContainer}>
-        <Text style={styles.metaText}>
-          Created By: {investments[0]?.createdBy || "-"}
-        </Text>
-
-        <Text style={styles.metaText}>
-          Created At:{" "}
-          {investments[0]?.createdAt
-            ? formatDateTime(investments[0]?.createdAt)
-            : "-"}
-        </Text>
-      </View>
-
-      {/* ✅ FIXED ScrollView */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingTop: 12,
-          paddingBottom: 40,
-        }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+                router.push({
+                  pathname: "/EditTransactionScreen",
+                  params: {
+                    businessId: businessId || "",
+                    businessName: businessName || "",
+                    investmentData: JSON.stringify(
+                      normalizeForEditPopup(editInvestments),
+                    ),
+                    images: JSON.stringify(images),
+                  },
+                });
+              }}
+            >
+              <MaterialIcons name="edit" size={26} color="#fff" />
+            </TouchableOpacity>
+          }
+        />
+      </SafeAreaView>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: "#fff" }}
       >
-        {investments.length === 0 ? (
-          <Text>No investments found for this group</Text>
-        ) : (
-          investments.map((inv, idx) => {
-            const totalAmount = Number(inv.totalAmount || 0);
-            const investable = Number(inv.investable || 0);
-            const invested = Number(inv.invested || 0);
-            const soldAmount = Number(inv.soldAmount || 0);
-            const withdrawn = Number(inv.withdrawn || 0);
+        <View style={styles.container}>
+          <View style={styles.metaContainer}>
+            <Text style={styles.metaText}>
+              Created By: {investments[0]?.createdBy || "-"}
+            </Text>
 
-            return (
-              <View key={idx} style={styles.card}>
-                {/* Top Row */}
-                <View style={styles.cardTopRow}>
-                  <Text style={styles.partnerName}>
-                    {inv.partnerName || "-"}
-                  </Text>
-
-                  {inv.share != null && (
-                    <Text style={styles.shareText}>Share: {inv.share}%</Text>
-                  )}
-                </View>
-
-                {/* Description */}
-                {inv.description && (
-                  <Text style={styles.descriptionText}>{inv.description}</Text>
-                )}
-
-                <View style={styles.divider} />
-
-                {/* Show only > 0 values */}
-
-                {totalAmount > 0 && (
-                  <View style={styles.amountRow}>
-                    <Text style={styles.amountLabel}>Total Amount</Text>
-                    <Text style={styles.amountValue}>
-                      ₹ {formatAmount(totalAmount)}
-                    </Text>
-                  </View>
-                )}
-
-                {investable > 0 && (
-                  <View style={styles.amountRow}>
-                    <Text style={styles.amountLabel}>Investable</Text>
-                    <Text style={styles.amountValue}>
-                      ₹ {formatAmount(investable)}
-                    </Text>
-                  </View>
-                )}
-
-                {invested > 0 && (
-                  <View style={styles.amountRow}>
-                    <Text style={styles.amountLabel}>Invested</Text>
-                    <Text style={styles.amountValue}>
-                      ₹ {formatAmount(invested)}
-                    </Text>
-                  </View>
-                )}
-
-                {soldAmount > 0 && (
-                  <View style={styles.amountRow}>
-                    <Text style={styles.amountLabel}>Sold Amount</Text>
-                    <Text style={styles.amountValue}>
-                      ₹ {formatAmount(soldAmount)}
-                    </Text>
-                  </View>
-                )}
-
-                {withdrawn > 0 && (
-                  <View style={styles.amountRow}>
-                    <Text style={styles.amountLabel}>Withdrawn</Text>
-                    <Text style={styles.amountValue}>
-                      ₹ {formatAmount(withdrawn)}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            );
-          })
-        )}
-        {images.length > 0 && (
-          <View style={{ marginTop: 10 }}>
-            <Text style={{ fontWeight: "600", marginBottom: 6 }}>Images</Text>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {images.map((img, i) => (
-                <TouchableOpacity key={i} onPress={() => setPreviewImage(img)}>
-                  <Image
-                    source={{ uri: img }}
-                    style={{
-                      width: 70,
-                      height: 70,
-                      borderRadius: 8,
-                      marginRight: 8,
-                    }}
-                  />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <Text style={styles.metaText}>
+              Created At:{" "}
+              {investments[0]?.createdAt
+                ? formatDateTime(investments[0]?.createdAt)
+                : "-"}
+            </Text>
           </View>
-        )}
-        {previewImage && (
-          <Modal transparent animationType="fade">
-            <View style={styles.previewContainer}>
-              <Image
-                source={{ uri: previewImage }}
-                style={styles.fullPreview}
-              />
 
-              {/* Close Button */}
-              <TouchableOpacity
-                style={styles.closeBtn}
-                onPress={() => setPreviewImage(null)}
-              >
-                <Ionicons name="close" size={30} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          </Modal>
-        )}
-      </ScrollView>
-    </View>
+          {/* ✅ FIXED ScrollView */}
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingTop: 12,
+              paddingBottom: 40,
+            }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {investments.length === 0 ? (
+              <Text>No investments found for this group</Text>
+            ) : (
+              investments.map((inv, idx) => {
+                const totalAmount = Number(inv.totalAmount || 0);
+                const investable = Number(inv.investable || 0);
+                const invested = Number(inv.invested || 0);
+                const soldAmount = Number(inv.soldAmount || 0);
+                const withdrawn = Number(inv.withdrawn || 0);
+
+                return (
+                  <View key={idx} style={styles.card}>
+                    {/* Top Row */}
+                    <View style={styles.cardTopRow}>
+                      <Text style={styles.partnerName}>
+                        {inv.partnerName || "-"}
+                      </Text>
+
+                      {inv.share != null && (
+                        <Text style={styles.shareText}>
+                          Share: {inv.share}%
+                        </Text>
+                      )}
+                    </View>
+
+                    {/* Description */}
+                    {inv.description && (
+                      <Text style={styles.descriptionText}>
+                        {inv.description}
+                      </Text>
+                    )}
+
+                    <View style={styles.divider} />
+
+                    {/* Show only > 0 values */}
+
+                    {totalAmount > 0 && (
+                      <View style={styles.amountRow}>
+                        <Text style={styles.amountLabel}>Total Amount</Text>
+                        <Text style={styles.amountValue}>
+                          ₹ {formatAmount(totalAmount)}
+                        </Text>
+                      </View>
+                    )}
+
+                    {investable > 0 && (
+                      <View style={styles.amountRow}>
+                        <Text style={styles.amountLabel}>Investable</Text>
+                        <Text style={styles.amountValue}>
+                          ₹ {formatAmount(investable)}
+                        </Text>
+                      </View>
+                    )}
+
+                    {invested > 0 && (
+                      <View style={styles.amountRow}>
+                        <Text style={styles.amountLabel}>Invested</Text>
+                        <Text style={styles.amountValue}>
+                          ₹ {formatAmount(invested)}
+                        </Text>
+                      </View>
+                    )}
+
+                    {soldAmount > 0 && (
+                      <View style={styles.amountRow}>
+                        <Text style={styles.amountLabel}>Sold Amount</Text>
+                        <Text style={styles.amountValue}>
+                          ₹ {formatAmount(soldAmount)}
+                        </Text>
+                      </View>
+                    )}
+
+                    {withdrawn > 0 && (
+                      <View style={styles.amountRow}>
+                        <Text style={styles.amountLabel}>Withdrawn</Text>
+                        <Text style={styles.amountValue}>
+                          ₹ {formatAmount(withdrawn)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })
+            )}
+            {images.length > 0 && (
+              <View style={{ marginTop: 10 }}>
+                <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                  Images
+                </Text>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {images.map((img, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      onPress={() => setPreviewImage(img)}
+                    >
+                      <Image
+                        source={{ uri: img }}
+                        style={{
+                          width: 70,
+                          height: 70,
+                          borderRadius: 8,
+                          marginRight: 8,
+                        }}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+            {previewImage && (
+              <Modal transparent animationType="fade">
+                <View style={styles.previewContainer}>
+                  <Image
+                    source={{ uri: previewImage }}
+                    style={styles.fullPreview}
+                  />
+
+                  {/* Close Button */}
+                  <TouchableOpacity
+                    style={styles.closeBtn}
+                    onPress={() => setPreviewImage(null)}
+                  >
+                    <Ionicons name="close" size={30} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              </Modal>
+            )}
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    </>
   );
 }
 

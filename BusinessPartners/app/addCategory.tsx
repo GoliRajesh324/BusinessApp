@@ -1,6 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
+import AppHeader from "@/src/components/AppHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -12,6 +13,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { createCategory, updateCategory } from "../src/services/inventory";
 
 export default function AddCategory() {
@@ -40,6 +42,7 @@ export default function AddCategory() {
 
   /* ------------------ SAVE CATEGORY ------------------ */
   const saveCategory = async () => {
+    Keyboard.dismiss();
     if (!name.trim()) return Alert.alert("Enter category name");
 
     const token = await AsyncStorage.getItem("token");
@@ -83,89 +86,75 @@ export default function AddCategory() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      {/* ================================================================== */}
-      {/* CUSTOM HEADER (same as inventory) */}
-      {/* ================================================================== */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        >
-          <Ionicons name="arrow-back" size={28} color="#fff" />
-        </TouchableOpacity>
+    <>
+      <SafeAreaView edges={["top"]} style={styles.safeTop}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
+        <AppHeader
+          title={isEdit === "true" ? "Edit Category" : "Add Category"}
+        />
+      </SafeAreaView>
+      <SafeAreaView edges={["bottom"]} style={styles.safeBottom}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.container}>
+            {/* Name */}
+            <Text style={styles.label}>Category Name</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter category name"
+            />
 
-        <Text style={styles.headerTitle}>
-          {isEdit === "true" ? "Edit Category" : "Add Category"}
-        </Text>
+            {/* Description */}
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, { height: 80 }]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Enter description"
+              multiline
+            />
 
-        <View style={{ width: 40 }} />
-      </View>
-
-      {/* ================================================================== */}
-      {/* BODY */}
-      {/* ================================================================== */}
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
-          {/* Name */}
-          <Text style={styles.label}>Category Name</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Enter category name"
-          />
-
-          {/* Description */}
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, { height: 80 }]}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Enter description"
-            multiline
-          />
-
-          {/* Quantity Type */}
-          <Text style={styles.label}>Quantity Type</Text>
-          <View style={styles.qtyRow}>
-            {["KG"].map((v) => (
-              <TouchableOpacity
-                key={v}
-                onPress={() => setQuantityType(v as "KG" | "LITERS")}
-                style={[
-                  styles.qtyOption,
-                  quantityType === v && styles.qtySelected,
-                ]}
-              >
-                <Text
-                  style={{
-                    color: quantityType === v ? "#fff" : "#333",
-                    fontWeight: "700",
-                  }}
+            {/* Quantity Type */}
+            <Text style={styles.label}>Quantity Type</Text>
+            <View style={styles.qtyRow}>
+              {["KG"].map((v) => (
+                <TouchableOpacity
+                  key={v}
+                  onPress={() => setQuantityType(v as "KG" | "LITERS")}
+                  style={[
+                    styles.qtyOption,
+                    quantityType === v && styles.qtySelected,
+                  ]}
                 >
-                  {v}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={{
+                      color: quantityType === v ? "#fff" : "#333",
+                      fontWeight: "700",
+                    }}
+                  >
+                    {v}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Save */}
+            <TouchableOpacity style={styles.saveBtn} onPress={saveCategory}>
+              <Text style={{ color: "#fff", fontWeight: "700" }}>Save</Text>
+            </TouchableOpacity>
+
+            {/* Cancel */}
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={() => router.back()}
+            >
+              <Text style={{ color: "#333", fontWeight: "600" }}>Cancel</Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Save */}
-          <TouchableOpacity style={styles.saveBtn} onPress={saveCategory}>
-            <Text style={{ color: "#fff", fontWeight: "700" }}>Save</Text>
-          </TouchableOpacity>
-
-          {/* Cancel */}
-          <TouchableOpacity
-            style={styles.cancelBtn}
-            onPress={() => router.back()}
-          >
-            <Text style={{ color: "#333", fontWeight: "600" }}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </TouchableWithoutFeedback>
-    </View>
+        </TouchableWithoutFeedback>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -174,26 +163,8 @@ export default function AddCategory() {
 /* ---------------------------------------------------------------------- */
 
 const styles = StyleSheet.create({
-  /* Header */
-  header: {
-    backgroundColor: "#4f93ff",
-    paddingTop: 45,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    zIndex: 999,
-  },
-  backButton: { width: 40, height: 40, justifyContent: "center" },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#fff",
-    marginLeft: -40,
-  },
+  safeTop: { backgroundColor: "#4f93ff" },
+  safeBottom: { flex: 1, backgroundColor: "#f3f4f6" },
 
   /* Body */
   container: {

@@ -1,7 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
+import AppHeader from "@/src/components/AppHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -18,6 +19,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import BASE_URL from "../src/config/config";
 
 export default function BusinessNews() {
@@ -165,92 +167,97 @@ export default function BusinessNews() {
     </View>
   );
 
-  /* ---------------- UI ---------------- */
   return (
-    <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={26} color="#000" />
-        </TouchableOpacity>
+    <>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
+        <AppHeader title={String("Business News")} videoId="ogns8WiacUI" />
+      </SafeAreaView>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: "#fff" }}
+      >
+        <View style={styles.container}>
+          {/* LIST */}
+          <FlatList
+            data={newsList}
+            keyExtractor={(item, index) =>
+              item.newsId?.toString() || index.toString()
+            }
+            renderItem={renderItem}
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingTop: 16,
+              paddingBottom: 180,
+            }}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.4}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            ListFooterComponent={
+              loading ? (
+                <ActivityIndicator size="small" color="#4f93ff" />
+              ) : null
+            }
+          />
 
-        <Text style={styles.headerTitle}>
-          {businessName || "Business News"}
-        </Text>
+          {/* FAB */}
+          <View style={styles.fabContainer}>
+            <TouchableOpacity
+              style={styles.fab}
+              onPress={() => setShowPopup(true)}
+            >
+              <Text style={styles.fabText}>+</Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={{ width: 26 }} />
-      </View>
+          {/* ADD NEWS MODAL */}
+          <Modal visible={showPopup} transparent animationType="slide">
+            <KeyboardAvoidingView
+              style={{ flex: 1 }}
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+            >
+              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={styles.overlay}>
+                  <View style={styles.popup}>
+                    <Text style={styles.popupTitle}>Add News</Text>
 
-      {/* LIST */}
-      <FlatList
-        data={newsList}
-        keyExtractor={(item, index) =>
-          item.newsId?.toString() || index.toString()
-        }
-        renderItem={renderItem}
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingTop: 16,
-          paddingBottom: 180,
-        }}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.4}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        ListFooterComponent={
-          loading ? <ActivityIndicator size="small" color="#4f93ff" /> : null
-        }
-      />
+                    <View style={styles.inputContainer}>
+                      <TextInput
+                        placeholder="Enter business update..."
+                        multiline
+                        value={newsFeed}
+                        onChangeText={setNewsFeed}
+                        style={styles.input}
+                      />
+                    </View>
 
-      {/* FAB */}
-      <View style={styles.fabContainer}>
-        <TouchableOpacity style={styles.fab} onPress={() => setShowPopup(true)}>
-          <Text style={styles.fabText}>+</Text>
-        </TouchableOpacity>
-      </View>
+                    <View style={styles.buttonRow}>
+                      <TouchableOpacity
+                        style={styles.saveBtn}
+                        onPress={handleSave}
+                      >
+                        <Text style={styles.btnText}>Send</Text>
+                      </TouchableOpacity>
 
-      {/* ADD NEWS MODAL */}
-      <Modal visible={showPopup} transparent animationType="slide">
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.overlay}>
-              <View style={styles.popup}>
-                <Text style={styles.popupTitle}>Add News</Text>
-
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    placeholder="Enter business update..."
-                    multiline
-                    value={newsFeed}
-                    onChangeText={setNewsFeed}
-                    style={styles.input}
-                  />
+                      <TouchableOpacity
+                        style={styles.cancelBtn}
+                        onPress={() => {
+                          Keyboard.dismiss();
+                          setShowPopup(false);
+                        }}
+                      >
+                        <Text style={styles.btnText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 </View>
-
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-                    <Text style={styles.btnText}>Send</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.cancelBtn}
-                    onPress={() => {
-                      Keyboard.dismiss();
-                      setShowPopup(false);
-                    }}
-                  >
-                    <Text style={styles.btnText}>Cancel</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
-      </Modal>
-    </View>
+              </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
+          </Modal>
+        </View>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -258,23 +265,6 @@ export default function BusinessNews() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 40,
-    paddingBottom: 12,
-    backgroundColor: "#4f93ff",
-  },
-
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#000",
-  },
-
   card: {
     backgroundColor: "rgb(248, 246, 246)",
     padding: 14,

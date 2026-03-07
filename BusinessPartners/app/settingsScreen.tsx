@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import {
   Alert,
-  Platform,
-  StatusBar,
   StyleSheet,
   Switch,
   Text,
@@ -10,12 +8,15 @@ import {
   View,
 } from "react-native";
 
+import AppHeader from "@/src/components/AppHeader";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as LocalAuthentication from "expo-local-authentication";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -119,82 +120,83 @@ export default function SettingsScreen() {
   const handleBack = () => router.back();
 
   return (
-    <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.headerLeft}>
-          <Ionicons name="arrow-back" size={28} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerRight} />
-      </View>
-
-      {/* SETTINGS CONTENT */}
-      <View style={styles.card}>
-        <View style={styles.optionRow}>
-          <View style={styles.optionLeft}>
-            <Ionicons name="lock-closed-outline" size={22} color="#333" />
-            <Text style={styles.optionText}>App Lock</Text>
+    <>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
+        <AppHeader title={String("Settings")} videoId="ogns8WiacUI" />
+      </SafeAreaView>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: "#fff" }}
+      >
+        <View style={styles.container}>
+          <View style={styles.card}>
+            <View style={styles.optionRow}>
+              <View style={styles.optionLeft}>
+                <Ionicons name="lock-closed-outline" size={22} color="#333" />
+                <Text style={styles.optionText}>App Lock</Text>
+              </View>
+              <Switch
+                value={appLockEnabled}
+                onValueChange={toggleAppLock}
+                trackColor={{ false: "#ccc", true: "#4f93ff" }}
+                thumbColor={appLockEnabled ? "#fff" : "#f4f3f4"}
+              />
+            </View>
           </View>
-          <Switch
-            value={appLockEnabled}
-            onValueChange={toggleAppLock}
-            trackColor={{ false: "#ccc", true: "#4f93ff" }}
-            thumbColor={appLockEnabled ? "#fff" : "#f4f3f4"}
-          />
+
+          {/* Language Toggle */}
+
+          <View style={styles.card}>
+            <View style={styles.optionRow}>
+              <View style={styles.optionLeft}>
+                <Ionicons name="language-outline" size={22} color="#333" />
+                <Text style={styles.optionText}>Language</Text>
+              </View>
+
+              {/* Segmented Toggle */}
+              <View style={styles.languageToggleContainer}>
+                <TouchableOpacity
+                  disabled={!isLangLoaded}
+                  onPress={() => setLanguage("en")}
+                  style={[
+                    styles.languageOption,
+                    !isTelugu && styles.languageSelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.languageText,
+                      !isTelugu && styles.languageTextSelected,
+                    ]}
+                  >
+                    English
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  disabled={!isLangLoaded}
+                  onPress={() => setLanguage("te")}
+                  style={[
+                    styles.languageOption,
+                    isTelugu && styles.languageSelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.languageText,
+                      isTelugu && styles.languageTextSelected,
+                    ]}
+                  >
+                    తెలుగు
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         </View>
-      </View>
-
-      {/* Language Toggle */}
-
-      <View style={styles.card}>
-        <View style={styles.optionRow}>
-          <View style={styles.optionLeft}>
-            <Ionicons name="language-outline" size={22} color="#333" />
-            <Text style={styles.optionText}>Language</Text>
-          </View>
-
-          {/* Segmented Toggle */}
-          <View style={styles.languageToggleContainer}>
-            <TouchableOpacity
-              disabled={!isLangLoaded}
-              onPress={() => setLanguage("en")}
-              style={[
-                styles.languageOption,
-                !isTelugu && styles.languageSelected,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.languageText,
-                  !isTelugu && styles.languageTextSelected,
-                ]}
-              >
-                English
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              disabled={!isLangLoaded}
-              onPress={() => setLanguage("te")}
-              style={[
-                styles.languageOption,
-                isTelugu && styles.languageSelected,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.languageText,
-                  isTelugu && styles.languageTextSelected,
-                ]}
-              >
-                తెలుగు
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </View>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -204,24 +206,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#e8eaf6",
   },
 
-  // HEADER
-  header: {
-    height:
-      Platform.OS === "android" ? 80 + (StatusBar.currentHeight || 0) : 100,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop:
-      Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
-    backgroundColor: "#4f93ff",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    zIndex: 100,
-  },
   headerLeft: { width: 40, justifyContent: "center", alignItems: "flex-start" },
   headerRight: { width: 40 },
   headerTitle: {

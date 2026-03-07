@@ -1,5 +1,4 @@
 // app/interestPerson.tsx
-import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -7,11 +6,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import AppHeader from "@/src/components/AppHeader";
+import { StatusBar } from "expo-status-bar";
 import { getAllInterests } from "../src/services/interestService"; // adjust path if needed
 
 type Interest = {
@@ -65,68 +65,69 @@ export default function InterestPerson() {
     .filter((r) => r.type === "taken")
     .reduce((s, r) => s + (r.amount || 0), 0);
   const net = totalGiven - totalTaken;
-
+  // <AppHeader title={String({name ? decodeURIComponent(name) : "Person"})} videoId="ogns8WiacUI" />
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#222" />
-        </TouchableOpacity>
-        <Text style={styles.title}>
-          {name ? decodeURIComponent(name) : "Person"}
-        </Text>
-      </View>
+    <>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
+        <AppHeader title={String("Person")} videoId="ogns8WiacUI" />
+      </SafeAreaView>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: "#fff" }}
+      >
+        <View style={styles.summary}>
+          <Text style={styles.small}>Net</Text>
+          <Text style={styles.net}>₹ {formatAmt(net)}</Text>
 
-      <View style={styles.summary}>
-        <Text style={styles.small}>Net</Text>
-        <Text style={styles.net}>₹ {formatAmt(net)}</Text>
+          <View style={{ height: 8 }} />
 
-        <View style={{ height: 8 }} />
-
-        <View style={styles.row}>
-          <View style={styles.tile}>
-            <Text style={styles.tileLabel}>Taken</Text>
-            <Text style={styles.tileAmt}>{formatAmt(totalTaken)}</Text>
-          </View>
-          <View style={styles.tile}>
-            <Text style={styles.tileLabel}>Given</Text>
-            <Text style={styles.tileAmt}>{formatAmt(totalGiven)}</Text>
+          <View style={styles.row}>
+            <View style={styles.tile}>
+              <Text style={styles.tileLabel}>Taken</Text>
+              <Text style={styles.tileAmt}>{formatAmt(totalTaken)}</Text>
+            </View>
+            <View style={styles.tile}>
+              <Text style={styles.tileLabel}>Given</Text>
+              <Text style={styles.tileAmt}>{formatAmt(totalGiven)}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {loading ? (
-        <ActivityIndicator style={{ marginTop: 20 }} />
-      ) : (
-        <ScrollView contentContainerStyle={{ padding: 14 }}>
-          {records.map((r) => (
-            <View key={String(r.id)} style={styles.record}>
-              <View style={styles.recordTop}>
-                <Text style={{ fontWeight: "700" }}>
-                  {r.type === "given" ? "Taken" : "Given"}
-                </Text>
-                <Text style={{ fontWeight: "700" }}>
-                  ₹ {formatAmt(r.amount)}
-                </Text>
+        {loading ? (
+          <ActivityIndicator style={{ marginTop: 20 }} />
+        ) : (
+          <ScrollView contentContainerStyle={{ padding: 14 }}>
+            {records.map((r) => (
+              <View key={String(r.id)} style={styles.record}>
+                <View style={styles.recordTop}>
+                  <Text style={{ fontWeight: "700" }}>
+                    {r.type === "given" ? "Taken" : "Given"}
+                  </Text>
+                  <Text style={{ fontWeight: "700" }}>
+                    ₹ {formatAmt(r.amount)}
+                  </Text>
+                </View>
+                <View style={styles.rowBetween}>
+                  <Text>Interest: {r.rate ?? 0} %</Text>
+                  <Text>{formatDate(r.startDate)}</Text>
+                </View>
+                {r.comment ? (
+                  <Text style={{ marginTop: 6, color: "#444" }}>
+                    {r.comment}
+                  </Text>
+                ) : null}
               </View>
-              <View style={styles.rowBetween}>
-                <Text>Interest: {r.rate ?? 0} %</Text>
-                <Text>{formatDate(r.startDate)}</Text>
-              </View>
-              {r.comment ? (
-                <Text style={{ marginTop: 6, color: "#444" }}>{r.comment}</Text>
-              ) : null}
-            </View>
-          ))}
-        </ScrollView>
-      )}
-    </SafeAreaView>
+            ))}
+          </ScrollView>
+        )}
+      </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#f4f6f9" },
-  header: { flexDirection: "row", alignItems: "center", padding: 12 },
   backBtn: { padding: 8, marginRight: 8 },
   title: { fontSize: 20, fontWeight: "700" },
   summary: {

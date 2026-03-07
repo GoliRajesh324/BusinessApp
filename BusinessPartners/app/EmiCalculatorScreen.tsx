@@ -1,6 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
+import AppHeader from "@/src/components/AppHeader";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useMemo, useState } from "react";
 import {
   Platform,
@@ -11,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EmiCalculatorScreen() {
   const router = useRouter();
@@ -54,112 +56,119 @@ export default function EmiCalculatorScreen() {
   }, [loanAmount, interestPercent, tenureYears]);
 
   return (
-    <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
+    <>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
+        <AppHeader title={String("EMI Calculator")} videoId="ogns8WiacUI" />
+      </SafeAreaView>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: "#fff" }}
+      >
+        <View style={styles.container}>
+          <ScrollView contentContainerStyle={{ padding: 16 }}>
+            {/* Loan Amount */}
+            <Text style={styles.label}>Loan Amount</Text>
 
-        <Text style={styles.headerTitle}>EMI Calculator</Text>
+            <View style={styles.valueBox}>
+              <TextInput
+                style={styles.valueText}
+                keyboardType="numeric"
+                value={String(loanAmount)}
+                onChangeText={(t) => setLoanAmount(Number(t) || 0)}
+              />
+            </View>
 
-        <View style={{ width: 24 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        {/* Loan Amount */}
-        <Text style={styles.label}>Loan Amount</Text>
-
-        <View style={styles.valueBox}>
-          <TextInput
-            style={styles.valueText}
-            keyboardType="numeric"
-            value={String(loanAmount)}
-            onChangeText={(t) => setLoanAmount(Number(t) || 0)}
-          />
-        </View>
-
-        <Slider
-          minimumValue={10000}
-          maximumValue={50000000}
-          step={10000}
-          value={loanAmount}
-          onValueChange={(val) => setLoanAmount(val)}
-          minimumTrackTintColor="#16a34a"
-        />
-
-        {/* Interest */}
-        <Text style={styles.label}>Rate of Interest</Text>
-
-        <View style={styles.row}>
-          <View style={styles.valueBox}>
-            {interestMode === "rupee" && <Text style={styles.prefix}>₹</Text>}
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              value={interestValue.toFixed(2)}
-              onChangeText={(t) => setInterestValue(Number(t) || 0)}
+            <Slider
+              minimumValue={10000}
+              maximumValue={50000000}
+              step={10000}
+              value={loanAmount}
+              onValueChange={(val) => setLoanAmount(val)}
+              minimumTrackTintColor="#16a34a"
             />
-            {interestMode === "percent" && <Text style={styles.suffix}>%</Text>}
-          </View>
 
-          <TouchableOpacity
-            style={styles.modeBtn}
-            onPress={() =>
-              setInterestMode((prev) =>
-                prev === "percent" ? "rupee" : "percent",
-              )
-            }
-          >
-            <Text style={styles.modeText}>
-              {interestMode === "percent" ? "%" : "₹"}
-            </Text>
-          </TouchableOpacity>
+            {/* Interest */}
+            <Text style={styles.label}>Rate of Interest</Text>
+
+            <View style={styles.row}>
+              <View style={styles.valueBox}>
+                {interestMode === "rupee" && (
+                  <Text style={styles.prefix}>₹</Text>
+                )}
+                <TextInput
+                  style={styles.input}
+                  keyboardType="numeric"
+                  value={interestValue.toFixed(2)}
+                  onChangeText={(t) => setInterestValue(Number(t) || 0)}
+                />
+                {interestMode === "percent" && (
+                  <Text style={styles.suffix}>%</Text>
+                )}
+              </View>
+
+              <TouchableOpacity
+                style={styles.modeBtn}
+                onPress={() =>
+                  setInterestMode((prev) =>
+                    prev === "percent" ? "rupee" : "percent",
+                  )
+                }
+              >
+                <Text style={styles.modeText}>
+                  {interestMode === "percent" ? "%" : "₹"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Slider
+              minimumValue={0}
+              maximumValue={interestMode === "percent" ? 30 : 3}
+              step={0.1}
+              value={interestValue}
+              onValueChange={(val) => setInterestValue(Number(val.toFixed(2)))}
+              minimumTrackTintColor="#16a34a"
+            />
+
+            {/* Tenure */}
+            <Text style={styles.label}>Loan Tenure (Years)</Text>
+
+            <View style={styles.valueBox}>
+              <Text style={styles.valueText}>{tenureYears} Yr</Text>
+            </View>
+
+            <Slider
+              minimumValue={1}
+              maximumValue={30}
+              step={1}
+              value={tenureYears}
+              onValueChange={(val) => setTenureYears(val)}
+              minimumTrackTintColor="#16a34a"
+            />
+
+            {/* Result Card */}
+            <View style={styles.resultCard}>
+              <Row
+                label="Monthly EMI"
+                value={`₹ ${emiDetails.emi.toFixed(0)}`}
+              />
+              <Row
+                label="Principal amount"
+                value={`₹ ${loanAmount.toLocaleString("en-IN")}`}
+              />
+              <Row
+                label="Total interest"
+                value={`₹ ${emiDetails.totalInterest.toFixed(0)}`}
+              />
+              <Row
+                label="Total amount"
+                value={`₹ ${emiDetails.totalAmount.toFixed(0)}`}
+              />
+            </View>
+          </ScrollView>
         </View>
-
-        <Slider
-          minimumValue={0}
-          maximumValue={interestMode === "percent" ? 30 : 3}
-          step={0.1}
-          value={interestValue}
-          onValueChange={(val) => setInterestValue(Number(val.toFixed(2)))}
-          minimumTrackTintColor="#16a34a"
-        />
-
-        {/* Tenure */}
-        <Text style={styles.label}>Loan Tenure (Years)</Text>
-
-        <View style={styles.valueBox}>
-          <Text style={styles.valueText}>{tenureYears} Yr</Text>
-        </View>
-
-        <Slider
-          minimumValue={1}
-          maximumValue={30}
-          step={1}
-          value={tenureYears}
-          onValueChange={(val) => setTenureYears(val)}
-          minimumTrackTintColor="#16a34a"
-        />
-
-        {/* Result Card */}
-        <View style={styles.resultCard}>
-          <Row label="Monthly EMI" value={`₹ ${emiDetails.emi.toFixed(0)}`} />
-          <Row
-            label="Principal amount"
-            value={`₹ ${loanAmount.toLocaleString("en-IN")}`}
-          />
-          <Row
-            label="Total interest"
-            value={`₹ ${emiDetails.totalInterest.toFixed(0)}`}
-          />
-          <Row
-            label="Total amount"
-            value={`₹ ${emiDetails.totalAmount.toFixed(0)}`}
-          />
-        </View>
-      </ScrollView>
-    </View>
+      </SafeAreaView>
+    </>
   );
 }
 

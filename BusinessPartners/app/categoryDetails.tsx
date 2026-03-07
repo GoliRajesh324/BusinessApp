@@ -1,6 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
+import AppHeader from "@/src/components/AppHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { fetchCategoryById } from "../src/services/inventory";
 
 export default function CategoryDetails() {
@@ -70,36 +72,38 @@ export default function CategoryDetails() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      {/* ---------------- HEADER ---------------- */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.headerLeft}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        >
-          <Ionicons name="arrow-back" size={28} color="#fff" />
-        </TouchableOpacity>
+    <>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
+        <AppHeader
+          title={String("Category Details")}
+          videoId="ogns8WiacUI"
+          rightComponent={
+            <TouchableOpacity onPress={handleEdit}>
+              <Text style={styles.headerRightText}>Edit</Text>
+            </TouchableOpacity>
+          }
+        />
+      </SafeAreaView>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: "#fff" }}
+      >
+        <View style={{ flex: 1, backgroundColor: "#fff" }}>
+          {/* ---------------- BODY ---------------- */}
+          <ScrollView style={styles.body}>
+            <Text style={styles.label}>Name</Text>
+            <Text style={styles.value}>{category.name}</Text>
 
-        <Text style={styles.headerTitle}>Category Details</Text>
+            <Text style={styles.label}>Description</Text>
+            <Text style={styles.value}>{category.description || "—"}</Text>
 
-        <TouchableOpacity onPress={handleEdit}>
-          <Text style={styles.headerRightText}>Edit</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* ---------------- BODY ---------------- */}
-      <ScrollView style={styles.body}>
-        <Text style={styles.label}>Name</Text>
-        <Text style={styles.value}>{category.name}</Text>
-
-        <Text style={styles.label}>Description</Text>
-        <Text style={styles.value}>{category.description || "—"}</Text>
-
-        <Text style={styles.label}>Quantity Type</Text>
-        <Text style={styles.value}>{category.quantityType}</Text>
-      </ScrollView>
-    </View>
+            <Text style={styles.label}>Quantity Type</Text>
+            <Text style={styles.value}>{category.quantityType}</Text>
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    </>
   );
 }
 

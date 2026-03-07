@@ -1,18 +1,17 @@
+import AppHeader from "@/src/components/AppHeader";
 import BASE_URL from "@/src/config/config";
-import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Platform,
-  StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface FieldChange {
   oldValue: string | null;
@@ -127,40 +126,37 @@ export default function ChangeHistoryScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.headerLeft}
-        >
-          <Ionicons name="arrow-back" size={28} color="#fff" />
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>Change History</Text>
-
-        <View style={styles.headerRight} />
-      </View>
-
-      {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#3498db"
-          style={{ marginTop: 20 }}
-        />
-      ) : cards.length === 0 ? (
-        <Text style={styles.noDataText}>
-          No changes found for this business.
-        </Text>
-      ) : (
-        <FlatList
-          data={cards}
-          renderItem={renderCard}
-          keyExtractor={(_, index) => index.toString()}
-          contentContainerStyle={{ padding: 16 }}
-        />
-      )}
-    </View>
+    <>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
+        <AppHeader title={String("Change History")} videoId="ogns8WiacUI" />
+      </SafeAreaView>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: "#fff" }}
+      >
+        <View style={styles.container}>
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color="#3498db"
+              style={{ marginTop: 20 }}
+            />
+          ) : cards.length === 0 ? (
+            <Text style={styles.noDataText}>
+              No changes found for this business.
+            </Text>
+          ) : (
+            <FlatList
+              data={cards}
+              renderItem={renderCard}
+              keyExtractor={(_, index) => index.toString()}
+              contentContainerStyle={{ padding: 16 }}
+            />
+          )}
+        </View>
+      </SafeAreaView>
+    </>
   );
 }
 const formatFieldName = (field: string) => {
@@ -183,18 +179,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 
-  header: {
-    height:
-      Platform.OS === "android" ? 90 + (StatusBar.currentHeight || 0) : 110,
-    paddingTop:
-      Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
-    backgroundColor: "#4f93ff",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-  },
-
   headerLeft: {
     width: 40,
     justifyContent: "center",
@@ -202,14 +186,6 @@ const styles = StyleSheet.create({
   },
 
   headerRight: { width: 40 },
-
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#fff",
-    textAlign: "center",
-    flex: 1,
-  },
 
   noDataText: {
     textAlign: "center",

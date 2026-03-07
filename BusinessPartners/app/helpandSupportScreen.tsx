@@ -1,59 +1,59 @@
 import React from "react";
 import {
-    Linking,
-    Platform,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
+import AppHeader from "@/src/components/AppHeader";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HelpAndSupportScreen() {
-  const router = useRouter();
-  const handleBack = () => router.back();
-
   return (
-    <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.headerLeft}>
-          <Ionicons name="arrow-back" size={28} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Help & Support</Text>
-        <View style={styles.headerRight} />
-      </View>
-      {/* PAGE CONTENT */}
-      <View style={styles.contentContainer}>
-        <Text style={styles.infoText}>
-          We're here to help! If you have questions, issues, or feedback, feel
-          free to reach out to our support team anytime.
-        </Text>
+    <>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
+        <AppHeader title={String("Help & Support")} videoId="ogns8WiacUI" />
+      </SafeAreaView>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: "#fff" }}
+      >
+        <View style={styles.container}>
+          {/* PAGE CONTENT */}
+          <View style={styles.contentContainer}>
+            <Text style={styles.infoText}>
+              We're here to help! If you have questions, issues, or feedback,
+              feel free to reach out to our support team anytime.
+            </Text>
 
-        {/* CALL CENTER SUPPORT STICKER */}
-        <View style={styles.stickerWrapper}>
-          <TouchableOpacity
-            style={styles.supportSticker}
-            onPress={() =>
-              Linking.openURL(
-                "mailto:bizmoney324@gmail.com?subject=App Support&body=Hi, I need assistance regarding your Business Money app."
-              )
-            }
-          >
-            <Ionicons name="headset" size={32} color="#fff" />
-            <View style={{ marginLeft: 12 }}>
-              <Text style={styles.stickerTitle}>Contact Support</Text>
-              <Text style={styles.stickerSubtitle}>
-                bizmoney324@gmail.com
-              </Text>
+            {/* CALL CENTER SUPPORT STICKER */}
+            <View style={styles.stickerWrapper}>
+              <TouchableOpacity
+                style={styles.supportSticker}
+                onPress={() =>
+                  Linking.openURL(
+                    "mailto:bizmoney324@gmail.com?subject=App Support&body=Hi, I need assistance regarding your Business Money app.",
+                  )
+                }
+              >
+                <Ionicons name="headset" size={32} color="#fff" />
+                <View style={{ marginLeft: 12 }}>
+                  <Text style={styles.stickerTitle}>Contact Support</Text>
+                  <Text style={styles.stickerSubtitle}>
+                    bizmoney324@gmail.com
+                  </Text>
+                </View>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </View>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -63,24 +63,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#e8eaf6",
   },
 
-  // HEADER
-  header: {
-    height:
-      Platform.OS === "android" ? 80 + (StatusBar.currentHeight || 0) : 100,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop:
-      Platform.OS === "android" ? (StatusBar.currentHeight || 20) + 20 : 40,
-    backgroundColor: "#4f93ff",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    zIndex: 100,
-  },
   headerLeft: { width: 40, justifyContent: "center", alignItems: "flex-start" },
   headerRight: { width: 40 },
   headerTitle: {

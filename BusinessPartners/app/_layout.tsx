@@ -1,17 +1,23 @@
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import BASE_URL from "@/src/config/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
+import axios from "axios";
+import * as Application from "expo-application";
+import Constants from "expo-constants";
 import * as LocalAuthentication from "expo-local-authentication";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   AppState,
+  Linking,
   StyleSheet,
   Text,
   View,
@@ -51,6 +57,38 @@ export default function RootLayout() {
     return false;
   };
 
+  const checkAppVersion = async () => {
+    try {
+      const currentVersion =
+        Application.nativeApplicationVersion || Constants.expoConfig?.version;
+      console.log("Current version:", currentVersion);
+
+      const res = await axios.get(
+        `${BASE_URL}/api/app/config?platform=android`,
+      );
+
+      const { latestVersion, forceUpdate, playStoreUrl } = res.data;
+
+      if (forceUpdate && currentVersion !== latestVersion) {
+        Alert.alert(
+          "Update Required",
+          "Please update the app to continue.",
+          [
+            {
+              text: "Update",
+              onPress: () => Linking.openURL(playStoreUrl),
+            },
+          ],
+          { cancelable: false },
+        );
+      }
+    } catch (error) {
+      console.log("Version check failed", error);
+    }
+  };
+  useEffect(() => {
+    checkAppVersion();
+  }, []);
   const checkLock = async () => {
     try {
       const lockEnabled = await AsyncStorage.getItem("appLockEnabled");
@@ -156,6 +194,12 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen
+            name="login"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
             name="dashboard"
             options={{
               headerShown: false,
@@ -189,6 +233,12 @@ export default function RootLayout() {
           />
           <Stack.Screen
             name="resetPasswordScreen"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="forgotPasswordScreen"
             options={{
               headerShown: false,
             }}

@@ -1,7 +1,8 @@
+import AppHeader from "@/src/components/AppHeader";
 import BASE_URL from "@/src/config/config";
-import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -12,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -65,66 +67,67 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Reset Password</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
+        <AppHeader title={String("Reset Password")} videoId="ogns8WiacUI" />
+      </SafeAreaView>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: "#fff" }}
+      >
+        <View style={styles.container}>
+          <View style={styles.form}>
+            <TextInput
+              placeholder="Old Password"
+              placeholderTextColor="#999"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="none"
+              autoComplete="off"
+              style={styles.input}
+              value={oldPassword}
+              onChangeText={setOldPassword}
+            />
 
-      {/* FORM */}
-      <View style={styles.form}>
-        <TextInput
-          placeholder="Old Password"
-          placeholderTextColor="#999"
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          textContentType="none"
-          autoComplete="off"
-          style={styles.input}
-          value={oldPassword}
-          onChangeText={setOldPassword}
-        />
+            <TextInput
+              placeholder="New Password"
+              placeholderTextColor="#999"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="none"
+              autoComplete="off"
+              style={styles.input}
+              value={newPassword}
+              onChangeText={setNewPassword}
+            />
 
-        <TextInput
-          placeholder="New Password"
-          placeholderTextColor="#999"
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          textContentType="none"
-          autoComplete="off"
-          style={styles.input}
-          value={newPassword}
-          onChangeText={setNewPassword}
-        />
+            <TextInput
+              placeholder="Confirm Password"
+              placeholderTextColor="#999"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="none"
+              autoComplete="off"
+              style={styles.input}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
 
-        <TextInput
-          placeholder="Confirm Password"
-          placeholderTextColor="#999"
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          textContentType="none"
-          autoComplete="off"
-          style={styles.input}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-        />
-
-        <TouchableOpacity style={styles.button} onPress={handleReset}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Reset Password</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
+            <TouchableOpacity style={styles.button} onPress={handleReset}>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Reset Password</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    </>
   );
 }
 

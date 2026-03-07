@@ -1,6 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
+import AppHeader from "@/src/components/AppHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -11,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { changeStock, fetchCategories } from "../src/services/inventory";
 
 export default function AddStock() {
@@ -65,64 +67,64 @@ export default function AddStock() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* ─────────────────────────────────────────── */}
-      {/* HEADER */}
-      {/* ─────────────────────────────────────────── */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.headerLeft}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        >
-          <Ionicons name="arrow-back" size={26} color="#fff" />
-        </TouchableOpacity>
+    <>
+      {/* TOP SAFE AREA */}
+      <SafeAreaView edges={["top"]} style={styles.safeTop}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
 
-        <Text style={styles.headerTitle}>Add Stock</Text>
-
-        <TouchableOpacity onPress={saveStock}>
-          <Text style={styles.headerRightText}>Save</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* ─────────────────────────────────────────── */}
-      {/* BODY */}
-      {/* ─────────────────────────────────────────── */}
-      <View style={styles.body}>
-        <Text style={styles.label}>Quantity</Text>
-        <TextInput
-          style={styles.input}
-          value={quantity}
-          onChangeText={setQuantity}
-          keyboardType="numeric"
-          placeholder="Enter quantity"
-        />
-        <Text style={styles.label}>Select Category</Text>
-
-        <FlatList
-          data={categories}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => setSelectedCategoryId(item.id)}
-              style={[
-                styles.categoryItem,
-                selectedCategoryId === item.id && styles.categorySelected,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.categoryText,
-                  selectedCategoryId === item.id && { color: "#fff" },
-                ]}
-              >
-                {item.name}
+        <AppHeader
+          title="Add Stock"
+          rightComponent={
+            <TouchableOpacity onPress={saveStock}>
+              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>
+                Save
               </Text>
             </TouchableOpacity>
-          )}
+          }
         />
-      </View>
-    </View>
+      </SafeAreaView>
+
+      {/* BOTTOM SAFE AREA */}
+      <SafeAreaView edges={["bottom"]} style={styles.safeBottom}>
+        <View style={styles.container}>
+          {/* BODY */}
+          <View style={styles.body}>
+            <Text style={styles.label}>Quantity</Text>
+            <TextInput
+              style={styles.input}
+              value={quantity}
+              onChangeText={setQuantity}
+              keyboardType="numeric"
+              placeholder="Enter quantity"
+            />
+            <Text style={styles.label}>Select Category</Text>
+
+            <FlatList
+              data={categories}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => setSelectedCategoryId(item.id)}
+                  style={[
+                    styles.categoryItem,
+                    selectedCategoryId === item.id && styles.categorySelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      selectedCategoryId === item.id && { color: "#fff" },
+                    ]}
+                  >
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -132,36 +134,8 @@ export default function AddStock() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-
-  /* Header */
-  header: {
-    backgroundColor: "#4f93ff",
-    paddingTop: 45,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    zIndex: 9999, // <-- added
-    elevation: 6, // <-- added
-    position: "relative", // <-- added
-  },
-
-  headerLeft: { width: 40 },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#fff",
-    marginLeft: -40,
-  },
-  headerRightText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-
+  safeTop: { backgroundColor: "#4f93ff" },
+  safeBottom: { flex: 1, backgroundColor: "#fff" },
   /* Body */
   body: {
     flex: 1,

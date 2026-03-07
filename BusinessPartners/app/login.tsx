@@ -2,7 +2,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -115,8 +115,7 @@ export default function LoginScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView edges={["top"]} style={styles.safe}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.container}
@@ -210,7 +209,16 @@ export default function LoginScreen() {
                 </Pressable>
               </View>
             </View>
-
+            {isLogin && (
+              <Pressable
+                onPress={() => router.push("/forgotPasswordScreen")}
+                style={{ alignSelf: "flex-end", marginBottom: 10 }}
+              >
+                <Text style={{ color: "#2563eb", fontWeight: "600" }}>
+                  Forgot Password ?
+                </Text>
+              </Pressable>
+            )}
             {/* Message */}
             {message ? (
               <Text

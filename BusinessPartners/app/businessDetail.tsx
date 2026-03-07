@@ -18,11 +18,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import ScreenHelpVideo from "@/src/components/ScreenHelpVideo";
+import AppHeader from "@/src/components/AppHeader";
 import { generateBusinessStatementPDF } from "@/src/utils/BusinessStatementPDF";
 import { normalizeInvestmentForEdit } from "@/src/utils/InvestmentNormalizer";
 import { useFocusEffect } from "@react-navigation/native";
+import { StatusBar } from "expo-status-bar";
 import { Calendar, DateData } from "react-native-calendars";
+import { SafeAreaView } from "react-native-safe-area-context";
 import InvestmentAudit from "../src/components/InvestmentAudit";
 import BASE_URL from "../src/config/config";
 
@@ -856,10 +858,6 @@ export default function BusinessDetail() {
     );
   };
 
-  const handleSelect = (val: string) => {
-    setSelectedFilter(val);
-    setOpen(false); // ✅ closes the dropdown when selected
-  };
   useEffect(() => {
     if (open) return;
   }, [selectedFilter]);
@@ -912,494 +910,507 @@ export default function BusinessDetail() {
   );
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.headerLeft}>
-          <Ionicons name="arrow-back" size={28} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{String(businessName || "")}</Text>
-        <TouchableOpacity
-          style={styles.headerRight}
-          onPress={() => alert("Header actions comming soon")}
-        >
-          <ScreenHelpVideo videoId="ogns8WiacUI" />
-          {/* <Entypo name="dots-three-vertical" size={24} color="#000" /> */}
-        </TouchableOpacity>
-      </View>
-
-      {open && (
-        <View style={styles.filterOverlay}>
-          <View style={styles.filterBox}>
-            <DropDownPicker
-              open={open}
-              value={selectedFilter}
-              items={items}
-              setOpen={setOpen}
-              setItems={setItems}
-              setValue={setSelectedFilter}
-              listMode="SCROLLVIEW"
-              dropDownDirection="BOTTOM"
-              style={{
-                backgroundColor: "#fff",
-                borderColor: "#ccc",
-                borderRadius: 8,
-              }}
-              dropDownContainerStyle={{
-                backgroundColor: "#fff",
-                borderColor: "#ccc",
-              }}
-            />
-          </View>
-        </View>
-      )}
-      {/* Investment Cards */}
-      <FlatList
-        data={filteredInvestments}
-        keyExtractor={(item, index) => `${item.investmentId}-${index}`}
-        renderItem={({ item, index }) => renderInvestmentCard(item, index)}
-        ListHeaderComponent={
-          <View style={{ paddingHorizontal: 16, paddingTop: 16, zIndex: 10 }}>
-            {/* 🔹 SUMMARY CARD */}
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() =>
-                router.push({
-                  pathname: "/partnerWiseDetails",
-                  params: {
-                    businessId: safeBusinessId,
-                    businessName: safeBusinessName,
-                    investmentDetails: investmentDetails,
-                  },
-                })
-              }
-              style={styles.summaryCardNew}
-            >
-              {/* Header */}
-              <View style={styles.summaryHeaderRow}>
-                <Text style={styles.summaryTitle}>Business Summary</Text>
-
-                {/* 📌 ICON + DROPDOWN BUTTON */}
-                <TouchableOpacity
-                  onPress={() => setSummaryDropdownOpen(!summaryDropdownOpen)}
-                  style={{ flexDirection: "row", alignItems: "center" }}
-                >
-                  <Text
-                    style={{
-                      marginLeft: 6,
-                      fontSize: 12,
-                      fontWeight: "600",
-                      color: "#2563eb",
-                      flexShrink: 0, // IMPORTANT FIX
-                    }}
-                  >
-                    {summaryFilter.toLowerCase()}
-                  </Text>
-
-                  <Ionicons
-                    name={summaryDropdownOpen ? "chevron-up" : "chevron-down"}
-                    size={18}
-                    color="#2563eb"
-                    style={{ marginLeft: 4 }}
-                  />
-                </TouchableOpacity>
+    <>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
+        <AppHeader title={String(businessName || "")} videoId="ogns8WiacUI" />
+      </SafeAreaView>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: "#fff" }}
+      >
+        <View style={styles.container}>
+          {open && (
+            <View style={styles.filterOverlay}>
+              <View style={styles.filterBox}>
+                <DropDownPicker
+                  open={open}
+                  value={selectedFilter}
+                  items={items}
+                  setOpen={setOpen}
+                  setItems={setItems}
+                  setValue={setSelectedFilter}
+                  listMode="SCROLLVIEW"
+                  dropDownDirection="BOTTOM"
+                  style={{
+                    backgroundColor: "#fff",
+                    borderColor: "#ccc",
+                    borderRadius: 8,
+                  }}
+                  dropDownContainerStyle={{
+                    backgroundColor: "#fff",
+                    borderColor: "#ccc",
+                  }}
+                />
               </View>
+            </View>
+          )}
+          {/* Investment Cards */}
+          <FlatList
+            data={filteredInvestments}
+            keyExtractor={(item, index) => `${item.investmentId}-${index}`}
+            renderItem={({ item, index }) => renderInvestmentCard(item, index)}
+            ListHeaderComponent={
+              <View
+                style={{ paddingHorizontal: 16, paddingTop: 16, zIndex: 10 }}
+              >
+                {/* 🔹 SUMMARY CARD */}
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/partnerWiseDetails",
+                      params: {
+                        businessId: safeBusinessId,
+                        businessName: safeBusinessName,
+                        investmentDetails: investmentDetails,
+                      },
+                    })
+                  }
+                  style={styles.summaryCardNew}
+                >
+                  {/* Header */}
+                  <View style={styles.summaryHeaderRow}>
+                    <Text style={styles.summaryTitle}>Business Summary</Text>
 
-              {/* 📌 SMALL DROPDOWN LIST */}
-              {summaryDropdownOpen && (
-                <View style={styles.summaryDropdownBox}>
-                  {summaryOptions.map((opt, index) => (
+                    {/* 📌 ICON + DROPDOWN BUTTON */}
                     <TouchableOpacity
-                      key={index}
-                      onPress={() => {
-                        setSummaryDropdownOpen(false);
-
-                        if (opt === "SELECT DATES") {
-                          setCalendarVisible(true);
-                          setCustomStartDate(null);
-                          setCustomEndDate(null);
-                          setSelectingStart(true);
-                        } else {
-                          setSummaryFilter(opt);
-                        }
-                      }}
-                      style={styles.summaryDropdownItem}
+                      onPress={() =>
+                        setSummaryDropdownOpen(!summaryDropdownOpen)
+                      }
+                      style={{ flexDirection: "row", alignItems: "center" }}
                     >
                       <Text
-                        style={[
-                          styles.summaryDropdownText,
-                          { color: opt === summaryFilter ? "#2563eb" : "#000" },
-                        ]}
+                        style={{
+                          marginLeft: 6,
+                          fontSize: 12,
+                          fontWeight: "600",
+                          color: "#2563eb",
+                          flexShrink: 0, // IMPORTANT FIX
+                        }}
                       >
-                        {opt}
+                        {summaryFilter.toLowerCase()}
                       </Text>
+
+                      <Ionicons
+                        name={
+                          summaryDropdownOpen ? "chevron-up" : "chevron-down"
+                        }
+                        size={18}
+                        color="#2563eb"
+                        style={{ marginLeft: 4 }}
+                      />
                     </TouchableOpacity>
-                  ))}
-                </View>
-              )}
+                  </View>
 
-              {/* Row 1 */}
-              <View style={styles.summaryRowNew}>
-                <View style={styles.summaryBlock}>
-                  <Text style={styles.summaryLabelNew}>Total Investment</Text>
-                  <Text style={styles.summaryValuePrimary}>
-                    ₹{formatAmount(totalInvestment)}
-                  </Text>
-                </View>
+                  {/* 📌 SMALL DROPDOWN LIST */}
+                  {summaryDropdownOpen && (
+                    <View style={styles.summaryDropdownBox}>
+                      {summaryOptions.map((opt, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          onPress={() => {
+                            setSummaryDropdownOpen(false);
 
-                <View style={styles.summaryBlock}>
-                  <Text style={styles.summaryLabelNew}>Total Sold</Text>
-                  <Text style={styles.summaryValuePrimary}>
-                    ₹{formatAmount(totalSoldAmount)}
-                  </Text>
-                </View>
-              </View>
+                            if (opt === "SELECT DATES") {
+                              setCalendarVisible(true);
+                              setCustomStartDate(null);
+                              setCustomEndDate(null);
+                              setSelectingStart(true);
+                            } else {
+                              setSummaryFilter(opt);
+                            }
+                          }}
+                          style={styles.summaryDropdownItem}
+                        >
+                          <Text
+                            style={[
+                              styles.summaryDropdownText,
+                              {
+                                color:
+                                  opt === summaryFilter ? "#2563eb" : "#000",
+                              },
+                            ]}
+                          >
+                            {opt}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
 
-              {/* Divider */}
-              <View style={styles.summaryDivider} />
-
-              {/* Row 2 */}
-              {summaryFilter === "ALL" && (
-                <>
+                  {/* Row 1 */}
                   <View style={styles.summaryRowNew}>
                     <View style={styles.summaryBlock}>
                       <Text style={styles.summaryLabelNew}>
-                        Available Money
+                        Total Investment
                       </Text>
-                      <Text
-                        style={[
-                          styles.summaryValueSecondary,
-                          {
-                            color:
-                              leftOver < 0
-                                ? "#DC2626"
-                                : leftOver > 0
-                                  ? "#16A34A"
-                                  : "#000000",
-                          },
-                        ]}
-                      >
-                        ₹{formatAmount(leftOver)}
+                      <Text style={styles.summaryValuePrimary}>
+                        ₹{formatAmount(totalInvestment)}
                       </Text>
                     </View>
 
                     <View style={styles.summaryBlock}>
-                      <Text style={styles.summaryLabelNew}>
-                        Your Investment
-                      </Text>
-                      <Text
-                        style={[
-                          styles.summaryValueSecondary,
-                          { color: "#2563eb" },
-                        ]}
-                      >
-                        ₹{formatAmount(yourInvestment)}
+                      <Text style={styles.summaryLabelNew}>Total Sold</Text>
+                      <Text style={styles.summaryValuePrimary}>
+                        ₹{formatAmount(totalSoldAmount)}
                       </Text>
                     </View>
                   </View>
-                </>
-              )}
-            </TouchableOpacity>
 
-            {/* 🔹 SUPPLIERS */}
-            {suppliers.length > 0 && (
-              <View style={{ marginTop: 20 }}>
-                <Text
+                  {/* Divider */}
+                  <View style={styles.summaryDivider} />
+
+                  {/* Row 2 */}
+                  {summaryFilter === "ALL" && (
+                    <>
+                      <View style={styles.summaryRowNew}>
+                        <View style={styles.summaryBlock}>
+                          <Text style={styles.summaryLabelNew}>
+                            Available Money
+                          </Text>
+                          <Text
+                            style={[
+                              styles.summaryValueSecondary,
+                              {
+                                color:
+                                  leftOver < 0
+                                    ? "#DC2626"
+                                    : leftOver > 0
+                                      ? "#16A34A"
+                                      : "#000000",
+                              },
+                            ]}
+                          >
+                            ₹{formatAmount(leftOver)}
+                          </Text>
+                        </View>
+
+                        <View style={styles.summaryBlock}>
+                          <Text style={styles.summaryLabelNew}>
+                            Your Investment
+                          </Text>
+                          <Text
+                            style={[
+                              styles.summaryValueSecondary,
+                              { color: "#2563eb" },
+                            ]}
+                          >
+                            ₹{formatAmount(yourInvestment)}
+                          </Text>
+                        </View>
+                      </View>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {/* 🔹 SUPPLIERS */}
+                {suppliers.length > 0 && (
+                  <View style={{ marginTop: 20 }}>
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: "700",
+                        marginBottom: 10,
+                        color: "#000",
+                      }}
+                    >
+                      Suppliers
+                    </Text>
+                    {suppliers.map((s) => renderSupplierCard(s))}
+                  </View>
+                )}
+
+                {/* 🔹 FILTER SECTION */}
+                <View
                   style={{
-                    fontSize: 18,
-                    fontWeight: "700",
-                    marginBottom: 10,
-                    color: "#000",
+                    marginBottom: 12,
+                    zIndex: 2000,
+                    elevation: 2000,
                   }}
                 >
-                  Suppliers
-                </Text>
-                {suppliers.map((s) => renderSupplierCard(s))}
-              </View>
-            )}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Text style={{ fontSize: 16, fontWeight: "600" }}>
+                      {currentLabel}
+                    </Text>
 
-            {/* 🔹 FILTER SECTION */}
-            <View
-              style={{
-                marginBottom: 12,
-                zIndex: 2000,
-                elevation: 2000,
+                    <View
+                      style={{ flexDirection: "row", alignItems: "center" }}
+                    >
+                      <TouchableOpacity
+                        onPress={() =>
+                          generateBusinessStatementPDF({
+                            businessName: safeBusinessName,
+                            downloadedBy: userName || "Unknown",
+                            transactions: filteredInvestments,
+                          })
+                        }
+                        style={{ marginRight: 12 }}
+                      >
+                        <Ionicons
+                          name="document-text-outline"
+                          size={24}
+                          color="#DC2626"
+                        />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={() => setOpen((prev) => !prev)}
+                      >
+                        <Ionicons
+                          name={open ? "filter-circle" : "filter"}
+                          size={24}
+                          color="#333"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            }
+            contentContainerStyle={{
+              paddingBottom: 180,
+            }}
+            onEndReached={loadMoreInvestments}
+            onEndReachedThreshold={0.4}
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchInvestments(0, true);
+            }}
+            ListFooterComponent={
+              loadingInvestments ? (
+                <ActivityIndicator size="small" color="#4f93ff" />
+              ) : null
+            }
+            ListEmptyComponent={
+              <View style={styles.noDataContainer}>
+                <Image
+                  source={require("../assets/stickers/no-transaction.png")}
+                  style={styles.sticker}
+                  resizeMode="contain"
+                />
+                <Text style={styles.noDataText}>No Transaction's found</Text>
+              </View>
+            }
+            removeClippedSubviews={false}
+          />
+          <View style={styles.fabContainer}>
+            <TouchableOpacity
+              style={styles.fab}
+              onPress={() => {
+                router.push({
+                  pathname: "/AddTransactionScreen",
+                  params: {
+                    businessId: safeBusinessId,
+                    businessName: safeBusinessName,
+                    cropDetails: JSON.stringify(cropDetails),
+                  },
+                });
               }}
             >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text style={{ fontSize: 16, fontWeight: "600" }}>
-                  {currentLabel}
+              <Text style={styles.fabText}>+</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Bottom Footer Buttons */}
+          <View style={styles.bottomButtonsContainer}>
+            <TouchableOpacity
+              style={styles.bottomButtonIcon}
+              onPress={() => router.back()}
+            >
+              <Ionicons name="home" size={28} color="#4f93ff" />
+              <Text style={styles.bottomButtonText}>Home</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.bottomButtonIcon}
+              onPress={() =>
+                router.push({
+                  pathname: "/businessNews",
+                  params: {
+                    businessId: safeBusinessId,
+                    businessName: safeBusinessName,
+                    cropId: cropDetails?.id,
+                  },
+                })
+              }
+            >
+              <Ionicons name="newspaper" size={28} color="#4f93ff" />
+              <Text style={styles.bottomButtonText}>News</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.bottomButtonIcon}
+              onPress={() =>
+                router.push({
+                  pathname: "/inventoryScreen",
+                  params: {
+                    businessId: safeBusinessId,
+                    businessName: safeBusinessName,
+                  },
+                })
+              }
+              //onPress={() => alert("Inventory Feature coming soon")}
+            >
+              <Ionicons name="cube" size={28} color="#4f93ff" />
+              <Text style={styles.bottomButtonText}>Inventory</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.bottomButtonIcon}
+              //onPress={() => alert("History Feature coming soon")}
+              onPress={() =>
+                router.push({
+                  pathname: "/ChangeHistoryScreen",
+                  params: {
+                    businessId,
+                    businessName,
+                  },
+                })
+              }
+            >
+              <Ionicons name="time" size={28} color="#4f93ff" />
+              <Text style={styles.bottomButtonText}>History</Text>
+            </TouchableOpacity>
+          </View>
+
+          {showAuditPopup && (
+            <InvestmentAudit
+              businessId={String(businessId || "")}
+              businessName={String(businessName || "")}
+              visible={showAuditPopup}
+              onClose={() => setShowAuditPopup(false)}
+            />
+          )}
+
+          {calendarVisible && (
+            <View style={styles.popupOverlay}>
+              <View style={[styles.popupContent, { padding: 10 }]}>
+                <Text
+                  style={{ fontSize: 16, fontWeight: "700", marginBottom: 10 }}
+                >
+                  Select Date Range
                 </Text>
 
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <TouchableOpacity
-                    onPress={() =>
-                      generateBusinessStatementPDF({
-                        businessName: safeBusinessName,
-                        downloadedBy: userName || "Unknown",
-                        transactions: filteredInvestments,
-                      })
+                <Calendar
+                  markingType="period"
+                  onDayPress={(day: DateData) => {
+                    if (selectingStart) {
+                      setCustomStartDate(day.dateString);
+                      setCustomEndDate(null);
+                      setSelectingStart(false);
+                    } else {
+                      if (customStartDate && day.dateString < customStartDate) {
+                        Alert.alert("End date must be after start date");
+                        return;
+                      }
+                      setCustomEndDate(day.dateString);
                     }
-                    style={{ marginRight: 12 }}
+                  }}
+                  markedDates={{
+                    ...(customStartDate && {
+                      [customStartDate]: {
+                        startingDay: true,
+                        color: "#2563eb",
+                        textColor: "#fff",
+                      },
+                    }),
+                    ...(customEndDate && {
+                      [customEndDate]: {
+                        endingDay: true,
+                        color: "#2563eb",
+                        textColor: "#fff",
+                      },
+                    }),
+                  }}
+                />
+
+                <View style={{ flexDirection: "row", marginTop: 12 }}>
+                  <TouchableOpacity
+                    style={styles.moveBtn}
+                    onPress={() => {
+                      if (!customStartDate) {
+                        Alert.alert("Please select a date");
+                        return;
+                      }
+
+                      const finalEndDate = customEndDate || customStartDate;
+
+                      setCalendarVisible(false);
+                      setSummaryFilter("SELECT DATES");
+
+                      fetchSummaryByDateRange(customStartDate, finalEndDate);
+                    }}
                   >
-                    <Ionicons
-                      name="document-text-outline"
-                      size={24}
-                      color="#DC2626"
-                    />
+                    <Text style={styles.buttonText}>Apply</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity onPress={() => setOpen((prev) => !prev)}>
-                    <Ionicons
-                      name={open ? "filter-circle" : "filter"}
-                      size={24}
-                      color="#333"
-                    />
+                  <TouchableOpacity
+                    style={styles.cancelBtn}
+                    onPress={() => setCalendarVisible(false)}
+                  >
+                    <Text style={styles.buttonText}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
-          </View>
-        }
-        contentContainerStyle={{
-          paddingBottom: 180,
-        }}
-        onEndReached={loadMoreInvestments}
-        onEndReachedThreshold={0.4}
-        refreshing={refreshing}
-        onRefresh={() => {
-          setRefreshing(true);
-          fetchInvestments(0, true);
-        }}
-        ListFooterComponent={
-          loadingInvestments ? (
-            <ActivityIndicator size="small" color="#4f93ff" />
-          ) : null
-        }
-        ListEmptyComponent={
-          <View style={styles.noDataContainer}>
-            <Image
-              source={require("../assets/stickers/no-transaction.png")}
-              style={styles.sticker}
-              resizeMode="contain"
-            />
-            <Text style={styles.noDataText}>No Transaction's found</Text>
-          </View>
-        }
-        removeClippedSubviews={false}
-      />
-      <View style={styles.fabContainer}>
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => {
-            router.push({
-              pathname: "/AddTransactionScreen",
-              params: {
-                businessId: safeBusinessId,
-                businessName: safeBusinessName,
-                cropDetails: JSON.stringify(cropDetails),
-              },
-            });
-          }}
-        >
-          <Text style={styles.fabText}>+</Text>
-        </TouchableOpacity>
-      </View>
+          )}
 
-      {/* Bottom Footer Buttons */}
-      <View style={styles.bottomButtonsContainer}>
-        <TouchableOpacity
-          style={styles.bottomButtonIcon}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="home" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.bottomButtonIcon}
-          onPress={() =>
-            router.push({
-              pathname: "/businessNews",
-              params: {
-                businessId: safeBusinessId,
-                businessName: safeBusinessName,
-                cropId: cropDetails?.id,
-              },
-            })
-          }
-        >
-          <Ionicons name="newspaper" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>News</Text>
-        </TouchableOpacity>
+          {confirmRestart && confirmRestart.length > 0 && (
+            <View style={styles.popupOverlay}>
+              <View style={styles.popupContent}>
+                <Text style={styles.popupTitle}>
+                  Do you really want to restart crop?{"\n"}Leftover money exists
+                  for some partners.
+                </Text>
 
-        <TouchableOpacity
-          style={styles.bottomButtonIcon}
-          onPress={() =>
-            router.push({
-              pathname: "/inventoryScreen",
-              params: {
-                businessId: safeBusinessId,
-                businessName: safeBusinessName,
-              },
-            })
-          }
-          //onPress={() => alert("Inventory Feature coming soon")}
-        >
-          <Ionicons name="cube" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>Inventory</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.bottomButtonIcon}
-          //onPress={() => alert("History Feature coming soon")}
-          onPress={() =>
-            router.push({
-              pathname: "/ChangeHistoryScreen",
-              params: {
-                businessId,
-                businessName,
-              },
-            })
-          }
-        >
-          <Ionicons name="time" size={28} color="#4f93ff" />
-          <Text style={styles.bottomButtonText}>History</Text>
-        </TouchableOpacity>
-      </View>
-
-      {showAuditPopup && (
-        <InvestmentAudit
-          businessId={String(businessId || "")}
-          businessName={String(businessName || "")}
-          visible={showAuditPopup}
-          onClose={() => setShowAuditPopup(false)}
-        />
-      )}
-
-      {calendarVisible && (
-        <View style={styles.popupOverlay}>
-          <View style={[styles.popupContent, { padding: 10 }]}>
-            <Text style={{ fontSize: 16, fontWeight: "700", marginBottom: 10 }}>
-              Select Date Range
-            </Text>
-
-            <Calendar
-              markingType="period"
-              onDayPress={(day: DateData) => {
-                if (selectingStart) {
-                  setCustomStartDate(day.dateString);
-                  setCustomEndDate(null);
-                  setSelectingStart(false);
-                } else {
-                  if (customStartDate && day.dateString < customStartDate) {
-                    Alert.alert("End date must be after start date");
-                    return;
-                  }
-                  setCustomEndDate(day.dateString);
-                }
-              }}
-              markedDates={{
-                ...(customStartDate && {
-                  [customStartDate]: {
-                    startingDay: true,
-                    color: "#2563eb",
-                    textColor: "#fff",
-                  },
-                }),
-                ...(customEndDate && {
-                  [customEndDate]: {
-                    endingDay: true,
-                    color: "#2563eb",
-                    textColor: "#fff",
-                  },
-                }),
-              }}
-            />
-
-            <View style={{ flexDirection: "row", marginTop: 12 }}>
-              <TouchableOpacity
-                style={styles.moveBtn}
-                onPress={() => {
-                  if (!customStartDate) {
-                    Alert.alert("Please select a date");
-                    return;
-                  }
-
-                  const finalEndDate = customEndDate || customStartDate;
-
-                  setCalendarVisible(false);
-                  setSummaryFilter("SELECT DATES");
-
-                  fetchSummaryByDateRange(customStartDate, finalEndDate);
-                }}
-              >
-                <Text style={styles.buttonText}>Apply</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setCalendarVisible(false)}
-              >
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {confirmRestart && confirmRestart.length > 0 && (
-        <View style={styles.popupOverlay}>
-          <View style={styles.popupContent}>
-            <Text style={styles.popupTitle}>
-              Do you really want to restart crop?{"\n"}Leftover money exists for
-              some partners.
-            </Text>
-
-            <View style={styles.leftoverList}>
-              {confirmRestart.map((p, idx) => (
-                <View key={idx} style={styles.leftoverItem}>
-                  <Text style={styles.partnerName}>
-                    {String(p.partnerName)}
-                  </Text>
-                  <Text style={styles.partnerAmount}>
-                    ₹{formatAmount(p.leftOver)}
-                  </Text>
+                <View style={styles.leftoverList}>
+                  {confirmRestart.map((p, idx) => (
+                    <View key={idx} style={styles.leftoverItem}>
+                      <Text style={styles.partnerName}>
+                        {String(p.partnerName)}
+                      </Text>
+                      <Text style={styles.partnerAmount}>
+                        ₹{formatAmount(p.leftOver)}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
+
+                <View style={styles.popupButtons}>
+                  <TouchableOpacity
+                    style={styles.moveBtn}
+                    onPress={handleRestartCrop}
+                  >
+                    <Text style={styles.buttonText}>Move</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.withdrawBtn}
+                    onPress={handleWithdrawFromPopup}
+                  >
+                    <Text style={styles.buttonText}>Withdraw</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.cancelBtn}
+                    onPress={() => setConfirmRestart([])}
+                  >
+                    <Text style={styles.buttonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-
-            <View style={styles.popupButtons}>
-              <TouchableOpacity
-                style={styles.moveBtn}
-                onPress={handleRestartCrop}
-              >
-                <Text style={styles.buttonText}>Move</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.withdrawBtn}
-                onPress={handleWithdrawFromPopup}
-              >
-                <Text style={styles.buttonText}>Withdraw</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setConfirmRestart([])}
-              >
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          )}
         </View>
-      )}
-    </View>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -1733,7 +1744,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-evenly",
     alignItems: "center",
     paddingVertical: 8,
-    paddingBottom: 30, // safe area spacing
+    paddingBottom: 5,
     borderTopWidth: 1,
     borderColor: "#e0e0e0",
     backgroundColor: "#fff",

@@ -1,7 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
+import AppHeader from "@/src/components/AppHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useState } from "react";
 import {
   FlatList,
@@ -10,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import CategoryCard from "../src/components/CategoryCard";
 import { fetchCategories } from "../src/services/inventory";
 
@@ -51,98 +53,102 @@ export default function InventoryScreen() {
     }
   };
 
-  const handleBack = () => router.back();
-
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.headerLeft}>
-          <Ionicons name="arrow-back" size={28} color="#fff" />
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>{businessName ?? "Inventory"}</Text>
-
-        <TouchableOpacity
-          onPress={() =>
-            router.push({
-              pathname: "/addCategory",
-              params: { businessId },
-            })
+    <>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
+        <StatusBar style="light" backgroundColor="#4f93ff" />
+        <AppHeader
+          title={String("Inventory")}
+          videoId="ogns8WiacUI"
+          rightComponent={
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: "/addCategory",
+                  params: { businessId },
+                })
+              }
+            >
+              <Text style={styles.addText}>Add Category</Text>
+            </TouchableOpacity>
           }
-        >
-          <Text style={styles.addText}>Add Category</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Category list */}
-      <FlatList
-        data={categories}
-        keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
-        ListEmptyComponent={
-          <Text style={styles.empty}>
-            No categories yet. Click "Add Category".
-          </Text>
-        }
-        renderItem={({ item }) => (
-          <CategoryCard
-            category={item}
-            onPress={() =>
-              router.push({
-                pathname: "/categoryDetails",
-                params: { categoryId: item.id },
-              })
+        />
+      </SafeAreaView>
+      <SafeAreaView
+        edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: "#fff" }}
+      >
+        <View style={styles.container}>
+          {/* Category list */}
+          <FlatList
+            data={categories}
+            keyExtractor={(item) => String(item.id)}
+            contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+            ListEmptyComponent={
+              <Text style={styles.empty}>
+                No categories yet. Click "Add Category".
+              </Text>
             }
+            renderItem={({ item }) => (
+              <CategoryCard
+                category={item}
+                onPress={() =>
+                  router.push({
+                    pathname: "/categoryDetails",
+                    params: { categoryId: item.id },
+                  })
+                }
+              />
+            )}
           />
-        )}
-      />
 
-      {/* FOOTER BUTTONS */}
-      <View style={styles.footer}>
-        {/* Add Stock */}
-        <TouchableOpacity
-          style={[styles.footerBtn, styles.addStockBtn]}
-          onPress={() => {
-            if (categories.length === 0) {
-              return alert("Please add at least one category first.");
-            }
+          {/* FOOTER BUTTONS */}
+          <View style={styles.footer}>
+            {/* Add Stock */}
+            <TouchableOpacity
+              style={[styles.footerBtn, styles.addStockBtn]}
+              onPress={() => {
+                if (categories.length === 0) {
+                  return alert("Please add at least one category first.");
+                }
 
-            router.push({
-              pathname: "/addStock",
-              params: { businessId },
-            });
-          }}
-        >
-          <Text style={styles.footerBtnText}>Add</Text>
-        </TouchableOpacity>
+                router.push({
+                  pathname: "/addStock",
+                  params: { businessId },
+                });
+              }}
+            >
+              <Text style={styles.footerBtnText}>Add</Text>
+            </TouchableOpacity>
 
-        {/* Consume Stock */}
-        <TouchableOpacity
-          style={[styles.footerBtn, styles.consumeBtn]}
-          onPress={() => {
-            if (categories.length === 0) {
-              return alert("Please add at least one category first.");
-            }
+            {/* Consume Stock */}
+            <TouchableOpacity
+              style={[styles.footerBtn, styles.consumeBtn]}
+              onPress={() => {
+                if (categories.length === 0) {
+                  return alert("Please add at least one category first.");
+                }
 
-            const hasStock = categories.some(
-              (c: any) => Number(c.availableQuantity) > 0,
-            );
+                const hasStock = categories.some(
+                  (c: any) => Number(c.availableQuantity) > 0,
+                );
 
-            if (!hasStock) {
-              return alert("No stock available to consume.");
-            }
+                if (!hasStock) {
+                  return alert("No stock available to consume.");
+                }
 
-            router.push({
-              pathname: "/consumeStock",
-              params: { businessId },
-            });
-          }}
-        >
-          <Text style={styles.footerBtnText}>Consume</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+                router.push({
+                  pathname: "/consumeStock",
+                  params: { businessId },
+                });
+              }}
+            >
+              <Text style={styles.footerBtnText}>Consume</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -151,25 +157,7 @@ export default function InventoryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 40,
-    paddingBottom: 12,
-    backgroundColor: "#4f93ff",
-  },
-
   headerLeft: { width: 40 },
-
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#fff",
-  },
 
   addText: { color: "#fff", fontWeight: "600" },
 
@@ -184,7 +172,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 30,
+    padding: 5,
     borderTopWidth: 1,
     borderColor: "#eee",
     backgroundColor: "#fff",

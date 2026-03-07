@@ -24,7 +24,7 @@ const ScreenHelpVideo: React.FC<ScreenHelpVideoProps> = ({ videoId }) => {
     <>
       {/* YouTube Icon */}
       <TouchableOpacity onPress={() => setVisible(true)}>
-        <Ionicons name="logo-youtube" size={35} color="red" />
+        <Ionicons name="logo-youtube" size={25} color="red" />
       </TouchableOpacity>
 
       {/* Fullscreen Modal */}

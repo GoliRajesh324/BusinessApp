@@ -25,17 +25,18 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
   return (
     <View style={styles.header}>
-      {/* LEFT */}{" "}
+      {/* LEFT */}
       <View style={styles.left}>
         {showBack && (
           <TouchableOpacity onPress={() => router.back()}>
-            {" "}
-            <Ionicons name="arrow-back" size={26} color="#fff" />{" "}
+            <Ionicons name="arrow-back" size={26} color="#fff" />
           </TouchableOpacity>
-        )}{" "}
+        )}
       </View>
+
       {/* TITLE */}
       <Text style={styles.title}>{title}</Text>
+
       {/* RIGHT */}
       <View style={styles.right}>
         {videoId && (
@@ -64,8 +65,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 40,
-    paddingBottom: 12,
+    paddingVertical: 10,
+    paddingBottom: 6,
     backgroundColor: "#4f93ff",
   },
 

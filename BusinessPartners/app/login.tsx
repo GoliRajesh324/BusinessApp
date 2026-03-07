@@ -85,11 +85,11 @@ export default function LoginScreen() {
           return;
         }
 
-        await AsyncStorage.setItem("token", res?.data?.token);
-        await AsyncStorage.setItem("userId", res?.data?.userId.toString());
-        await AsyncStorage.setItem("userName", res?.data?.username);
-        await AsyncStorage.setItem("email", res?.data?.email);
-        await AsyncStorage.setItem("phone", res?.data?.phone);
+        await AsyncStorage.setItem("token", res.data.token);
+        await AsyncStorage.setItem("userId", String(res.data.userId));
+        await AsyncStorage.setItem("userName", res.data.username);
+        await AsyncStorage.setItem("email", res.data.email);
+        await AsyncStorage.setItem("phone", res.data.phone);
 
         setMessage("Login successful!");
         router.replace("/dashboard"); // ✅ route to dashboard

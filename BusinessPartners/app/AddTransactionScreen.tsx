@@ -1,6 +1,7 @@
 // AddInvestmentPopup.tsx
 import AppHeader from "@/src/components/AppHeader";
 import SupplierPopup from "@/src/components/SupplierPopup";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -88,6 +89,16 @@ const AddTransactionScreen = () => {
 
   const [images, setImages] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("addTransaction");
+    setVideoId(id);
+  };
   useEffect(() => {
     const load = async () => {
       const t = await AsyncStorage.getItem("token");
@@ -103,13 +114,20 @@ const AddTransactionScreen = () => {
       try {
         const response = await fetch(
           `${BASE_URL}/api/business/${businessId}/partners`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
         );
 
-        const text = await response.text();
-        if (!response.ok || !text) return;
+        if (!response.ok) {
+          console.log("Failed to fetch partners");
+          return;
+        }
 
-        const data = JSON.parse(text);
+        const data = await response.json();
 
         if (data?.partners) {
           setPartners(
@@ -119,6 +137,8 @@ const AddTransactionScreen = () => {
               share: p.share,
             })),
           );
+        } else {
+          setPartners([]);
         }
       } catch (err) {
         console.log("Error fetching partners", err);
@@ -153,21 +173,24 @@ const AddTransactionScreen = () => {
         const response = await fetch(
           `${BASE_URL}/api/business/${businessId}/business-details-by-id`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           },
         );
 
-        const text = await response.text();
-        if (!response.ok || !text) {
+        if (!response.ok) {
           console.warn("⚠️ No data returned from business-details-by-id");
           return;
         }
 
-        const data = JSON.parse(text);
-        setInvestmentDetails(data.investmentDetails || []);
+        const data = await response.json();
+
+        setInvestmentDetails(data?.investmentDetails || []);
 
         // ✅ Map backend structure correctly
-        const mappedRows: PartnerRow[] = (data.investmentDetails || []).map(
+        const mappedRows: PartnerRow[] = (data?.investmentDetails || []).map(
           (inv: any) => ({
             id: inv.partner?.partnerId?.toString() || "",
             name: inv.partner?.username || "Unknown",
@@ -183,7 +206,9 @@ const AddTransactionScreen = () => {
             reduceLeftOver: "",
           }),
         );
+
         console.log({ mappedRows });
+
         if (mappedRows.length > 0) {
           setRows(mappedRows);
         }
@@ -191,7 +216,6 @@ const AddTransactionScreen = () => {
         console.log("❌ Error fetching business info:", err);
       }
     };
-
     fetchBusinessInfo();
   }, [businessId, token]);
 
@@ -581,6 +605,7 @@ const AddTransactionScreen = () => {
 
       return {};
     });
+
     try {
       // 1️⃣ Create form data
       const formData = new FormData();
@@ -707,7 +732,7 @@ const AddTransactionScreen = () => {
         <StatusBar style="light" backgroundColor="#4f93ff" />
         <AppHeader
           title={String("Add Transaction")}
-          videoId="ogns8WiacUI"
+          videoId={videoId}
           rightComponent={
             <TouchableOpacity
               onPress={handleSave}

@@ -1,4 +1,5 @@
 import AppHeader from "@/src/components/AppHeader";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -51,6 +52,16 @@ export default function BusinessNews() {
     load();
   }, []);
 
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("businessNews");
+    setVideoId(id);
+  };
   /* ---------------- RESET ON SCREEN FOCUS ---------------- */
   useFocusEffect(
     useCallback(() => {
@@ -171,7 +182,7 @@ export default function BusinessNews() {
     <>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
-        <AppHeader title={String("Business News")} videoId="ogns8WiacUI" />
+        <AppHeader title={String("Business News")} videoId={videoId} />
       </SafeAreaView>
       <SafeAreaView
         edges={["bottom"]}

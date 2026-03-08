@@ -19,8 +19,10 @@ import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import AppHeader from "@/src/components/AppHeader";
+import { InvestmentDTO } from "@/src/types/types";
 import { generateBusinessStatementPDF } from "@/src/utils/BusinessStatementPDF";
 import { normalizeInvestmentForEdit } from "@/src/utils/InvestmentNormalizer";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { Calendar, DateData } from "react-native-calendars";
@@ -120,6 +122,16 @@ export default function BusinessDetail() {
     { label: "Everyone's Transactions", value: "allInvestments" },
   ]);
 
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("businessDetail");
+    setVideoId(id);
+  };
   useEffect(() => {
     if (!businessId || !token) return;
     fetchSuppliers();
@@ -167,7 +179,6 @@ export default function BusinessDetail() {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
           },
         },
       );
@@ -176,9 +187,9 @@ export default function BusinessDetail() {
         throw new Error("Failed to fetch supplier investments");
       }
 
-      const data = await response.json();
+      const data: InvestmentDTO[] = await response.json();
 
-      if (!data || data.length === 0) {
+      if (!Array.isArray(data) || data.length === 0) {
         Alert.alert("No transactions found for this supplier");
         return;
       }
@@ -189,7 +200,7 @@ export default function BusinessDetail() {
         params: {
           businessId: safeBusinessId,
           businessName: safeBusinessName,
-          investmentData: JSON.stringify(normalizeInvestmentForEdit(data)), // 🔥 important
+          investmentData: JSON.stringify(normalizeInvestmentForEdit(data)),
         },
       });
     } catch (error) {
@@ -209,16 +220,16 @@ export default function BusinessDetail() {
       );
 
       if (!res.ok) throw new Error("Failed to fetch suppliers");
+
       const data = await res.json();
 
-      // ✅ type accumulator and final cast
       const grouped: Supplier[] = Object.values(
         data.reduce((acc: Record<number, Supplier>, item: any) => {
           if (!acc[item.supplierId]) {
             acc[item.supplierId] = {
               supplierId: item.supplierId,
               supplierName: item.supplierName,
-              pendingAmount: item.pendingAmount || 0,
+              pendingAmount: item.pendingAmount ?? 0,
               partners: [],
             };
           }
@@ -226,18 +237,18 @@ export default function BusinessDetail() {
           acc[item.supplierId].partners.push({
             partnerId: item.partnerId,
             username: item.partnerName,
-            paidAmount: item.amountPaid || 0,
-            pendingAmount: item.amountPending || 0,
+            paidAmount: item.amountPaid ?? 0,
+            pendingAmount: item.amountPending ?? 0,
           });
 
           return acc;
         }, {}),
       );
 
-      setSuppliers(grouped); // ✅ now works
+      setSuppliers(grouped);
     } catch (err) {
       console.log(err);
-      alert("Error fetching suppliers");
+      Alert.alert("Error", "Error fetching suppliers");
     }
   };
 
@@ -311,19 +322,27 @@ export default function BusinessDetail() {
     if (!token || !safeBusinessId) return;
 
     try {
-      //console.log(`📅 Fetching summary for range: ${startDate} to ${endDate}`);
-
       const response = await fetch(
         `${BASE_URL}/api/business/${safeBusinessId}/business-details-by-id-and-date?startDate=${startDate}&endDate=${endDate}`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         },
       );
+
+      if (!response.ok) {
+        console.warn("⚠️ Failed to fetch summary by date range");
+        return;
+      }
 
       const data = await response.json();
 
       setTotalInvestment(data?.totalInvestment || 0);
       setTotalSoldAmount(data?.totalSoldAmount || 0);
+
+      // keeping same behavior as your existing logic
       setYourInvestment(0);
       setLeftOver(0);
     } catch (err) {
@@ -376,28 +395,39 @@ export default function BusinessDetail() {
   // Fetch business info
   useEffect(() => {
     if (!token || !safeBusinessId) return;
+
     const fetchBusinessInfo = async () => {
       try {
         const response = await fetch(
           `${BASE_URL}/api/business/${safeBusinessId}/business-details-by-id`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
         );
-        const text = await response.text();
-        if (!response.ok || !text) return;
-        const data = JSON.parse(text);
 
-        setTotalInvestment(data.totalInvestment || 0);
-        setTotalSoldAmount(data.totalSoldAmount || 0);
-        setInvestmentDetails(data.investmentDetails || []);
+        if (!response.ok) {
+          console.warn("⚠️ Failed to fetch business info");
+          return;
+        }
 
-        if (data.crop) {
+        const data = await response.json();
+
+        setTotalInvestment(data?.totalInvestment || 0);
+        setTotalSoldAmount(data?.totalSoldAmount || 0);
+        setInvestmentDetails(data?.investmentDetails || []);
+
+        if (data?.crop) {
           setCropDetails({
             id: data.crop.id,
             cropNumber: data.crop.cropNumber,
           });
         }
+
         console.log("📊 Business id:", safeBusinessId);
-        console.log("📊 Business details fetched:", data.crop);
+        console.log("📊 Business details fetched:", data?.crop);
       } catch (err) {
         console.log("❌ Error fetching business info:", err);
       }
@@ -405,7 +435,6 @@ export default function BusinessDetail() {
 
     fetchBusinessInfo();
   }, [safeBusinessId, token]);
-
   // Fetch partners
   useEffect(() => {
     if (!token || !safeBusinessId) return;
@@ -414,11 +443,17 @@ export default function BusinessDetail() {
       try {
         const response = await fetch(
           `${BASE_URL}/api/business/${safeBusinessId}/partners`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
         );
-        const text = await response.text();
-        if (!response.ok || !text) return;
-        const data = JSON.parse(text);
+
+        if (!response.ok) return;
+
+        const data = await response.json();
 
         if (data?.partners) {
           setPartners(
@@ -430,13 +465,12 @@ export default function BusinessDetail() {
           );
         }
       } catch (err) {
-        //console.log("❌ Error fetching partners:", err);
+        // console.log("❌ Error fetching partners:", err);
       }
     };
 
     fetchPartners();
   }, [safeBusinessId, token]);
-
   useEffect(() => {
     if (!userName || !investmentDetails.length) return;
 
@@ -468,17 +502,13 @@ export default function BusinessDetail() {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
           },
         },
       );
 
       if (!response.ok) throw new Error("Failed to fetch investments");
 
-      const text = await response.text();
-      if (!text) return;
-
-      const data = JSON.parse(text);
+      const data = await response.json();
 
       const content = data?.content || [];
 
@@ -500,23 +530,34 @@ export default function BusinessDetail() {
 
   const fetchBusinessDetails = async () => {
     if (!token || !safeBusinessId) return;
+
     try {
       const response = await fetch(
         `${BASE_URL}/api/business/${safeBusinessId}/business-details-by-id`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
       );
+
+      if (!response.ok) {
+        console.warn("⚠️ Failed to fetch business details");
+        return;
+      }
 
       const data = await response.json();
 
       // 🧮 Safely update top-level totals
       setTotalInvestment(data?.totalInvestment || 0);
       setTotalSoldAmount(data?.totalSoldAmount || 0);
+
       setInvestmentDetails(
         Array.isArray(data?.investmentDetails) ? data.investmentDetails : [],
       );
-      setCropDetails(data?.crop || null);
 
-      setInvestmentDetails(data.investmentDetails || []);
+      setCropDetails(data?.crop || null);
     } catch (err) {
       //console.log("❌ Error fetching business details:", err);
     }
@@ -682,26 +723,6 @@ export default function BusinessDetail() {
       </TouchableOpacity>
     );
   };
-
-  const handlePopupSave = async ({ investmentData }: any) => {
-    try {
-      const response = await axios.post(
-        `${BASE_URL}/api/investment/add-investment`,
-        investmentData,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      const investmentGroupId = response?.data;
-      //console.log("➡️ Investment Group ID:", investmentGroupId);
-
-      // refresh investments list
-      await fetchBusinessDetails();
-      fetchInvestments();
-    } catch (error) {
-      //console.log(error);
-    }
-  };
-
-  const handleBack = () => router.back();
 
   // Render a small label-value row
   const RowKV = ({ k, v }: { k: string; v: any }) => (
@@ -913,7 +934,7 @@ export default function BusinessDetail() {
     <>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
-        <AppHeader title={String(businessName || "")} videoId="ogns8WiacUI" />
+        <AppHeader title={String(businessName || "")} videoId={videoId} />
       </SafeAreaView>
       <SafeAreaView
         edges={["bottom"]}

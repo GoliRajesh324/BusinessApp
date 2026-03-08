@@ -1,3 +1,4 @@
+import { InvestmentDTO } from "@/src/types/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -40,7 +41,6 @@ const CropDetailsPage = () => {
       fetchInvestments();
     }
   }, [businessId, token]);
-
   const fetchInvestments = async () => {
     try {
       const response = await fetch(
@@ -49,7 +49,6 @@ const CropDetailsPage = () => {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
           },
         },
       );
@@ -57,10 +56,16 @@ const CropDetailsPage = () => {
       if (!response.ok) throw new Error("Failed to fetch investments");
 
       const data = await response.json();
+
+      const content: InvestmentDTO[] = Array.isArray(data?.content)
+        ? data.content
+        : [];
+
       setInvestments(
-        Array.isArray(data)
-          ? data.sort((a, b) => b.investmentId - a.investmentId)
-          : [],
+        [...content].sort(
+          (a: InvestmentDTO, b: InvestmentDTO) =>
+            (b.investmentId ?? 0) - (a.investmentId ?? 0),
+        ),
       );
     } catch (err) {
       console.log(err);

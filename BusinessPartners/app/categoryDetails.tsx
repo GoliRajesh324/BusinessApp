@@ -1,4 +1,5 @@
 import AppHeader from "@/src/components/AppHeader";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -21,6 +22,16 @@ export default function CategoryDetails() {
   const [category, setCategory] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("categoryDetail");
+    setVideoId(id);
+  };
   /* ---------------- Load Category Details ---------------- */
   useEffect(() => {
     (async () => {
@@ -77,7 +88,7 @@ export default function CategoryDetails() {
         <StatusBar style="light" backgroundColor="#4f93ff" />
         <AppHeader
           title={String("Category Details")}
-          videoId="ogns8WiacUI"
+          videoId={videoId}
           rightComponent={
             <TouchableOpacity onPress={handleEdit}>
               <Text style={styles.headerRightText}>Edit</Text>

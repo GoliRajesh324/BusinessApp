@@ -1,4 +1,5 @@
 import AppHeader from "@/src/components/AppHeader";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -34,6 +35,16 @@ export default function ConsumeStock() {
     })();
   }, [businessId]);
 
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("consumeStock");
+    setVideoId(id);
+  };
   /* ---------------- Save stock consumption ---------------- */
   const saveConsumption = async () => {
     if (!selectedCategory)
@@ -78,7 +89,7 @@ export default function ConsumeStock() {
         <StatusBar style="light" backgroundColor="#4f93ff" />
         <AppHeader
           title={String("Consume Stock")}
-          videoId="ogns8WiacUI"
+          videoId={videoId}
           rightComponent={
             <TouchableOpacity onPress={saveConsumption}>
               <Text style={styles.headerRightText}>Save</Text>

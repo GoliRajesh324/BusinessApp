@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -205,6 +206,7 @@ export default function AddBusinessPopup({
 
     try {
       setLoading(true);
+
       const token = await AsyncStorage.getItem("token");
       if (!token) {
         Alert.alert("Session expired", "Please login again.");
@@ -228,31 +230,29 @@ export default function AddBusinessPopup({
         });
       }
 
-      // successful save: call parent handlers and reset
+      // success
       onSave();
       onClose();
       resetForm();
     } catch (err: any) {
-      // Detailed logging for debugging 403
+      const status = err?.response?.status;
+      const serverMsg = err?.response?.data?.message || err?.response?.data;
+
       console.log("AddBusiness save error:", {
-        status: err?.response?.status,
+        status,
         data: err?.response?.data,
         message: err?.message,
       });
 
-      const status = err?.response?.status;
-      const serverMsg = err?.response?.data?.message || err?.response?.data;
-
-      if (status === 403) {
-        Alert.alert(
-          "Unauthorized",
-          serverMsg ||
-            "Access denied (403). Please login or check permissions.",
-        );
-        // do not auto-navigate away — keep behaviour unchanged
-      } else {
-        Alert.alert("Error", serverMsg || "Failed to save business");
+      // 🔒 handle expired token
+      if (status === 401 || status === 403) {
+        Alert.alert("Session expired", "Please login again.");
+        await AsyncStorage.multiRemove(["token", "userId", "userName"]);
+        router.replace("/login");
+        return;
       }
+
+      Alert.alert("Error", serverMsg || "Failed to save business");
     } finally {
       setLoading(false);
     }

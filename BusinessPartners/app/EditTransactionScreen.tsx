@@ -27,6 +27,7 @@ const SLIDER_THUMB_SIZE = 18;
 
 import AppHeader from "@/src/components/AppHeader";
 import SupplierPopup from "@/src/components/SupplierPopup";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -101,6 +102,17 @@ const EditTransactionScreen = () => {
     "share" | "equal" | "manual"
   >("share");
   const [shareValues, setShareValues] = useState<number[]>([]);
+
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("editTransaction");
+    setVideoId(id);
+  };
 
   useEffect(() => {
     if (params.images) {
@@ -434,6 +446,8 @@ const EditTransactionScreen = () => {
         }
       });
 
+      setIsUpdating(true); // 🔒 lock early
+
       const response = await fetch(
         `${BASE_URL}/api/investment/edit-investment`,
         {
@@ -444,6 +458,12 @@ const EditTransactionScreen = () => {
           body: formData,
         },
       );
+
+      // handle token expiry
+      if (response.status === 401 || response.status === 403) {
+        Alert.alert("Session expired", "Please login again.");
+        return;
+      }
 
       if (!response.ok) {
         const text = await response.text();
@@ -684,7 +704,7 @@ const EditTransactionScreen = () => {
         <StatusBar style="light" backgroundColor="#4f93ff" />
         <AppHeader
           title={String("Edit Transaction")}
-          videoId="ogns8WiacUI"
+          videoId={videoId}
           rightComponent={
             <TouchableOpacity
               onPress={handleSave}

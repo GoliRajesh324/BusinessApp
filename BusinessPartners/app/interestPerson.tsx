@@ -65,12 +65,14 @@ export default function InterestPerson() {
     .filter((r) => r.type === "taken")
     .reduce((s, r) => s + (r.amount || 0), 0);
   const net = totalGiven - totalTaken;
-  // <AppHeader title={String({name ? decodeURIComponent(name) : "Person"})} videoId="ogns8WiacUI" />
   return (
     <>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
-        <AppHeader title={String("Person")} videoId="ogns8WiacUI" />
+        <AppHeader
+          title={name ? decodeURIComponent(name) : "Person"}
+          videoId={videoId}
+        />
       </SafeAreaView>
       <SafeAreaView
         edges={["bottom"]}

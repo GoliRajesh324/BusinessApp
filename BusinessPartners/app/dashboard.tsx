@@ -1,4 +1,5 @@
 import ScreenHelpVideo from "@/src/components/ScreenHelpVideo";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -42,6 +43,16 @@ export default function Dashboard() {
     null,
   );
 
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("dashboard");
+    setVideoId(id);
+  };
   useFocusEffect(
     useCallback(() => {
       setActiveMenu("Business");
@@ -71,14 +82,19 @@ export default function Dashboard() {
   // ✅ Fetch businesses
   const fetchBusinesses = async () => {
     if (!token || !userId) return;
+
     try {
       setLoading(true);
+
       const response = await fetch(`${BASE_URL}/api/business/user/${userId}`, {
         method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
-      // 👇 HANDLE EXPIRED TOKEN
+      // 🔒 HANDLE EXPIRED TOKEN
       if (response.status === 401 || response.status === 403) {
         console.log("🔒 Token expired, logging out");
 
@@ -86,13 +102,18 @@ export default function Dashboard() {
         router.replace("/login");
         return;
       }
+
       if (!response.ok) throw new Error("Failed to fetch businesses");
+
       const data = await response.json();
-      const updated = data.map((b: any) => {
+
+      const updated = (Array.isArray(data) ? data : []).map((b: any) => {
         let inProgress = false;
-        if (b.crops && b.crops.length > 0) {
+
+        if (Array.isArray(b.crops) && b.crops.length > 0) {
           inProgress = b.crops.some((c: any) => c.cropInProgress === true);
         }
+
         return { ...b, cropInProgress: inProgress };
       });
 
@@ -152,13 +173,27 @@ export default function Dashboard() {
   // ✅ Delete
   const handleDeleteBusiness = async () => {
     if (!confirmDelete) return;
+
     try {
       await axios.delete(`${BASE_URL}/api/business/${confirmDelete.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
+
       setConfirmDelete(null);
       await fetchBusinesses();
-    } catch (err) {
+    } catch (err: any) {
+      // 🔒 Handle token expiry
+      if (err?.response?.status === 401 || err?.response?.status === 403) {
+        console.log("🔒 Token expired, logging out");
+
+        await AsyncStorage.multiRemove(["token", "userId", "userName"]);
+        router.replace("/login");
+        return;
+      }
+
       console.log("❌ Delete error:", err);
       Alert.alert("Error", "Error deleting business");
     }
@@ -195,7 +230,7 @@ export default function Dashboard() {
         {/* RIGHT SIDE ICONS */}
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <View style={{ marginRight: 25 }}>
-            <ScreenHelpVideo videoId="ogns8WiacUI" />
+            <ScreenHelpVideo videoId={videoId} />
           </View>
 
           <TouchableOpacity

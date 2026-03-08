@@ -1,5 +1,6 @@
 import AppHeader from "@/src/components/AppHeader";
 import BASE_URL from "@/src/config/config";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -40,9 +41,18 @@ export default function ChangeHistoryScreen() {
   const [cards, setCards] = useState<AuditCard[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("changeHistory");
+    setVideoId(id);
+  };
   useEffect(() => {
     if (!businessId) return;
-
     const fetchAuditLogs = async () => {
       try {
         setLoading(true);
@@ -53,9 +63,16 @@ export default function ChangeHistoryScreen() {
           `${BASE_URL}/api/audit/business/${businessId}`,
           {
             method: "GET",
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
         );
+
+        if (response.status === 204) {
+          setCards([]);
+          return;
+        }
 
         if (!response.ok) throw new Error("Failed to fetch audit logs");
 
@@ -129,7 +146,7 @@ export default function ChangeHistoryScreen() {
     <>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
-        <AppHeader title={String("Change History")} videoId="ogns8WiacUI" />
+        <AppHeader title={String("Change History")} videoId={videoId} />
       </SafeAreaView>
       <SafeAreaView
         edges={["bottom"]}

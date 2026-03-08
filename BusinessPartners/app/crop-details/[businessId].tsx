@@ -46,28 +46,24 @@ const CropDetailsPage = () => {
       const response = await fetch(
         `${BASE_URL}/api/investment/all-investments/${businessId}`,
         {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          headers: { Authorization: `Bearer ${token}` },
         },
       );
 
       if (!response.ok) throw new Error("Failed to fetch investments");
 
-      const data = await response.json();
+      const { content = [] } = await response.json();
+
+      const investments = Array.isArray(content) ? content : [];
+
       setInvestments(
-        Array.isArray(data)
-          ? data.sort((a, b) => b.investmentId - a.investmentId)
-          : [],
+        investments.sort((a: any, b: any) => b.investmentId - a.investmentId),
       );
     } catch (err) {
       console.log(err);
       Alert.alert("Error", "Error fetching investments");
     }
   };
-
   // Group by investmentGroupId
   const groupedInvestments = investments.reduce((acc: any, inv) => {
     if (!acc[inv.investmentGroupId]) {

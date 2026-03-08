@@ -56,15 +56,27 @@ export default function RootLayout() {
     }
     return false;
   };
-
+  const getAuthHeaders = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      return {
+        Authorization: token ? `Bearer ${token}` : undefined,
+        "Content-Type": "application/json",
+      };
+    } catch (e) {
+      console.log("Error getting token from storage", e);
+      return { "Content-Type": "application/json" };
+    }
+  };
   const checkAppVersion = async () => {
     try {
       const currentVersion =
         Application.nativeApplicationVersion || Constants.expoConfig?.version;
       console.log("Current version:", currentVersion);
-
+      const headers = await getAuthHeaders();
       const res = await axios.get(
         `${BASE_URL}/api/app/config?platform=android`,
+        { headers },
       );
 
       const { latestVersion, forceUpdate, playStoreUrl } = res.data;
@@ -86,9 +98,28 @@ export default function RootLayout() {
       console.log("Version check failed", error);
     }
   };
+
+  const fetchVideoIds = async () => {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await axios.get(`${BASE_URL}/api/help-videos`, { headers });
+
+      const data = res.data;
+      console.log("Fetched video IDs:", data);
+      for (const key in data) {
+        await AsyncStorage.setItem(key, data[key]);
+      }
+
+      console.log("Video IDs stored successfully");
+    } catch (error) {
+      console.log("Failed to load help videos", error);
+    }
+  };
   useEffect(() => {
     checkAppVersion();
+    fetchVideoIds();
   }, []);
+
   const checkLock = async () => {
     try {
       const lockEnabled = await AsyncStorage.getItem("appLockEnabled");

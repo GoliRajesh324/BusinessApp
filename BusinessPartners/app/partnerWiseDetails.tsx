@@ -1,4 +1,5 @@
 import AppHeader from "@/src/components/AppHeader";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -18,6 +19,16 @@ export default function PartnerWiseDetails() {
   const [totalInvestment, setTotalInvestment] = useState(0);
   const [totalSoldAmount, setTotalSoldAmount] = useState(0);
 
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("partnerWiseDetail");
+    setVideoId(id);
+  };
   useEffect(() => {
     const loadData = async () => {
       const t = await AsyncStorage.getItem("token");
@@ -33,13 +44,23 @@ export default function PartnerWiseDetails() {
       try {
         const res = await fetch(
           `${BASE_URL}/api/business/${businessId}/partners`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
         );
-        const text = await res.text();
-        if (!res.ok || !text) return;
-        const data = JSON.parse(text);
 
-        if (data?.partners) setPartners(data.partners);
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        if (data?.partners) {
+          setPartners(data.partners);
+        } else {
+          setPartners([]);
+        }
       } catch (err) {
         console.log("❌ Error fetching partner details:", err);
       }
@@ -51,26 +72,33 @@ export default function PartnerWiseDetails() {
   // Fetch business info
   useEffect(() => {
     if (!token || !businessId) return;
+
     const fetchBusinessInfo = async () => {
       try {
         const response = await fetch(
           `${BASE_URL}/api/business/${businessId}/business-details-by-id`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
         );
-        const text = await response.text();
-        if (!response.ok || !text) return;
-        const data = JSON.parse(text);
 
-        setTotalInvestment(data.totalInvestment || 0);
-        setTotalSoldAmount(data.totalSoldAmount || 0);
-        setInvestmentDetails(data.investmentDetails || []);
+        if (!response.ok) return;
 
-        /*  if (data.crop) {
-          setCropDetails({
-            id: data.crop.id,
-            cropNumber: data.crop.cropNumber,
-          });
-        } */
+        const data = await response.json();
+
+        setTotalInvestment(data?.totalInvestment || 0);
+        setTotalSoldAmount(data?.totalSoldAmount || 0);
+        setInvestmentDetails(data?.investmentDetails || []);
+
+        /* if (data?.crop) {
+        setCropDetails({
+          id: data.crop.id,
+          cropNumber: data.crop.cropNumber,
+        });
+      } */
       } catch (err) {
         console.log("❌ Error fetching business info:", err);
       }
@@ -78,7 +106,6 @@ export default function PartnerWiseDetails() {
 
     fetchBusinessInfo();
   }, [businessId, token]);
-
   const formatAmount = (v: any) =>
     Number(v || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
@@ -86,7 +113,7 @@ export default function PartnerWiseDetails() {
     <>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
-        <AppHeader title={String("Settings")} videoId="ogns8WiacUI" />
+        <AppHeader title={String("Partner Details")} videoId={videoId} />
       </SafeAreaView>
       <SafeAreaView
         edges={["bottom"]}

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 
 import AppHeader from "@/src/components/AppHeader";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as LocalAuthentication from "expo-local-authentication";
@@ -25,6 +26,16 @@ export default function SettingsScreen() {
   const [isTelugu, setIsTelugu] = useState(false);
   const [isLangLoaded, setIsLangLoaded] = useState(false);
 
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("setting");
+    setVideoId(id);
+  };
   useEffect(() => {
     (async () => {
       try {
@@ -117,13 +128,11 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleBack = () => router.back();
-
   return (
     <>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
-        <AppHeader title={String("Settings")} videoId="ogns8WiacUI" />
+        <AppHeader title={String("Settings")} videoId={videoId} />
       </SafeAreaView>
       <SafeAreaView
         edges={["bottom"]}

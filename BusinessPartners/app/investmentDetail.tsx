@@ -1,10 +1,11 @@
 import AppHeader from "@/src/components/AppHeader";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -32,6 +33,18 @@ export default function InvestmentDetail() {
   const [editInvestments, setEditInvestments] = useState<InvestmentDTO[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("investmentDetail");
+    setVideoId(id);
+  };
+
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -48,23 +61,33 @@ export default function InvestmentDetail() {
           const res = await fetch(
             `${BASE_URL}/api/investment/all-group-investments/${investmentGroupId}`,
             {
-              headers: { Authorization: `Bearer ${storedToken}` },
+              headers: {
+                Authorization: `Bearer ${storedToken}`,
+              },
             },
           );
+
+          // 🔒 handle token expiry
+          if (res.status === 401 || res.status === 403) {
+            Alert.alert("Session expired", "Please login again.");
+            return;
+          }
 
           if (!res.ok) throw new Error("Failed to fetch group investments");
 
           const data = await res.json();
 
-          if (data.length > 0 && data[0].images) {
-            setImages(data[0].images);
-          }
-
           if (!isActive) return;
 
-          setInvestments(Array.isArray(data) ? data : []);
+          const safeData = Array.isArray(data) ? data : [];
 
-          const editInvestmentDetails = data.filter(
+          if (safeData.length > 0 && safeData[0]?.images) {
+            setImages(safeData[0].images);
+          }
+
+          setInvestments(safeData);
+
+          const editInvestmentDetails = safeData.filter(
             (inv: InvestmentDTO) =>
               !(
                 inv.transactionType === "WITHDRAW" &&
@@ -74,7 +97,7 @@ export default function InvestmentDetail() {
 
           setEditInvestments(editInvestmentDetails);
         } catch (err) {
-          console.log(err);
+          console.log("❌ loadData error:", err);
           Alert.alert("Error", "Failed to fetch group investments");
         }
       };
@@ -182,7 +205,7 @@ export default function InvestmentDetail() {
         <StatusBar style="light" backgroundColor="#4f93ff" />
         <AppHeader
           title={String("Transaction Details")}
-          videoId="ogns8WiacUI"
+          videoId={videoId}
           rightComponent={
             <TouchableOpacity
               onPress={() => {

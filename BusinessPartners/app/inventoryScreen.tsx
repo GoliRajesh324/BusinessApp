@@ -1,9 +1,10 @@
 import AppHeader from "@/src/components/AppHeader";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   StyleSheet,
@@ -23,6 +24,16 @@ export default function InventoryScreen() {
   const [categories, setCategories] = useState<any[]>([]);
   const [token, setToken] = useState<string | null>(null);
 
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("inventoryScreen");
+    setVideoId(id);
+  };
   // Reload on focus
   useFocusEffect(
     useCallback(() => {
@@ -59,7 +70,7 @@ export default function InventoryScreen() {
         <StatusBar style="light" backgroundColor="#4f93ff" />
         <AppHeader
           title={String("Inventory")}
-          videoId="ogns8WiacUI"
+          videoId={videoId}
           rightComponent={
             <TouchableOpacity
               onPress={() =>

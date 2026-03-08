@@ -1,8 +1,9 @@
 import AppHeader from "@/src/components/AppHeader";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Platform,
   ScrollView,
@@ -28,6 +29,16 @@ export default function EmiCalculatorScreen() {
   const interestPercent =
     interestMode === "percent" ? interestValue : interestValue * 12; // 1₹ = 12%
 
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("emiCalculator");
+    setVideoId(id);
+  };
   const emiDetails = useMemo(() => {
     const P = loanAmount;
     const annualRate = interestPercent;
@@ -59,7 +70,7 @@ export default function EmiCalculatorScreen() {
     <>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
-        <AppHeader title={String("EMI Calculator")} videoId="ogns8WiacUI" />
+        <AppHeader title={String("EMI Calculator")} videoId={videoId} />
       </SafeAreaView>
       <SafeAreaView
         edges={["bottom"]}

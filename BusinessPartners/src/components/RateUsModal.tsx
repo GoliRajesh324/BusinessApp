@@ -3,7 +3,6 @@ import { useState } from "react";
 import {
   Linking,
   Modal,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -20,16 +19,10 @@ export function RateUsModal({
   const [rating, setRating] = useState(0);
 
   const openStore = () => {
-    const appId =
-      Platform.OS === "android" ? "com.yourapp.android" : "id1234567890"; // replace with your real IDs
+    const playStoreUrl = `https://play.google.com/store/apps/details?id=com.srilekhaapps.businessmoney`;
 
-    const url =
-      Platform.OS === "android"
-        ? `market://details?id=${appId}`
-        : `itms-apps://itunes.apple.com/app/${appId}`;
-
-    Linking.canOpenURL(url).then((supported) => {
-      if (supported) Linking.openURL(url);
+    Linking.canOpenURL(playStoreUrl).then((supported) => {
+      if (supported) Linking.openURL(playStoreUrl);
       else alert("Cannot open store");
     });
   };

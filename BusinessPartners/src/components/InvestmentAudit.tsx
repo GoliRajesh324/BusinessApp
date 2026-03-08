@@ -42,28 +42,45 @@ export default function InvestmentAudit({
 
   useEffect(() => {
     if (!businessId || !visible) return;
-
     const fetchAuditLogs = async () => {
       try {
+        setLoading(true);
+
         const token = await AsyncStorage.getItem("token");
+
         const response = await fetch(
           `${BASE_URL}/api/audit/business/${businessId}`,
           {
             method: "GET",
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           },
         );
 
-        if (!response.ok) throw new Error("Failed to fetch audit logs");
+        // Handle 204 No Content
+        if (response.status === 204) {
+          setLogs([]);
+          return;
+        }
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "Failed to fetch audit logs");
+        }
+
         const data = await response.json();
-        setLogs(data);
+
+        // Since backend returns List directly
+        setLogs(Array.isArray(data) ? data : []);
       } catch (err) {
         console.log("Error fetching audit logs:", err);
+        setLogs([]);
       } finally {
         setLoading(false);
       }
     };
-
     fetchAuditLogs();
   }, [businessId, visible]);
 

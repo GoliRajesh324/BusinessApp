@@ -1,9 +1,10 @@
 import AppHeader from "@/src/components/AppHeader";
 import BASE_URL from "@/src/config/config";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,6 +24,16 @@ export default function ResetPasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("resetPassword");
+    setVideoId(id);
+  };
   const handleReset = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {
       Alert.alert("Error", "All fields are required");
@@ -70,7 +81,7 @@ export default function ResetPasswordScreen() {
     <>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
-        <AppHeader title={String("Reset Password")} videoId="ogns8WiacUI" />
+        <AppHeader title={String("Reset Password")} videoId={videoId} />
       </SafeAreaView>
       <SafeAreaView
         edges={["bottom"]}

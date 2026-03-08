@@ -1,5 +1,6 @@
 // SimpleInterestPage.tsx
 import AppHeader from "@/src/components/AppHeader";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
@@ -27,6 +28,7 @@ import {
   updateInterest,
 } from "../src/services/interestService";
 import { generateInterestPDF } from "../src/services/pdfGenerator";
+
 type Interest = {
   id?: number | string;
   name: string;
@@ -87,6 +89,16 @@ export default function SimpleInterestPage() {
     fetchAll();
   }, [showActive]);
 
+  const [videoId, setVideoId] = useState("");
+
+  useEffect(() => {
+    loadVideo();
+  }, []);
+
+  const loadVideo = async () => {
+    const id = await getVideoId("simpleInterest");
+    setVideoId(id);
+  };
   async function fetchAll() {
     setLoading(true);
     try {
@@ -292,7 +304,7 @@ export default function SimpleInterestPage() {
     <>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
-        <AppHeader title={String("Interest Money")} videoId="ogns8WiacUI" />
+        <AppHeader title={String("Interest Money")} videoId={videoId} />
       </SafeAreaView>
       <SafeAreaView
         edges={["bottom"]}

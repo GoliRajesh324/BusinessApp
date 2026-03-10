@@ -961,8 +961,7 @@ const EditTransactionScreen = () => {
                         Number(r.reduceLeftOver ?? 0) +
                           //Number(originalReduceMap[r.partnerId ?? 0]) >
                           Number(r.availableMoney ?? 0) >
-                          0 &&
-                        r.reduceLeftOverFlag === "Y" && (
+                          0 && (
                           <View
                             style={{
                               marginTop: 10,

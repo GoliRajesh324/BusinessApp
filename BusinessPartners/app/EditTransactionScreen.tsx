@@ -58,10 +58,39 @@ const EditTransactionScreen = () => {
   const [checkedState, setCheckedState] = useState<Record<number, boolean>>({});
 
   const toggleCheckbox = (index: number) => {
+    const newChecked = !checkedState[index];
+
     setCheckedState((prev) => ({
       ...prev,
-      [index]: !prev[index],
+      [index]: newChecked,
     }));
+
+    // If unchecked → reset values
+    if (!newChecked) {
+      setInvestmentDataState((prev) => {
+        const copy = [...prev];
+
+        copy[index] = {
+          ...copy[index],
+          reduceLeftOver: 0,
+          reduceLeftOverFlag: "N",
+        };
+
+        return copy;
+      });
+    } else {
+      // If checked again → mark flag Y
+      setInvestmentDataState((prev) => {
+        const copy = [...prev];
+
+        copy[index] = {
+          ...copy[index],
+          reduceLeftOverFlag: "Y",
+        };
+
+        return copy;
+      });
+    }
   };
 
   // ✅ Extract group data safely
@@ -301,7 +330,7 @@ const EditTransactionScreen = () => {
       );
       // ✅ Prepare list of updated investments matching backend InvestmentDTO
       // 1️⃣ Update visible records (Investment, Sold, Withdraw)
-      const visibleUpdates = investmentDataState.map((inv) => ({
+      const visibleUpdates = investmentDataState.map((inv, index) => ({
         investmentId: inv.investmentId,
         createdAt: inv.createdAt,
         createdBy: inv.createdBy,
@@ -327,7 +356,10 @@ const EditTransactionScreen = () => {
         supplierName: inv.supplierName,
         supplierId: inv.supplierId,
         updatedBy: userId,
-        reduceLeftOver: Number(inv.reduceLeftOver || 0),
+        reduceLeftOver: checkedState[index]
+          ? Number(inv.reduceLeftOver || 0)
+          : 0,
+        reduceLeftOverFlag: checkedState[index] ? "Y" : "N",
       }));
 
       // 🚨 Withdraw validation: cannot exceed available money
@@ -404,18 +436,33 @@ const EditTransactionScreen = () => {
             inv.transactionType?.toUpperCase().trim() === "INVESTMENT_WITHDRAW",
         )
         .map((hidden) => {
-          // find matching partner from visible state
-          const match = investmentDataState.find(
+          const matchIndex = investmentDataState.findIndex(
             (r) => r.partnerId === hidden.partnerId,
           );
 
+          const match = investmentDataState[matchIndex];
+
           const reduceValue = Number(match?.reduceLeftOver || 0);
+          const checked = checkedState[matchIndex];
+
+          if (!checked) {
+            // checkbox removed → reset values
+            return {
+              ...hidden,
+              transactionType: "INVESTMENT_WITHDRAW",
+              withdrawn: 0,
+              reduceLeftOver: 0,
+              reduceLeftOverFlag: "N",
+              updatedBy: userId,
+            };
+          }
 
           return {
             ...hidden,
-            transactionType: "INVESTMENT_WITHDRAW", // 👈 change type to Withdraw
-            withdrawn: reduceValue, // 👈 set withdrawn from entered amount
-            reduceLeftOver: reduceValue, // 👈 set reduceLeftOver same
+            transactionType: "INVESTMENT_WITHDRAW",
+            withdrawn: reduceValue,
+            reduceLeftOver: reduceValue,
+            reduceLeftOverFlag: reduceValue > 0 ? "Y" : "N",
             updatedBy: userId,
           };
         });
@@ -958,40 +1005,38 @@ const EditTransactionScreen = () => {
                               </Text>
                             </TouchableOpacity>
 
-                            {checkedState[i] && (
-                              <TextInput
-                                style={styles.leftOverInput}
-                                keyboardType="numeric"
-                                placeholder="Enter amount to use..."
-                                placeholderTextColor="#888"
-                                value={String(r.reduceLeftOver) ?? ""}
-                                onChangeText={(val) => {
-                                  const entered = Number(val) || 0;
+                            <TextInput
+                              style={styles.leftOverInput}
+                              keyboardType="numeric"
+                              placeholder="Enter amount to use..."
+                              placeholderTextColor="#888"
+                              value={String(r.reduceLeftOver) ?? ""}
+                              onChangeText={(val) => {
+                                const entered = Number(val) || 0;
 
-                                  const available =
-                                    Number(r.availableMoney ?? 0) +
-                                    Number(
-                                      originalReduceMap[r.partnerId ?? 0] ?? 0,
-                                    );
+                                const available =
+                                  Number(r.availableMoney ?? 0) +
+                                  Number(
+                                    originalReduceMap[r.partnerId ?? 0] ?? 0,
+                                  );
 
-                                  if (entered > available) {
-                                    Alert.alert(
-                                      "Invalid Amount",
-                                      `Entered amount cannot exceed available money (₹${available.toFixed(2)})`,
-                                    );
-                                    return; // ⛔ stop here
-                                  }
-                                  setInvestmentDataState((prev) => {
-                                    const next = [...prev];
-                                    next[i] = {
-                                      ...next[i],
-                                      reduceLeftOver: Number(val),
-                                    };
-                                    return next;
-                                  });
-                                }}
-                              />
-                            )}
+                                if (entered > available) {
+                                  Alert.alert(
+                                    "Invalid Amount",
+                                    `Entered amount cannot exceed available money (₹${available.toFixed(2)})`,
+                                  );
+                                  return; // ⛔ stop here
+                                }
+                                setInvestmentDataState((prev) => {
+                                  const next = [...prev];
+                                  next[i] = {
+                                    ...next[i],
+                                    reduceLeftOver: Number(val),
+                                  };
+                                  return next;
+                                });
+                              }}
+                            />
                           </View>
                         )}
                       {transactionType === "Withdraw" &&

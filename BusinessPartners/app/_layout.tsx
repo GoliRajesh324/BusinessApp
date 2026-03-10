@@ -10,7 +10,8 @@ import axios from "axios";
 import * as Application from "expo-application";
 import Constants from "expo-constants";
 import * as LocalAuthentication from "expo-local-authentication";
-import { Stack } from "expo-router";
+import * as Notifications from "expo-notifications";
+import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -155,15 +156,91 @@ export default function RootLayout() {
     checkLock();
   }, []);
 
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+
+  const router = useRouter();
+
+  // prevents duplicate navigation
+  const lastHandledNotification = useRef<string | null>(null);
+
+  const openInvestmentFromNotification = (data: any) => {
+    const type = data?.type;
+    const investmentGroupId = data?.investmentGroupId;
+
+    // prevent duplicate navigation
+    if (lastHandledNotification.current === investmentGroupId) {
+      return;
+    }
+
+    lastHandledNotification.current = investmentGroupId;
+
+    if (type === "INVESTMENT_ADDED" || type === "INVESTMENT_UPDATED") {
+      router.push({
+        pathname: "/investmentDetail",
+        params: {
+          investmentGroupId: data.investmentGroupId,
+          businessId: data.businessId,
+          businessName: data.businessName,
+        },
+      });
+    } else if (type === "BUSINESS_CREATED") {
+      router.push({
+        pathname: "/businessDetail",
+        params: {
+          businessId: data.businessId,
+          businessName: data.businessName,
+        },
+      });
+    }
+  };
+
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data;
+
+        openInvestmentFromNotification(data);
+      },
+    );
+
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    const checkInitialNotification = async () => {
+      const response = await Notifications.getLastNotificationResponseAsync();
+
+      if (!response) return;
+
+      const data = response.notification.request.content.data;
+
+      openInvestmentFromNotification(data);
+    };
+
+    checkInitialNotification();
+  }, []);
+
   // 2️⃣ Auto-lock when app goes to background
   useEffect(() => {
     const sub = AppState.addEventListener("change", async (nextState) => {
+      const lockEnabled = await AsyncStorage.getItem("appLockEnabled");
+
       if (
+        lockEnabled === "true" &&
         appState.current === "active" &&
         nextState.match(/inactive|background/)
       ) {
         await AsyncStorage.setItem("appLockLastAuth", "no");
       }
+
       appState.current = nextState;
     });
 

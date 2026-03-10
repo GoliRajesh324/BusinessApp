@@ -4,11 +4,9 @@ import {
   Alert,
   FlatList,
   Image,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
-  UIManager,
   View,
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
@@ -155,16 +153,6 @@ export default function BusinessDetail() {
   const currentLabel =
     items.find((item) => item.value === selectedFilter)?.label ||
     "Select Filter";
-
-  // enable LayoutAnimation for Android
-  useEffect(() => {
-    if (
-      Platform.OS === "android" &&
-      UIManager.setLayoutAnimationEnabledExperimental
-    ) {
-      UIManager.setLayoutAnimationEnabledExperimental(true);
-    }
-  }, []);
 
   const handleSupplierClick = async (supplier: Supplier) => {
     try {

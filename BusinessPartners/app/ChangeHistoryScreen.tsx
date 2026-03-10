@@ -4,6 +4,7 @@ import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { t } from "i18next";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -146,7 +147,7 @@ export default function ChangeHistoryScreen() {
     <>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
-        <AppHeader title={String("Change History")} videoId={videoId} />
+        <AppHeader title={t("changeHistory")} videoId={videoId} />
       </SafeAreaView>
       <SafeAreaView
         edges={["bottom"]}

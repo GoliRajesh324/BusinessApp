@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import ConnectionStatus from "../src/components/ConnectionStatus";
 import BASE_URL from "../src/config/config";
+import { registerForPushNotificationsAsync } from "../src/services/notificationService";
 
 export const unstable_settings = {
   headerShown: false, // hide header
@@ -28,8 +29,9 @@ export default function LoginScreen() {
     const checkBiometricAndToken = async () => {
       const bio = await AsyncStorage.getItem("appLockLastAuth");
       const token = await AsyncStorage.getItem("token");
+      const lockEnabled = await AsyncStorage.getItem("appLockEnabled");
 
-      if (bio === "yes" && token) {
+      if (token && (lockEnabled !== "true" || bio === "yes")) {
         router.replace("/dashboard");
       }
     };
@@ -46,6 +48,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false); // ✅ new state
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+
   const handleSubmit = async () => {
     if (loading) return; // prevent double clicks
     setMessage("");
@@ -90,6 +93,27 @@ export default function LoginScreen() {
         await AsyncStorage.setItem("userName", String(res.data.username));
         await AsyncStorage.setItem("email", String(res.data.email || ""));
         await AsyncStorage.setItem("phone", String(res.data.phone || ""));
+
+        // 🔔 Register device for push notifications
+        try {
+          const pushToken = await registerForPushNotificationsAsync();
+
+          if (pushToken) {
+            await axios.post(
+              `${BASE_URL}/api/auth/save-token`,
+              { pushToken },
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              },
+            );
+
+            console.log("Push token saved:", pushToken);
+          }
+        } catch (error) {
+          console.log("Failed to register push token", error);
+        }
 
         setMessage("Login successful!");
         router.replace("/dashboard"); // ✅ route to dashboard

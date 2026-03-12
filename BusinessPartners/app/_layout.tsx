@@ -182,11 +182,19 @@ export default function RootLayout() {
 
     lastHandledNotification.current = investmentGroupId;
 
-    if (type === "INVESTMENT_ADDED" || type === "INVESTMENT_UPDATED") {
+    if (type === "INVESTMENT_ADDED") {
       router.push({
         pathname: "/investmentDetail",
         params: {
           investmentGroupId: data.investmentGroupId,
+          businessId: data.businessId,
+          businessName: data.businessName,
+        },
+      });
+    } else if (type === "INVESTMENT_UPDATED") {
+      router.push({
+        pathname: "/ChangeHistoryScreen",
+        params: {
           businessId: data.businessId,
           businessName: data.businessName,
         },

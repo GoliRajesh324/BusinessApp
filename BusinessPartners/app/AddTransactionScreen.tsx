@@ -75,7 +75,7 @@ const AddTransactionScreen = () => {
     "share" | "equal" | "manual"
   >("share");
   const [shareValues, setShareValues] = useState<number[]>([]);
-  const [typeModalVisible, setTypeModalVisible] = useState(false);
+  const [typeDropdownVisible, setTypeDropdownVisible] = useState(false);
   const [transactionType, setTransactionType] = useState<
     "Investment" | "Sold" | "Withdraw" | null
   >(null);
@@ -763,6 +763,7 @@ const AddTransactionScreen = () => {
         <View style={styles.container}>
           <ScrollView
             contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 16 }}
+            onScrollBeginDrag={() => setTypeDropdownVisible(false)}
           >
             {/* Business + Transaction Type Row */}
             <View style={styles.businessTypeRow}>
@@ -778,11 +779,19 @@ const AddTransactionScreen = () => {
                     styles.typeDropdownBtn,
                     errorVisible && { borderColor: "red", borderWidth: 2 },
                   ]}
-                  onPress={() => setTypeModalVisible(true)}
+                  onPress={() => setTypeDropdownVisible(true)}
                 >
                   <Text
                     style={{
-                      color: errorVisible ? "red" : "#333",
+                      color: errorVisible
+                        ? "red"
+                        : transactionType === "Investment"
+                          ? "#007bff"
+                          : transactionType === "Sold"
+                            ? "#28a745"
+                            : transactionType === "Withdraw"
+                              ? "#dc3545"
+                              : "#333",
                       fontWeight: "600",
                     }}
                   >
@@ -1209,34 +1218,34 @@ const AddTransactionScreen = () => {
               </View>
             </TouchableWithoutFeedback>
           </Modal>
-          {/* Type Modal */}
-          <Modal visible={typeModalVisible} transparent animationType="fade">
-            <TouchableOpacity
-              style={styles.typeModalOverlay}
-              onPress={() => setTypeModalVisible(false)}
-            >
-              <View style={styles.typeModal}>
-                {(["Investment", "Sold", "Withdraw"] as const).map((t) => (
-                  <TouchableOpacity
-                    key={t}
-                    onPress={() => {
-                      setTransactionType(t);
-                      setTypeModalVisible(false);
+          {typeDropdownVisible && (
+            <View style={styles.typeDropdownMenu}>
+              {[
+                { label: "Investment", color: "#007bff" },
+                { label: "Sold", color: "#28a745" },
+                { label: "Withdraw", color: "#dc3545" },
+              ].map((item) => (
+                <TouchableOpacity
+                  key={item.label}
+                  style={styles.typeDropdownItem}
+                  onPress={() => {
+                    setTransactionType(item.label as any);
+                    setTypeDropdownVisible(false);
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: item.color,
+                      fontWeight:
+                        transactionType === item.label ? "700" : "500",
                     }}
-                    style={styles.typeOption}
                   >
-                    <Text
-                      style={{
-                        fontWeight: transactionType === t ? "700" : "400",
-                      }}
-                    >
-                      {t}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </TouchableOpacity>
-          </Modal>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       </SafeAreaView>
     </>
@@ -1777,5 +1786,24 @@ smallNote: { fontSize: 10, color: "#666", marginTop: 4 },
     borderWidth: 1,
     borderColor: "#ccc",
     backgroundColor: "#f9f9f9",
+  },
+  typeDropdownMenu: {
+    position: "absolute",
+    top: 40,
+    right: 0,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    elevation: 5,
+    zIndex: 999,
+    width: 150,
+  },
+
+  typeDropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
   },
 });

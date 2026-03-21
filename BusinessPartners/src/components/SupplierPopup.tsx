@@ -1,13 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 // ✅ Type for each partner row
@@ -27,6 +27,7 @@ interface SupplierPopupProps {
   totalAmount: number;
   remaining: number;
   rows: PartnerRow[];
+  supplierName?: string; // ✅ ADD THIS
 }
 
 export default function SupplierPopup({
@@ -36,8 +37,11 @@ export default function SupplierPopup({
   totalAmount,
   remaining,
   rows,
+  supplierName, // ✅ ADD THIS
 }: SupplierPopupProps) {
-  const [supplierName, setSupplierName] = useState("");
+  const [supplierNameInput, setSupplierNameInput] = useState(
+    supplierName || "",
+  );
 
   const pendingRows: PartnerRow[] = rows.map((r: PartnerRow) => {
     const investNum = Number(r.actual) || 0;
@@ -46,28 +50,28 @@ export default function SupplierPopup({
     return { ...r, pending: diff > 0 ? diff : 0 };
   });
 
+  useEffect(() => {
+    if (visible) {
+      setSupplierNameInput(supplierName || "");
+    }
+  }, [visible, supplierName]);
+
   const handleConfirm = () => {
-    if (!supplierName.trim()) {
+    if (!supplierNameInput.trim()) {
       Alert.alert("Validation", "Please enter supplier name.");
       return;
     }
-    onConfirm(supplierName);
-    setSupplierName(""); // reset
+
+    onConfirm(supplierNameInput);
   };
 
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.container}>
-          <Text style={styles.heading}>
-            Borrowed from Supplier 
-          </Text>
-           <Text style={styles.orheading}>
-                OR
-          </Text>
-           <Text style={styles.heading}>
-            Adjust Remaining Amount
-          </Text>
+          <Text style={styles.heading}>Borrowed from Supplier</Text>
+          <Text style={styles.orheading}>OR</Text>
+          <Text style={styles.heading}>Adjust Remaining Amount</Text>
 
           {/* Amount Display */}
           <View style={styles.amountBox}>
@@ -89,8 +93,9 @@ export default function SupplierPopup({
           <TextInput
             style={styles.input}
             placeholder="Enter Supplier Name"
-            value={supplierName}
-            onChangeText={setSupplierName}
+            placeholderTextColor="#666" // ✅ ADD THIS
+            value={supplierNameInput}
+            onChangeText={setSupplierNameInput}
           />
 
           {/* Pending List */}
@@ -148,7 +153,7 @@ const styles = StyleSheet.create({
     color: "#1d3557",
     textAlign: "center",
   },
-    orheading: {
+  orheading: {
     fontSize: 14,
     fontWeight: "700",
     marginBottom: 10,

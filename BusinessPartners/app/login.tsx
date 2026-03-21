@@ -2,12 +2,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -18,13 +20,9 @@ import ConnectionStatus from "../src/components/ConnectionStatus";
 import BASE_URL from "../src/config/config";
 import { registerForPushNotificationsAsync } from "../src/services/notificationService";
 
-export const unstable_settings = {
-  headerShown: false, // hide header
-};
 export default function LoginScreen() {
   const router = useRouter();
 
-  // ⬇️ AUTO ROUTE LOGGED-IN + BIOMETRIC USERS
   useEffect(() => {
     const checkBiometricAndToken = async () => {
       const bio = await AsyncStorage.getItem("appLockLastAuth");
@@ -43,16 +41,19 @@ export default function LoginScreen() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false); // ✅ new state
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
 
+  const [message, setMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const handleSubmit = async () => {
-    if (loading) return; // prevent double clicks
+    if (loading) return;
+
     setMessage("");
-    setLoading(true); // start loading
+    setLoading(true);
+
     if (!isLogin) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -68,20 +69,20 @@ export default function LoginScreen() {
         return;
       }
     }
+
     const url = isLogin
       ? `${BASE_URL}/api/auth/login`
       : `${BASE_URL}/api/auth/register`;
 
     try {
       const payload = isLogin
-        ? { username, password }
-        : { username, password, email, phone };
+        ? { username: username.toLowerCase(), password } // ✅ FIX
+        : { username: username.toLowerCase(), password, email, phone };
 
       const res = await axios.post(url, payload);
 
       if (isLogin) {
         const token = res?.data?.token || null;
-        // const userId = res?.data?.userId || null;
 
         if (!token) {
           setMessage("No token received from server");
@@ -94,7 +95,6 @@ export default function LoginScreen() {
         await AsyncStorage.setItem("email", String(res.data.email || ""));
         await AsyncStorage.setItem("phone", String(res.data.phone || ""));
 
-        // 🔔 Register device for push notifications
         try {
           const pushToken = await registerForPushNotificationsAsync();
 
@@ -108,15 +108,12 @@ export default function LoginScreen() {
                 },
               },
             );
-
-            console.log("Push token saved:", pushToken);
           }
         } catch (error) {
-          console.log("Failed to register push token", error);
+          console.log("Push token failed", error);
         }
 
-        setMessage("Login successful!");
-        router.replace("/dashboard"); // ✅ route to dashboard
+        router.replace("/dashboard");
       } else {
         setMessage("Registered successfully. You can now login.");
         setIsLogin(true);
@@ -133,235 +130,215 @@ export default function LoginScreen() {
       setMessage(errorMsg);
       setPassword("");
     } finally {
-      setLoading(false); // ✅ stop loading
+      setLoading(false);
     }
   };
 
   return (
-    <>
-      <SafeAreaView edges={["top"]} style={styles.safe}>
+    <SafeAreaView style={{ flex: 1 }}>
+      <LinearGradient
+        colors={["#1e3a8a", "#2563eb", "#60a5fa"]}
+        style={{ flex: 1 }}
+      >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={styles.container}
+          style={{ flex: 1 }}
         >
-          <View style={styles.card}>
-            <Text style={styles.title}>
-              {isLogin ? "Business Login" : "Register New User"}
-            </Text>
-
-            {/* Username */}
-            <View style={styles.inputGroup}>
-              <ConnectionStatus />
-              <Text style={styles.label}>
-                {isLogin ? "Login ID" : "Username"}
+          <ScrollView contentContainerStyle={styles.container}>
+            <View style={styles.header}>
+              <Text style={styles.title}>BizMoney</Text>
+              <Text style={styles.subtitle}>
+                {isLogin ? "Welcome back 👋" : "Create your account 🚀"}
               </Text>
-
-              <View style={styles.inputRow}>
-                <Ionicons name="person-outline" size={18} color="#555" />
-                <TextInput
-                  style={styles.inputFlex}
-                  value={username}
-                  onChangeText={(t) => setUsername(t.trim())}
-                  placeholder={
-                    isLogin
-                      ? "Enter username / email / phone"
-                      : "Choose a username"
-                  }
-                  placeholderTextColor="#847575ff"
-                  autoCapitalize="none"
-                />
-              </View>
             </View>
-            {/* Email (Register only) */}
-            {!isLogin && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email</Text>
 
-                <View style={styles.inputRow}>
-                  <Ionicons name="mail-outline" size={18} color="#555" />
-                  <TextInput
-                    style={styles.inputFlex}
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="Enter email"
-                    placeholderTextColor="#847575ff"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
-              </View>
-            )}
-            {/* Phone (Register only) */}
-            {!isLogin && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Phone</Text>
+            <View style={styles.card}>
+              <ConnectionStatus />
 
-                <View style={styles.inputRow}>
-                  <Ionicons name="call-outline" size={18} color="#555" />
-                  <TextInput
-                    style={styles.inputFlex}
-                    value={phone}
-                    onChangeText={(t) => setPhone(t.replace(/[^0-9]/g, ""))}
-                    placeholder="Enter phone number"
-                    placeholderTextColor="#847575ff"
-                    keyboardType="numeric"
-                    maxLength={10}
-                  />
-                </View>
-              </View>
-            )}
-            {/* Password */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
+              <Input
+                icon="person-outline"
+                placeholder="Username / Email / Phone"
+                value={username}
+                onChangeText={
+                  (t: string) => setUsername(t.trim().toLowerCase()) // ✅ lowercase fix
+                }
+              />
 
-              <View style={styles.inputRow}>
-                <Ionicons name="lock-closed-outline" size={18} color="#555" />
-
-                <TextInput
-                  style={styles.inputFlex}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  placeholder="Enter password"
-                  placeholderTextColor="#847575ff"
+              {!isLogin && (
+                <Input
+                  icon="mail-outline"
+                  placeholder="Email"
+                  value={email}
+                  onChangeText={setEmail}
                 />
+              )}
 
-                <Pressable onPress={() => setShowPassword(!showPassword)}>
-                  <Text style={styles.showBtnText}>
-                    {showPassword ? "Hide" : "Show"}
+              {!isLogin && (
+                <Input
+                  icon="call-outline"
+                  placeholder="Phone"
+                  value={phone}
+                  onChangeText={(t: string) =>
+                    setPhone(t.replace(/[^0-9]/g, ""))
+                  }
+                />
+              )}
+
+              <Input
+                icon="lock-closed-outline"
+                placeholder="Password"
+                value={password}
+                secure={!showPassword}
+                onChangeText={setPassword}
+                rightIcon={
+                  <Ionicons
+                    name={showPassword ? "eye-off" : "eye"}
+                    size={18}
+                    onPress={() => setShowPassword(!showPassword)}
+                  />
+                }
+              />
+
+              {isLogin && (
+                <Pressable onPress={() => router.push("/forgotPasswordScreen")}>
+                  <Text style={styles.forgot}>Forgot Password?</Text>
+                </Pressable>
+              )}
+
+              {message ? <Text style={styles.error}>{message}</Text> : null}
+
+              <Pressable style={styles.button} onPress={handleSubmit}>
+                <Text style={styles.buttonText}>
+                  {loading ? "Please wait..." : isLogin ? "Login" : "Register"}
+                </Text>
+              </Pressable>
+
+              <View style={styles.switchWrap}>
+                <Text>
+                  {isLogin
+                    ? "Don't have an account?"
+                    : "Already have an account?"}
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    setIsLogin(!isLogin);
+                    setMessage("");
+                    setPassword("");
+                  }}
+                >
+                  <Text style={styles.switchText}>
+                    {isLogin ? "Register" : "Login"}
                   </Text>
                 </Pressable>
               </View>
             </View>
-            {isLogin && (
-              <Pressable
-                onPress={() => router.push("/forgotPasswordScreen")}
-                style={{ alignSelf: "flex-end", marginBottom: 10 }}
-              >
-                <Text style={{ color: "#2563eb", fontWeight: "600" }}>
-                  Forgot Password ?
-                </Text>
-              </Pressable>
-            )}
-            {/* Message */}
-            {message ? (
-              <Text
-                style={[
-                  styles.message,
-                  message.toLowerCase().includes("success")
-                    ? { color: "green" }
-                    : { color: "red" },
-                ]}
-              >
-                {message}
-              </Text>
-            ) : null}
-
-            {/* Submit */}
-            <Pressable
-              onPress={handleSubmit}
-              style={[styles.button, loading && { opacity: 0.6 }]}
-              disabled={loading}
-            >
-              <Text style={styles.buttonText}>
-                {loading
-                  ? isLogin
-                    ? "Logging in..."
-                    : "Registering..."
-                  : isLogin
-                    ? "Login"
-                    : "Register"}
-              </Text>
-            </Pressable>
-
-            {/* Switch Mode */}
-            <View style={{ marginTop: 16, alignItems: "center" }}>
-              <Text>
-                {isLogin
-                  ? "Don't have an account?"
-                  : "Already have an account?"}
-              </Text>
-              <Pressable
-                onPress={() => {
-                  setIsLogin(!isLogin);
-                  setMessage("");
-                  setPassword("");
-                }}
-                disabled={loading}
-              >
-                <Text style={styles.link}>
-                  {isLogin ? "Register here" : "Login here"}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
+          </ScrollView>
         </KeyboardAvoidingView>
-      </SafeAreaView>
-    </>
+      </LinearGradient>
+    </SafeAreaView>
   );
 }
 
+/* INPUT COMPONENT */
+const Input = ({
+  icon,
+  placeholder,
+  value,
+  onChangeText,
+  secure,
+  rightIcon,
+}: any) => (
+  <View style={styles.inputBox}>
+    <Ionicons name={icon} size={18} color="#64748b" />
+    <TextInput
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      secureTextEntry={secure}
+      style={styles.input}
+      placeholderTextColor="#94a3b8"
+      autoCapitalize="none"
+    />
+    {rightIcon}
+  </View>
+);
+
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f3f4f6" },
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  card: {
-    backgroundColor: "#fff",
-    padding: 28,
-    borderRadius: 12,
-    width: "100%",
-    maxWidth: 400,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  inputGroup: { marginBottom: 14 },
-  label: { marginBottom: 6, fontWeight: "500", fontSize: 15 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 10,
-    fontSize: 16,
-    color: "#000", // <-- add this
-  },
-  passwordRow: { flexDirection: "row", alignItems: "center" },
-  showBtn: { paddingHorizontal: 10, justifyContent: "center" },
-  showBtnText: { color: "#2563eb", fontWeight: "600" },
-  button: {
-    marginTop: 10,
-    backgroundColor: "#2563eb",
-    paddingVertical: 12,
-    borderRadius: 6,
-    alignItems: "center",
-  },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  message: { marginTop: 12, marginBottom: 8, textAlign: "center" },
-  link: { color: "#2563eb", marginTop: 6, fontWeight: "600" },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    paddingHorizontal: 10,
+    padding: 20,
   },
 
-  inputFlex: {
+  header: {
+    marginBottom: 30,
+  },
+
+  title: {
+    fontSize: 34,
+    color: "#fff",
+    fontWeight: "800",
+  },
+
+  subtitle: {
+    color: "#e0e7ff",
+    marginTop: 6,
+  },
+
+  card: {
+    backgroundColor: "rgba(255,255,255,0.95)",
+    padding: 20,
+    borderRadius: 20,
+    elevation: 6,
+  },
+
+  inputBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f1f5f9",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+
+  input: {
     flex: 1,
-    padding: 10,
-    fontSize: 16,
-    color: "#000",
+    padding: 12,
+  },
+
+  forgot: {
+    alignSelf: "flex-end",
+    color: "#2563eb",
+    marginBottom: 10,
+    fontWeight: "600",
+  },
+
+  button: {
+    backgroundColor: "#2563eb",
+    padding: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+
+  buttonText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+
+  error: {
+    color: "red",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+
+  switchWrap: {
+    marginTop: 18,
+    alignItems: "center",
+  },
+
+  switchText: {
+    color: "#2563eb",
+    fontWeight: "700",
+    marginTop: 4,
   },
 });

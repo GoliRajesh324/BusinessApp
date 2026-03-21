@@ -1075,9 +1075,7 @@ export default function BusinessDetail() {
                     <>
                       <View style={styles.summaryRowNew}>
                         <View style={styles.summaryBlock}>
-                          <Text style={styles.summaryLabelNew}>
-                            Available Money
-                          </Text>
+                          <Text style={styles.summaryLabelNew}>Your Money</Text>
                           <Text
                             style={[
                               styles.summaryValueSecondary,

@@ -117,7 +117,7 @@ const EditTransactionScreen = () => {
   const shakeAnim = useRef(new Animated.Value(1)).current;
   const shakeAnimations = useRef<Record<number, Animated.Value>>({}).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [typeModalVisible, setTypeModalVisible] = useState(false);
+  const [typeDropdownVisible, setTypeDropdownVisible] = useState(false);
   const expected = useMemo(() => parseFloat(totalAmount) || 0, [totalAmount]);
   const [invalidPartnerIds, setInvalidPartnerIds] = useState<number[]>([]);
   const redTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -302,7 +302,7 @@ const EditTransactionScreen = () => {
       const enteredTotal = Number(totalAmount);
       const diff = Math.round((totalEntered - enteredTotal) * 100) / 100;
 
-      if (diff !== 0) {
+      if (diff !== 0 && !supplierName) {
         setRemaining(enteredTotal - totalEntered);
         setShowSupplierPopup(true);
         return;
@@ -351,9 +351,9 @@ const EditTransactionScreen = () => {
         investmentGroupId: inv.investmentGroupId,
         totalAmount: Number(totalAmount || inv.totalAmount || 0),
         imageUrl: inv.imageUrl,
-        splitType: inv.splitType?.toUpperCase(),
+        splitType: splitMode.toUpperCase(),
         transactionType: transactionType.toUpperCase(),
-        supplierName: inv.supplierName,
+        supplierName: supplierName || inv.supplierName,
         supplierId: inv.supplierId,
         updatedBy: userId,
         reduceLeftOver: checkedState[index]
@@ -537,7 +537,11 @@ const EditTransactionScreen = () => {
   useEffect(() => {
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
-      return;
+      return; // ✅ skip recalculation on initial load
+    }
+
+    if (splitMode === "manual") {
+      return; // ✅ never recalc manual
     }
 
     if (
@@ -576,6 +580,8 @@ const EditTransactionScreen = () => {
         ...r,
         invested: Number(value.toFixed(2)),
         investable: Number(value.toFixed(2)),
+        reduceLeftOver: r.reduceLeftOver ?? 0, // ✅ preserve
+        reduceLeftOverFlag: r.reduceLeftOverFlag ?? "N", // ✅ preserve
       };
     });
 
@@ -707,9 +713,11 @@ const EditTransactionScreen = () => {
         return {
           ...r,
           invested: Number(val.toFixed(2)),
-          investable: Number(r.investable ?? expected / prev.length), // don’t overwrite
+          investable: Number(r.investable ?? expected / prev.length),
           actual: Number(val.toFixed(2)),
-          splitType: sheetTempMode, // ✅ Save mode here
+          splitType: sheetTempMode,
+          reduceLeftOver: r.reduceLeftOver ?? 0, // ✅ preserve
+          reduceLeftOverFlag: r.reduceLeftOverFlag ?? "N", // ✅ preserve
         };
       }),
     );
@@ -780,6 +788,7 @@ const EditTransactionScreen = () => {
         <View style={styles.container}>
           <ScrollView
             contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 16 }}
+            onScrollBeginDrag={() => setTypeDropdownVisible(false)}
           >
             {/* Business + Transaction Type Row */}
             <View style={styles.businessTypeRow}>
@@ -795,11 +804,19 @@ const EditTransactionScreen = () => {
                     styles.typeDropdownBtn,
                     errorVisible && { borderColor: "red", borderWidth: 2 },
                   ]}
-                  onPress={() => setTypeModalVisible(true)}
+                  onPress={() => setTypeDropdownVisible((prev) => !prev)}
                 >
                   <Text
                     style={{
-                      color: errorVisible ? "red" : "#333",
+                      color: errorVisible
+                        ? "red"
+                        : transactionType === "Investment"
+                          ? "#007bff"
+                          : transactionType === "Sold"
+                            ? "#28a745"
+                            : transactionType === "Withdraw"
+                              ? "#dc3545"
+                              : "#333",
                       fontWeight: "600",
                     }}
                   >
@@ -1078,20 +1095,24 @@ const EditTransactionScreen = () => {
               totalAmount={expected}
               rows={supplierRows}
               remaining={remaining}
+              supplierName={supplierName}
               onClose={() => setShowSupplierPopup(false)}
-              onConfirm={(supplierName) => {
+              onConfirm={(name) => {
                 setShowSupplierPopup(false);
 
-                // update supplier in state
+                setSupplierName(name); // ✅ update main state
+
                 setInvestmentDataState((prev) =>
                   prev.map((inv) => ({
                     ...inv,
-                    supplierName,
+                    supplierName: name,
                   })),
                 );
 
-                // continue save
-                handleSave();
+                // ✅ wait for state update
+                setTimeout(() => {
+                  handleSave();
+                }, 0);
               }}
             />
           )}
@@ -1220,49 +1241,50 @@ const EditTransactionScreen = () => {
             </TouchableWithoutFeedback>
           </Modal>
           {/* Type Modal */}
-          <Modal visible={typeModalVisible} transparent animationType="fade">
-            <TouchableOpacity
-              style={styles.typeModalOverlay}
-              onPress={() => setTypeModalVisible(false)}
-            >
-              <View style={styles.typeModal}>
-                {(["Investment", "Sold", "Withdraw"] as const).map((t) => (
-                  <TouchableOpacity
-                    key={t}
-                    onPress={() => {
-                      setTransactionType(t);
+          {typeDropdownVisible && (
+            <View style={styles.typeDropdownMenu}>
+              {[
+                { label: "Investment", color: "#007bff" },
+                { label: "Sold", color: "#28a745" },
+                { label: "Withdraw", color: "#dc3545" },
+              ].map((item) => (
+                <TouchableOpacity
+                  key={item.label}
+                  style={styles.typeDropdownItem}
+                  onPress={() => {
+                    setTransactionType(item.label);
 
-                      // ✅ Reset total amount to 0
-                      setTotalAmount("0");
-                      // ✅ Reset partner calculated amounts
-                      setInvestmentDataState((prev) =>
-                        prev.map((r) => ({
-                          ...r,
-                          invested: 0,
-                          withdrawn: 0,
-                          soldAmount: 0,
-                          investable: 0, // ✅ ADD THIS
-                        })),
-                      );
+                    // ✅ SAME RESET LOGIC (important)
+                    setTotalAmount("0");
 
-                      // Reset split values
-                      setShareValues((prev) => prev.map(() => 0));
-                      setTypeModalVisible(false);
+                    setInvestmentDataState((prev) =>
+                      prev.map((r) => ({
+                        ...r,
+                        invested: 0,
+                        withdrawn: 0,
+                        soldAmount: 0,
+                        investable: 0,
+                      })),
+                    );
+
+                    setShareValues((prev) => prev.map(() => 0));
+
+                    setTypeDropdownVisible(false);
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: item.color,
+                      fontWeight:
+                        transactionType === item.label ? "700" : "500",
                     }}
-                    style={styles.typeOption}
                   >
-                    <Text
-                      style={{
-                        fontWeight: transactionType === t ? "700" : "400",
-                      }}
-                    >
-                      {t}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </TouchableOpacity>
-          </Modal>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       </SafeAreaView>
     </>
@@ -1670,5 +1692,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     backgroundColor: "#f9f9f9",
+  },
+  typeDropdownMenu: {
+    position: "absolute",
+    top: 40,
+    right: 0,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    elevation: 5,
+    zIndex: 999,
+    width: 150,
+  },
+
+  typeDropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
   },
 });

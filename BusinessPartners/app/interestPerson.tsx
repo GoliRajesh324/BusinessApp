@@ -69,10 +69,7 @@ export default function InterestPerson() {
     <>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
-        <AppHeader
-          title={name ? decodeURIComponent(name) : "Person"}
-          videoId={videoId}
-        />
+        <AppHeader title={name ? decodeURIComponent(name) : "Person"} />
       </SafeAreaView>
       <SafeAreaView
         edges={["bottom"]}

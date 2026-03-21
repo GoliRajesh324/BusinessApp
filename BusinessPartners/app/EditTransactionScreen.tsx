@@ -804,7 +804,14 @@ const EditTransactionScreen = () => {
                     styles.typeDropdownBtn,
                     errorVisible && { borderColor: "red", borderWidth: 2 },
                   ]}
-                  onPress={() => setTypeDropdownVisible((prev) => !prev)}
+                  //disabled={true}
+                  // onPress={() => setTypeDropdownVisible((prev) => !prev)}
+                  onPress={() =>
+                    Alert.alert(
+                      "Not Allowed",
+                      "You cannot change transaction type while editing.",
+                    )
+                  }
                 >
                   <Text
                     style={{

@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { t } from "i18next";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
@@ -80,7 +81,7 @@ export default function InventoryScreen() {
                 })
               }
             >
-              <Text style={styles.addText}>Add Category</Text>
+              <Text style={styles.addText}>{t("addCategory")}</Text>
             </TouchableOpacity>
           }
         />
@@ -129,7 +130,7 @@ export default function InventoryScreen() {
                 });
               }}
             >
-              <Text style={styles.footerBtnText}>Add</Text>
+              <Text style={styles.footerBtnText}>{t("add")}</Text>
             </TouchableOpacity>
 
             {/* Consume Stock */}
@@ -154,7 +155,7 @@ export default function InventoryScreen() {
                 });
               }}
             >
-              <Text style={styles.footerBtnText}>Consume</Text>
+              <Text style={styles.footerBtnText}>{t("consume")}</Text>
             </TouchableOpacity>
           </View>
         </View>

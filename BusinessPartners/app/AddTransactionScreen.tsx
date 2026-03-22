@@ -8,6 +8,7 @@ import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { t } from "i18next";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -731,7 +732,7 @@ const AddTransactionScreen = () => {
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
         <AppHeader
-          title={String("Add Transaction")}
+          title={t("addTransaction")}
           videoId={videoId}
           rightComponent={
             <TouchableOpacity
@@ -750,7 +751,7 @@ const AddTransactionScreen = () => {
               }
             >
               <Text style={styles.saveText}>
-                {isSaving ? "Saving..." : "Save"}
+                {isSaving ? t("saving...") : t("save")}
               </Text>
             </TouchableOpacity>
           }
@@ -795,7 +796,7 @@ const AddTransactionScreen = () => {
                       fontWeight: "600",
                     }}
                   >
-                    {transactionType ?? "Select Type"}
+                    {transactionType ?? t("selectType")}
                   </Text>
                   <Ionicons
                     name="chevron-down"
@@ -807,21 +808,21 @@ const AddTransactionScreen = () => {
               </Animated.View>
             </View>
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Enter description</Text>
+              <Text style={styles.inputLabel}>{t("description")}</Text>
               <TextInput
                 style={styles.inputBox}
-                placeholder="Enter description"
+                placeholder={t("enterDescription")}
                 value={description}
                 onChangeText={setDescription}
               />
             </View>
 
             <View style={[styles.inputContainer, { marginBottom: 6 }]}>
-              <Text style={styles.inputLabel}>Enter amount</Text>
+              <Text style={styles.inputLabel}>{t("amount")}</Text>
               <View style={styles.amountRow}>
                 <TextInput
                   style={[styles.inputBox, styles.amountInput]}
-                  placeholder="Enter amount"
+                  placeholder={t("enterAmount")}
                   keyboardType="numeric"
                   value={totalAmount}
                   onChangeText={setTotalAmount}
@@ -846,7 +847,7 @@ const AddTransactionScreen = () => {
 
             {/* Partner Cards */}
             <View style={{ marginTop: 12 }}>
-              <Text style={styles.sectionTitle}>Partners</Text>
+              <Text style={styles.sectionTitle}>{t("partners")}</Text>
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingVertical: 8 }}
@@ -967,7 +968,7 @@ const AddTransactionScreen = () => {
                                   fontWeight: "500",
                                 }}
                               >
-                                Available Money to use: ₹
+                                {t("availableMoneytoUse")} : ₹
                                 {Number(r.leftOver).toFixed(2)}
                               </Text>
                             </TouchableOpacity>
@@ -1026,7 +1027,7 @@ const AddTransactionScreen = () => {
               </ScrollView>
             </View>
             {/* Images Section */}
-            <Text style={styles.sectionTitle}>Images</Text>
+            <Text style={styles.sectionTitle}>{t("images")}</Text>
 
             <View style={{ flexDirection: "row", marginBottom: 10 }}>
               <TouchableOpacity
@@ -1126,9 +1127,11 @@ const AddTransactionScreen = () => {
                   <View style={styles.sheetContainer}>
                     {/* Header */}
                     <View style={styles.sheetHeader}>
-                      <Text style={styles.sheetHeaderTitle}>Split Options</Text>
+                      <Text style={styles.sheetHeaderTitle}>
+                        {t("splitOptions")}
+                      </Text>
                       <TouchableOpacity onPress={applySheet}>
-                        <Text style={styles.sheetDone}>Done</Text>
+                        <Text style={styles.sheetDone}>{t("done")}</Text>
                       </TouchableOpacity>
                     </View>
 

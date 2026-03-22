@@ -23,6 +23,7 @@ import { normalizeInvestmentForEdit } from "@/src/utils/InvestmentNormalizer";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
+import { t } from "i18next";
 import { Calendar, DateData } from "react-native-calendars";
 import { SafeAreaView } from "react-native-safe-area-context";
 import InvestmentAudit from "../src/components/InvestmentAudit";
@@ -52,7 +53,7 @@ export default function BusinessDetail() {
     businessName?: string;
   }>();
 
-  const [summaryFilter, setSummaryFilter] = useState("ALL");
+  const [summaryFilter, setSummaryFilter] = useState(t("all"));
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [customStartDate, setCustomStartDate] = useState<string | null>(null);
   const [customEndDate, setCustomEndDate] = useState<string | null>(null);
@@ -61,12 +62,12 @@ export default function BusinessDetail() {
   const [summaryDropdownOpen, setSummaryDropdownOpen] = useState(false);
 
   const summaryOptions = [
-    "ALL",
-    "TODAY",
-    "YESTERDAY",
-    "THIS MONTH",
-    "LAST MONTH",
-    "SELECT DATES",
+    t("all"),
+    t("today"),
+    t("yesterday"),
+    t("thisMonth"),
+    t("lastMonth"),
+    t("selectDates"),
   ];
 
   const router = useRouter();
@@ -113,11 +114,11 @@ export default function BusinessDetail() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [items, setItems] = useState([
-    { label: "Your Transactions", value: "byLoggedInUser" },
-    { label: "Your Investments", value: "byInvestment" },
-    { label: "Your Withdraws", value: "byWithdraw" },
-    { label: "Your Sold", value: "bySold" },
-    { label: "Everyone's Transactions", value: "allInvestments" },
+    { label: t("yourTransactions"), value: "byLoggedInUser" },
+    { label: t("yourInvestments"), value: "byInvestment" },
+    { label: t("yourWithdraws"), value: "byWithdraw" },
+    { label: t("yourSold"), value: "bySold" },
+    { label: t("everyonesTransactions"), value: "allInvestments" },
   ]);
 
   const [videoId, setVideoId] = useState("");
@@ -341,7 +342,7 @@ export default function BusinessDetail() {
   useEffect(() => {
     if (!token || !safeBusinessId) return;
 
-    if (summaryFilter === "ALL") {
+    if (summaryFilter === t("all")) {
       /* console.log(
         "🔄 Summary filter ALL selected → fetching overall business details",
       ); */
@@ -762,7 +763,7 @@ export default function BusinessDetail() {
       <TouchableOpacity
         key={String(inv?.investmentId ?? idx)}
         style={styles.newCard}
-        activeOpacity={0.9}
+        activeOpacity={0.7}
         onPress={() =>
           router.push({
             pathname: "/investmentDetail",
@@ -802,20 +803,20 @@ export default function BusinessDetail() {
           {/* Investment Layout */}
           {type === "Investment" && (
             <>
-              <Text style={styles.investedLabel}>Invested</Text>
+              <Text style={styles.investedLabel}>{t("invested")}</Text>
               <Text style={styles.investedValue}>
                 ₹{formatAmount(invested)}
               </Text>
 
               <View style={styles.amountRow}>
-                <Text style={styles.amountLabel}>Investable</Text>
+                <Text style={styles.amountLabel}>{t("investable")}</Text>
                 <Text style={styles.amountValue}>
                   ₹{formatAmount(investable)}
                 </Text>
               </View>
 
               <View style={styles.amountRow}>
-                <Text style={styles.amountLabel}>Total Amount</Text>
+                <Text style={styles.amountLabel}>{t("totalAmount")}</Text>
                 <Text style={styles.amountValue}>
                   ₹{formatAmount(totalAmount)}
                 </Text>
@@ -826,13 +827,13 @@ export default function BusinessDetail() {
           {/* Sold Layout */}
           {type === "Sold" && (
             <>
-              <Text style={styles.investedLabel}>Your Sold Amount</Text>
+              <Text style={styles.investedLabel}>{t("yourSoldAmount")}</Text>
               <Text style={styles.investedValue}>
                 ₹{formatAmount(soldAmount)}
               </Text>
 
               <View style={styles.amountRow}>
-                <Text style={styles.amountLabel}>Total Sold Amount</Text>
+                <Text style={styles.amountLabel}>{t("totalSoldAmount")}</Text>
                 <Text style={styles.amountValue}>
                   ₹{formatAmount(totalAmount)}
                 </Text>
@@ -843,13 +844,13 @@ export default function BusinessDetail() {
           {/* Withdraw Layout */}
           {type === "Withdraw" && (
             <>
-              <Text style={styles.investedLabel}>Your Withdrawal</Text>
+              <Text style={styles.investedLabel}>{t("yourWithdrawal")}</Text>
               <Text style={styles.investedValue}>
                 ₹{formatAmount(withdrawn)}
               </Text>
 
               <View style={styles.amountRow}>
-                <Text style={styles.amountLabel}>Total Withdrawal</Text>
+                <Text style={styles.amountLabel}>{t("totalWithdrawal")}</Text>
                 <Text style={styles.amountValue}>
                   ₹{formatAmount(totalAmount)}
                 </Text>
@@ -860,7 +861,9 @@ export default function BusinessDetail() {
 
         {/* Footer */}
         <View style={styles.footerRow}>
-          <Text style={styles.footerLeft}>Created by: {createdBy}</Text>
+          <Text style={styles.footerLeft}>
+            {t("createdBy")}: {createdBy}
+          </Text>
           <Text style={styles.footerRight}>{formatDateTime(createdAt)}</Text>
         </View>
       </TouchableOpacity>
@@ -980,7 +983,9 @@ export default function BusinessDetail() {
                 >
                   {/* Header */}
                   <View style={styles.summaryHeaderRow}>
-                    <Text style={styles.summaryTitle}>Business Summary</Text>
+                    <Text style={styles.summaryTitle}>
+                      {t("businessSummary")}
+                    </Text>
 
                     {/* 📌 ICON + DROPDOWN BUTTON */}
                     <TouchableOpacity
@@ -1052,7 +1057,7 @@ export default function BusinessDetail() {
                   <View style={styles.summaryRowNew}>
                     <View style={styles.summaryBlock}>
                       <Text style={styles.summaryLabelNew}>
-                        Total Investment
+                        {t("totalInvestment")}
                       </Text>
                       <Text style={styles.summaryValuePrimary}>
                         ₹{formatAmount(totalInvestment)}
@@ -1060,7 +1065,9 @@ export default function BusinessDetail() {
                     </View>
 
                     <View style={styles.summaryBlock}>
-                      <Text style={styles.summaryLabelNew}>Total Sold</Text>
+                      <Text style={styles.summaryLabelNew}>
+                        {t("totalSold")}
+                      </Text>
                       <Text style={styles.summaryValuePrimary}>
                         ₹{formatAmount(totalSoldAmount)}
                       </Text>
@@ -1071,11 +1078,13 @@ export default function BusinessDetail() {
                   <View style={styles.summaryDivider} />
 
                   {/* Row 2 */}
-                  {summaryFilter === "ALL" && (
+                  {summaryFilter === t("all") && (
                     <>
                       <View style={styles.summaryRowNew}>
                         <View style={styles.summaryBlock}>
-                          <Text style={styles.summaryLabelNew}>Your Money</Text>
+                          <Text style={styles.summaryLabelNew}>
+                            {t("yourMoney")}
+                          </Text>
                           <Text
                             style={[
                               styles.summaryValueSecondary,
@@ -1095,7 +1104,7 @@ export default function BusinessDetail() {
 
                         <View style={styles.summaryBlock}>
                           <Text style={styles.summaryLabelNew}>
-                            Your Investment
+                            {t("yourInvestment")}
                           </Text>
                           <Text
                             style={[
@@ -1233,7 +1242,7 @@ export default function BusinessDetail() {
               onPress={() => router.back()}
             >
               <Ionicons name="home" size={28} color="#4f93ff" />
-              <Text style={styles.bottomButtonText}>Home</Text>
+              <Text style={styles.bottomButtonText}>{t("home")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.bottomButtonIcon}
@@ -1249,7 +1258,7 @@ export default function BusinessDetail() {
               }
             >
               <Ionicons name="newspaper" size={28} color="#4f93ff" />
-              <Text style={styles.bottomButtonText}>News</Text>
+              <Text style={styles.bottomButtonText}>{t("news")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1266,7 +1275,7 @@ export default function BusinessDetail() {
               //onPress={() => alert("Inventory Feature coming soon")}
             >
               <Ionicons name="cube" size={28} color="#4f93ff" />
-              <Text style={styles.bottomButtonText}>Inventory</Text>
+              <Text style={styles.bottomButtonText}>{t("inventory")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1283,7 +1292,7 @@ export default function BusinessDetail() {
               }
             >
               <Ionicons name="time" size={28} color="#4f93ff" />
-              <Text style={styles.bottomButtonText}>History</Text>
+              <Text style={styles.bottomButtonText}>{t("history")}</Text>
             </TouchableOpacity>
           </View>
 

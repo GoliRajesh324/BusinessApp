@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Image,
@@ -16,6 +17,7 @@ import {
 import { RateUsModal } from "../src/components/RateUsModal";
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [userName, setUserName] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
@@ -54,32 +56,32 @@ export default function ProfileScreen() {
   const options = [
     {
       icon: "settings-outline",
-      text: "Settings",
+      text: t("settings"),
       action: () => router.push("/settingsScreen"),
     },
     {
       icon: "share-social-outline",
-      text: "Share",
+      text: t("share"),
       action: handleShareApp,
     },
     {
       icon: "star",
-      text: "Rate Us",
+      text: t("rateUs"),
       action: () => setRateModalVisible(true),
     },
     {
       icon: "lock-closed-outline",
-      text: "Change Password",
+      text: t("changePassword"),
       action: () => router.push("/resetPasswordScreen"),
     },
     {
       icon: "help-circle-outline",
-      text: "Help & Support",
+      text: t("helpAndSupport"),
       action: () => router.push("/helpandSupportScreen"),
     },
     {
       icon: "log-out-outline",
-      text: "Logout",
+      text: t("logout"),
       action: handleLogout,
     },
   ];
@@ -91,7 +93,7 @@ export default function ProfileScreen() {
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.title}>{t("profile")}</Text>
           <TouchableOpacity
             onPress={() =>
               Alert.alert(

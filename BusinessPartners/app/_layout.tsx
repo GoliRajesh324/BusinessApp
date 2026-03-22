@@ -24,6 +24,7 @@ import {
   View,
 } from "react-native";
 import "../src/i18n/i18n";
+import i18n from "../src/i18n/i18n";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -39,7 +40,7 @@ export default function RootLayout() {
 
   const appState = useRef(AppState.currentState);
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
+  const [langReady, setLangReady] = useState(false);
   // 1️⃣ Run biometric if needed
   const runBiometric = async () => {
     const lockEnabled = await AsyncStorage.getItem("appLockEnabled");
@@ -50,7 +51,7 @@ export default function RootLayout() {
       fallbackLabel: "Use Passcode",
       disableDeviceFallback: false,
     });
-
+    if (lockEnabled !== "true") return true;
     if (result.success) {
       await AsyncStorage.setItem("appLockLastAuth", "yes");
       return true;
@@ -120,7 +121,36 @@ export default function RootLayout() {
     checkAppVersion();
     fetchVideoIds();
   }, []);
+  useEffect(() => {
+    const setDefaultAppLock = async () => {
+      const lock = await AsyncStorage.getItem("appLockEnabled");
 
+      if (lock === null) {
+        // ✅ First time install
+        await AsyncStorage.setItem("appLockEnabled", "true");
+      }
+    };
+
+    setDefaultAppLock();
+  }, []);
+  useEffect(() => {
+    const loadLanguage = async () => {
+      try {
+        const savedLang = await AsyncStorage.getItem("appLanguage");
+
+        const langToUse = savedLang || "en";
+
+        await i18n.changeLanguage(langToUse);
+
+        setLangReady(true);
+      } catch (e) {
+        console.log("Language load error:", e);
+        setLangReady(true);
+      }
+    };
+
+    loadLanguage();
+  }, []);
   const checkLock = async () => {
     try {
       const lockEnabled = await AsyncStorage.getItem("appLockEnabled");
@@ -392,6 +422,12 @@ export default function RootLayout() {
           />
           <Stack.Screen
             name="investmentDetail"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="addEditInterest"
             options={{
               headerShown: false,
             }}

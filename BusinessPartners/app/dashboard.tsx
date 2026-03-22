@@ -265,7 +265,7 @@ export default function Dashboard() {
                 activeMenu === "Business" && styles.activeMenuTabText,
               ]}
             >
-              Business
+              {t("business")}
             </Text>
           </TouchableOpacity>
 
@@ -290,7 +290,7 @@ export default function Dashboard() {
                 activeMenu === "Interest" && styles.activeMenuTabText,
               ]}
             >
-              Interest
+              {t("interest")}
             </Text>
           </TouchableOpacity>
 
@@ -314,7 +314,7 @@ export default function Dashboard() {
                 activeMenu === "Emi Calc" && styles.activeMenuTabText,
               ]}
             >
-              EMi Calc
+              {t("emiCal")}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -446,7 +446,7 @@ export default function Dashboard() {
                         setLongPressedId(null);
                       }}
                     >
-                      <Text style={styles.btnText}>Delete</Text>
+                      <Text style={styles.btnText}>{t("delete")}</Text>
                     </TouchableOpacity>
                   ) : item.cropInProgress ? (
                     <TouchableOpacity
@@ -461,7 +461,7 @@ export default function Dashboard() {
                         })
                       }
                     >
-                      <Text style={styles.btnText}>In Progress</Text>
+                      <Text style={styles.btnText}> {t("inProgress")}</Text>
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
@@ -511,7 +511,7 @@ export default function Dashboard() {
           }}
         >
           <Text style={styles.floatingButtonText}>
-            {showPlusOnly ? "+" : "+ Add business"}
+            {showPlusOnly ? "+" : t("addBusiness")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -529,7 +529,7 @@ export default function Dashboard() {
         <View style={styles.modalOverlay}>
           <View style={styles.popupBox}>
             <Text style={styles.popupTitle}>
-              Start
+              {t("start")}
               <Text style={styles.bold}> {confirmStart?.name}</Text> Business ?
             </Text>
             <View style={styles.popupButtons}>

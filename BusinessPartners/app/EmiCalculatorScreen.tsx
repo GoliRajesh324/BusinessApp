@@ -18,7 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function EmiCalculatorScreen() {
   const router = useRouter();
 
-  const [loanAmount, setLoanAmount] = useState(1000000);
+  const [loanAmount, setLoanAmount] = useState("1000000");
   const [interestValue, setInterestValue] = useState(6.5);
   const [interestMode, setInterestMode] = useState<"percent" | "rupee">(
     "percent",
@@ -40,7 +40,7 @@ export default function EmiCalculatorScreen() {
     setVideoId(id);
   };
   const emiDetails = useMemo(() => {
-    const P = loanAmount;
+    const P = Number(loanAmount) || 0;
     const annualRate = interestPercent;
     const r = annualRate / 12 / 100;
     const n = tenureYears * 12;
@@ -85,8 +85,8 @@ export default function EmiCalculatorScreen() {
               <TextInput
                 style={styles.valueText}
                 keyboardType="numeric"
-                value={String(loanAmount)}
-                onChangeText={(t) => setLoanAmount(Number(t) || 0)}
+                value={loanAmount}
+                onChangeText={(t) => setLoanAmount(t)}
               />
             </View>
 
@@ -94,8 +94,8 @@ export default function EmiCalculatorScreen() {
               minimumValue={10000}
               maximumValue={50000000}
               step={10000}
-              value={loanAmount}
-              onValueChange={(val) => setLoanAmount(val)}
+              value={Number(loanAmount) || 0}
+              onValueChange={(val) => setLoanAmount(String(val))}
               minimumTrackTintColor="#16a34a"
             />
 
@@ -165,7 +165,7 @@ export default function EmiCalculatorScreen() {
               />
               <Row
                 label="Principal amount"
-                value={`₹ ${loanAmount.toLocaleString("en-IN")}`}
+                value={`₹ ${Number(loanAmount || 0).toLocaleString("en-IN")}`}
               />
               <Row
                 label="Total interest"

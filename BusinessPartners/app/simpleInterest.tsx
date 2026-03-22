@@ -3,22 +3,18 @@ import AppHeader from "@/src/components/AppHeader";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Keyboard,
-  KeyboardAvoidingView,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -85,9 +81,11 @@ export default function SimpleInterestPage() {
   const [showSummaryAmounts, setShowSummaryAmounts] = useState(false);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
-  useEffect(() => {
-    fetchAll();
-  }, [showActive]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchAll();
+    }, [showActive]),
+  );
 
   const [videoId, setVideoId] = useState("");
 
@@ -142,23 +140,23 @@ export default function SimpleInterestPage() {
   );
 
   const onAddPress = () => {
-    setFormData(emptyForm());
-    setEditingId(null);
-    setShowModal(true);
+    router.push("/addEditInterest");
   };
 
   const onEditOpen = (rec: Interest) => {
-    setFormData({
-      name: rec.name,
-      type: rec.type,
-      amount: rec.amount,
-      rate: rec.rate,
-      startDate: rec.startDate,
-      endDate: rec.endDate || "",
-      comment: rec.comment,
+    router.push({
+      pathname: "/addEditInterest",
+      params: {
+        id: rec.id,
+        name: rec.name,
+        type: rec.type,
+        amount: rec.amount,
+        rate: rec.rate,
+        startDate: rec.startDate,
+        endDate: rec.endDate,
+        comment: rec.comment,
+      },
     });
-    setEditingId(rec.id ?? null);
-    setShowModal(true);
   };
 
   const handleDownloadPDF = async () => {
@@ -352,9 +350,12 @@ export default function SimpleInterestPage() {
                   style={styles.activeBtn}
                   onPress={() => setShowActive((s) => !s)}
                 >
-                  <Text style={styles.activeText}>
-                    {showActive ? "Active" : "InActive"} ⏷
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text style={styles.activeText}>
+                      {showActive ? "Active" : "InActive"}
+                    </Text>
+                    <Ionicons name="chevron-down" size={16} color="#007bff" />
+                  </View>
                 </TouchableOpacity>
 
                 {/* Eye Button */}
@@ -500,7 +501,11 @@ export default function SimpleInterestPage() {
                             {rec.comment ? (
                               <View style={styles.recordRow}>
                                 <Text style={styles.recordLabel}>Comment</Text>
-                                <Text style={styles.recordValue}>
+                                <Text
+                                  style={styles.commentText}
+                                  numberOfLines={3}
+                                  ellipsizeMode="tail"
+                                >
                                   {rec.comment}
                                 </Text>
                               </View>
@@ -519,254 +524,6 @@ export default function SimpleInterestPage() {
           <TouchableOpacity style={styles.fab} onPress={onAddPress}>
             <Text style={styles.fabText}>+</Text>
           </TouchableOpacity>
-
-          <Modal
-            visible={showModal}
-            animationType="slide"
-            transparent
-            onRequestClose={() => !saving && setShowModal(false)}
-          >
-            <KeyboardAvoidingView
-              style={{ flex: 1 }}
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-              keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-            >
-              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <View style={styles.modalOverlay}>
-                  <View style={styles.modalCard}>
-                    {/* HEADER */}
-                    <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>
-                        {editingId ? "Edit Record" : "Add Record"}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => {
-                          if (!saving) {
-                            setShowModal(false);
-                            setEditingId(null);
-                            setFormData(emptyForm());
-                          }
-                        }}
-                      >
-                        <Ionicons name="close" size={22} color="#333" />
-                      </TouchableOpacity>
-                    </View>
-
-                    {/* SCROLLABLE CONTENT */}
-                    <View style={{ maxHeight: 400 }}>
-                      <ScrollView
-                        keyboardShouldPersistTaps="handled"
-                        showsVerticalScrollIndicator
-                      >
-                        <TextInput
-                          placeholder="Name"
-                          placeholderTextColor="#888"
-                          style={styles.input}
-                          value={String(formData.name ?? "")}
-                          onChangeText={(t) =>
-                            setFormData((p) => ({ ...p, name: t }))
-                          }
-                          editable={!saving}
-                        />
-
-                        <View style={styles.typeRow}>
-                          <TouchableOpacity
-                            style={[
-                              styles.typeBtn,
-                              formData.type === "taken" && styles.typeBtnActive,
-                            ]}
-                            onPress={() =>
-                              setFormData((p) => ({ ...p, type: "taken" }))
-                            }
-                            disabled={saving}
-                          >
-                            <Text style={styles.typeBtnText}>
-                              Money Given By You
-                            </Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            style={[
-                              styles.typeBtn,
-                              formData.type === "given" && styles.typeBtnActive,
-                            ]}
-                            onPress={() =>
-                              setFormData((p) => ({ ...p, type: "given" }))
-                            }
-                            disabled={saving}
-                          >
-                            <Text style={styles.typeBtnText}>
-                              Money Taken By You
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-
-                        <TextInput
-                          placeholder="Amount"
-                          placeholderTextColor="#888"
-                          style={styles.input}
-                          value={
-                            formData.amount !== undefined &&
-                            formData.amount !== null
-                              ? String(formData.amount)
-                              : ""
-                          }
-                          onChangeText={(t) => {
-                            const num = t.replace(/[^0-9.]/g, "");
-                            setFormData((p) => ({
-                              ...p,
-                              amount: num === "" ? undefined : Number(num),
-                            }));
-                          }}
-                          keyboardType="numeric"
-                          editable={!saving}
-                        />
-
-                        <TextInput
-                          placeholder="Rate of Interest (%)"
-                          placeholderTextColor="#888"
-                          style={styles.input}
-                          value={
-                            formData.rate !== undefined &&
-                            formData.rate !== null
-                              ? String(formData.rate)
-                              : ""
-                          }
-                          onChangeText={(t) =>
-                            setFormData((p) => ({
-                              ...p,
-                              rate: t === "" ? undefined : Number(t),
-                            }))
-                          }
-                          keyboardType="numeric"
-                          editable={!saving}
-                        />
-
-                        <View style={styles.dateRow}>
-                          <Text style={styles.dateLabel}>Start Date</Text>
-
-                          <View style={styles.dateInputWrapper}>
-                            <TextInput
-                              style={styles.dateTextInput}
-                              placeholder="YYYY-MM-DD"
-                              value={formData.startDate ?? ""}
-                              onChangeText={(text) =>
-                                setFormData((p) => ({ ...p, startDate: text }))
-                              }
-                            />
-
-                            <TouchableOpacity onPress={openStartDatePicker}>
-                              <Ionicons
-                                name="calendar-outline"
-                                size={20}
-                                color="#555"
-                              />
-                            </TouchableOpacity>
-
-                            {formData.startDate ? (
-                              <TouchableOpacity
-                                onPress={() =>
-                                  setFormData((p) => ({ ...p, startDate: "" }))
-                                }
-                              >
-                                <Ionicons
-                                  name="close-circle"
-                                  size={20}
-                                  color="red"
-                                />
-                              </TouchableOpacity>
-                            ) : null}
-                          </View>
-                        </View>
-
-                        {editingId && (
-                          <View style={styles.dateRow}>
-                            <Text style={styles.dateLabel}>End Date</Text>
-
-                            <View style={styles.dateInputWrapper}>
-                              <TextInput
-                                style={styles.dateTextInput}
-                                placeholder="YYYY-MM-DD"
-                                value={formData.endDate ?? ""}
-                                onChangeText={(text) =>
-                                  setFormData((p) => ({ ...p, endDate: text }))
-                                }
-                              />
-
-                              <TouchableOpacity onPress={openEndDatePicker}>
-                                <Ionicons
-                                  name="calendar-outline"
-                                  size={20}
-                                  color="#555"
-                                />
-                              </TouchableOpacity>
-
-                              {formData.endDate ? (
-                                <TouchableOpacity
-                                  onPress={() =>
-                                    setFormData((p) => ({ ...p, endDate: "" }))
-                                  }
-                                >
-                                  <Ionicons
-                                    name="close-circle"
-                                    size={20}
-                                    color="red"
-                                  />
-                                </TouchableOpacity>
-                              ) : null}
-                            </View>
-                          </View>
-                        )}
-
-                        <TextInput
-                          placeholder="Comment"
-                          placeholderTextColor="#888"
-                          style={[styles.input, styles.textarea]}
-                          value={formData.comment ?? ""}
-                          onChangeText={(t) =>
-                            setFormData((p) => ({ ...p, comment: t }))
-                          }
-                          editable={!saving}
-                          multiline
-                        />
-                      </ScrollView>
-                    </View>
-
-                    {/* ACTION BUTTONS */}
-                    <View style={styles.modalActions}>
-                      <TouchableOpacity
-                        style={[styles.btn, styles.cancelBtn]}
-                        onPress={() => {
-                          if (!saving) {
-                            setShowModal(false);
-                            setEditingId(null);
-                            setFormData(emptyForm());
-                          }
-                        }}
-                        disabled={saving}
-                      >
-                        <Text style={styles.btnText}>Cancel</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[styles.btn, styles.saveBtn]}
-                        onPress={handleSave}
-                        disabled={saving}
-                      >
-                        {saving ? (
-                          <ActivityIndicator color="#fff" />
-                        ) : (
-                          <Text style={[styles.btnText, { color: "#fff" }]}>
-                            {editingId ? "Update" : "Save"}
-                          </Text>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              </TouchableWithoutFeedback>
-            </KeyboardAvoidingView>
-          </Modal>
         </View>
       </SafeAreaView>
     </>
@@ -883,11 +640,11 @@ const styles = StyleSheet.create({
   },
   recordType: { fontSize: 13, fontWeight: "700" },
   recordEditBtn: { padding: 6 },
-
   recordRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 6,
+    alignItems: "flex-start", // ✅ important for multiline
   },
   recordLabel: { color: "#666", fontSize: 12 },
   recordValue: { fontSize: 14, fontWeight: "700" },
@@ -1010,5 +767,12 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 45,
     fontSize: 14,
+  },
+  commentText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#333",
+    flexShrink: 1, // ✅ prevents overflow
+    maxWidth: "70%", // ✅ keeps layout intact
   },
 });

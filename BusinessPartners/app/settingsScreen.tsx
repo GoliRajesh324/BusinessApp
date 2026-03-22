@@ -48,7 +48,9 @@ export default function SettingsScreen() {
 
         // Load App Lock
         const savedLock = await AsyncStorage.getItem("appLockEnabled");
-        setAppLockEnabled(savedLock === "true");
+
+        const lockValue = savedLock === null ? "true" : savedLock; // ✅ default ON
+        setAppLockEnabled(lockValue === "true");
       } catch (e) {
         console.log("Language/AppLock load error:", e);
       }

@@ -3,6 +3,7 @@ import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { t } from "i18next";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { PieChart } from "react-native-gifted-charts";
@@ -131,9 +132,7 @@ export default function PartnerWiseDetails() {
             {/* 🔵 Partner Share Pie Chart */}
             {partners.length > 0 && (
               <View style={styles.chartCard}>
-                <Text style={styles.chartTitle}>
-                  Partner Share Distribution
-                </Text>
+                <Text style={styles.chartTitle}>{t("partnerShareChart")}</Text>
 
                 <View style={styles.pieContainer}>
                   <PieChart
@@ -214,7 +213,7 @@ export default function PartnerWiseDetails() {
                     {inv?.partner?.username?.toUpperCase()}
                   </Text>
                   <Text style={styles.partnerCardShare}>
-                    Share: {inv.partner.share}%
+                    {t("share")}: {inv.partner.share}%
                   </Text>
                 </View>
 
@@ -222,7 +221,7 @@ export default function PartnerWiseDetails() {
                 <View style={styles.partnerGrid}>
                   {/* Available Money */}
                   <View style={styles.partnerGridItem}>
-                    <Text style={styles.gridLabel}>Available Money</Text>
+                    <Text style={styles.gridLabel}>{t("yourMoney")}</Text>
                     <Text
                       style={[
                         styles.gridValue,
@@ -239,7 +238,7 @@ export default function PartnerWiseDetails() {
 
                   {/* Withdrawn */}
                   <View style={styles.partnerGridItem}>
-                    <Text style={styles.gridLabel}>Withdrawn</Text>
+                    <Text style={styles.gridLabel}>{t("withdrawn")}</Text>
                     <Text style={styles.gridValue}>
                       ₹{formatAmount(inv.withdrawn)}
                     </Text>
@@ -247,7 +246,9 @@ export default function PartnerWiseDetails() {
 
                   {/* Actual Investment */}
                   <View style={styles.partnerGridItem}>
-                    <Text style={styles.gridLabel}>Actual Investment</Text>
+                    <Text style={styles.gridLabel}>
+                      {t("actualInvestment")}
+                    </Text>
                     <Text style={styles.gridValue}>
                       ₹{formatAmount(inv.actualInvestment)}
                     </Text>
@@ -255,7 +256,7 @@ export default function PartnerWiseDetails() {
 
                   {/* You Invested */}
                   <View style={styles.partnerGridItem}>
-                    <Text style={styles.gridLabel}>You Invested</Text>
+                    <Text style={styles.gridLabel}>{t("youInvested")}</Text>
                     <Text style={styles.gridValue}>
                       ₹{formatAmount(inv.yourInvestment)}
                     </Text>

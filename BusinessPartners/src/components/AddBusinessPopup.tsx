@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { router } from "expo-router";
+import { t } from "i18next";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -278,7 +279,7 @@ export default function AddBusinessPopup({
 
           <View style={styles.headerRow}>
             <Text style={styles.title}>
-              {editingBusiness ? "Edit Business" : "Add Business"}
+              {editingBusiness ? "Edit Business" : t("addBusinessTitle")}
             </Text>
 
             <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -288,7 +289,7 @@ export default function AddBusinessPopup({
                 style={[styles.headerSaveBtn, saveDisabled && { opacity: 0.5 }]}
               >
                 <Text style={styles.headerSaveText}>
-                  {loading ? "Saving.." : "Save"}
+                  {loading ? t("saving") : t("save")}
                 </Text>
               </TouchableOpacity>
 
@@ -297,24 +298,25 @@ export default function AddBusinessPopup({
               </TouchableOpacity>
             </View>
           </View>
-
           <ScrollView
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.scrollContent}
           >
-            <Text style={styles.label}>Business Name</Text>
+            <Text style={styles.label}> {t("businessName")}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter Business Name"
+              placeholder={t("enterBusinessName")}
               placeholderTextColor="#888" // Add this line
               value={businessName}
               onChangeText={setBusinessName}
             />
 
-            <Text style={[styles.label, { marginTop: 10 }]}>Partner Name</Text>
+            <Text style={[styles.label, { marginTop: 10 }]}>
+              {t("partnerName")}
+            </Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter Partner Name"
+              placeholder={t("enterPartnerName")}
               placeholderTextColor="#888" // Add this line
               value={partnerName}
               onChangeText={setPartnerName}
@@ -323,7 +325,7 @@ export default function AddBusinessPopup({
             <View style={styles.partnerRow}>
               <TextInput
                 style={[styles.input, styles.shareInput]}
-                placeholder="Enter Share %"
+                placeholder={t("enterSharePercentage")}
                 placeholderTextColor="#888" // Add this line
                 keyboardType="numeric"
                 value={share}
@@ -337,16 +339,13 @@ export default function AddBusinessPopup({
                 onPress={handleAddOrUpdatePartner}
               >
                 <Text style={styles.addBtnText}>
-                  {editingIndex !== null ? "Update" : "Add"}
+                  {editingIndex !== null ? t("update") : t("add")}
                 </Text>
               </TouchableOpacity>
             </View>
 
             {partners.length === 0 ? (
-              <Text style={styles.emptyPartners}>
-                No partners have been added.{"\n"}You can add only partners who
-                have an account.
-              </Text>
+              <Text style={styles.emptyPartners}>{t("noPartnerData")}</Text>
             ) : (
               partners.map((p, idx) => (
                 <View key={idx} style={styles.partnerCard}>

@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { t } from "i18next";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -204,7 +205,7 @@ export default function InvestmentDetail() {
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
         <AppHeader
-          title={String("Transaction Details")}
+          title={t("transactionDetails")}
           videoId={videoId}
           rightComponent={
             <TouchableOpacity
@@ -236,11 +237,11 @@ export default function InvestmentDetail() {
         <View style={styles.container}>
           <View style={styles.metaContainer}>
             <Text style={styles.metaText}>
-              Created By: {investments[0]?.createdBy || "-"}
+              {t("createdBy")}: {investments[0]?.createdBy || "-"}
             </Text>
 
             <Text style={styles.metaText}>
-              Created At:{" "}
+              {t("createdAt")}:{" "}
               {investments[0]?.createdAt
                 ? formatDateTime(investments[0]?.createdAt)
                 : "-"}
@@ -278,7 +279,7 @@ export default function InvestmentDetail() {
 
                       {inv.share != null && (
                         <Text style={styles.shareText}>
-                          Share: {inv.share}%
+                          {t("share")}: {inv.share}%
                         </Text>
                       )}
                     </View>
@@ -296,7 +297,9 @@ export default function InvestmentDetail() {
 
                     {totalAmount > 0 && (
                       <View style={styles.amountRow}>
-                        <Text style={styles.amountLabel}>Total Amount</Text>
+                        <Text style={styles.amountLabel}>
+                          {t("totalAmount")}
+                        </Text>
                         <Text style={styles.amountValue}>
                           ₹ {formatAmount(totalAmount)}
                         </Text>
@@ -305,7 +308,9 @@ export default function InvestmentDetail() {
 
                     {investable > 0 && (
                       <View style={styles.amountRow}>
-                        <Text style={styles.amountLabel}>Investable</Text>
+                        <Text style={styles.amountLabel}>
+                          {t("investable")}
+                        </Text>
                         <Text style={styles.amountValue}>
                           ₹ {formatAmount(investable)}
                         </Text>
@@ -314,7 +319,7 @@ export default function InvestmentDetail() {
 
                     {invested > 0 && (
                       <View style={styles.amountRow}>
-                        <Text style={styles.amountLabel}>Invested</Text>
+                        <Text style={styles.amountLabel}> {t("invested")}</Text>
                         <Text style={styles.amountValue}>
                           ₹ {formatAmount(invested)}
                         </Text>
@@ -323,7 +328,10 @@ export default function InvestmentDetail() {
 
                     {soldAmount > 0 && (
                       <View style={styles.amountRow}>
-                        <Text style={styles.amountLabel}>Sold Amount</Text>
+                        <Text style={styles.amountLabel}>
+                          {" "}
+                          {t("soldAmount")}
+                        </Text>
                         <Text style={styles.amountValue}>
                           ₹ {formatAmount(soldAmount)}
                         </Text>
@@ -332,7 +340,7 @@ export default function InvestmentDetail() {
 
                     {withdrawn > 0 && (
                       <View style={styles.amountRow}>
-                        <Text style={styles.amountLabel}>Withdrawn</Text>
+                        <Text style={styles.amountLabel}> {t("withdraw")}</Text>
                         <Text style={styles.amountValue}>
                           ₹ {formatAmount(withdrawn)}
                         </Text>

@@ -11,6 +11,7 @@ import {
   FlatList,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -96,7 +97,19 @@ export default function ChangeHistoryScreen() {
     "transactionType",
   ];
   const renderCard = ({ item }: { item: AuditCard }) => (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() =>
+        router.push({
+          pathname: "/investmentDetail",
+          params: {
+            investmentGroupId: item.investmentGroupId,
+            businessId: businessId,
+            businessName: businessName,
+          },
+        })
+      }
+    >
       {/* HEADER CHANGES */}
       {Object.entries(item.headerChanges).map(([key, change]) => (
         <View key={key} style={{ marginBottom: 6 }}>
@@ -140,7 +153,7 @@ export default function ChangeHistoryScreen() {
           {new Date(item.modifiedAt).toLocaleString()}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (

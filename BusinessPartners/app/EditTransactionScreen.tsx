@@ -30,6 +30,7 @@ import SupplierPopup from "@/src/components/SupplierPopup";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { t } from "i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const EditTransactionScreen = () => {
@@ -356,10 +357,15 @@ const EditTransactionScreen = () => {
         supplierName: supplierName || inv.supplierName,
         supplierId: inv.supplierId,
         updatedBy: userId,
-        reduceLeftOver: checkedState[index]
-          ? Number(inv.reduceLeftOver || 0)
-          : 0,
-        reduceLeftOverFlag: checkedState[index] ? "Y" : "N",
+        reduceLeftOver:
+          Number(totalAmount) === 0
+            ? 0
+            : checkedState[index]
+              ? Number(inv.reduceLeftOver || 0)
+              : 0,
+
+        reduceLeftOverFlag:
+          Number(totalAmount) === 0 ? "N" : checkedState[index] ? "Y" : "N",
       }));
 
       // 🚨 Withdraw validation: cannot exceed available money
@@ -444,7 +450,16 @@ const EditTransactionScreen = () => {
 
           const reduceValue = Number(match?.reduceLeftOver || 0);
           const checked = checkedState[matchIndex];
-
+          if (Number(totalAmount) === 0) {
+            return {
+              ...hidden,
+              transactionType: "INVESTMENT_WITHDRAW",
+              withdrawn: 0,
+              reduceLeftOver: 0,
+              reduceLeftOverFlag: "N",
+              updatedBy: userId,
+            };
+          }
           if (!checked) {
             // checkbox removed → reset values
             return {
@@ -537,14 +552,32 @@ const EditTransactionScreen = () => {
   useEffect(() => {
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
-      return; // ✅ skip recalculation on initial load
+      return;
+    }
+
+    if (!investmentDataState?.length) return;
+
+    const total = Number(totalAmount);
+
+    // ✅ FIX: if total = 0 → reset all
+    if (total === 0) {
+      const reset = investmentDataState.map((r) => ({
+        ...r,
+        invested: 0,
+        investable: 0,
+        withdrawn: 0,
+        soldAmount: 0,
+      }));
+
+      setInvestmentDataState(reset);
+      return;
     }
 
     if (splitMode === "manual") {
       return; // ✅ never recalc manual
     }
 
-    if (
+    /*  if (
       !totalAmount ||
       Number(totalAmount) <= 0 ||
       !investmentDataState?.length
@@ -552,7 +585,7 @@ const EditTransactionScreen = () => {
       return;
     }
 
-    const total = Number(totalAmount);
+    const total = Number(totalAmount); */
 
     const updated = investmentDataState.map((r) => {
       const share = Number(r.share) || 0;
@@ -758,7 +791,7 @@ const EditTransactionScreen = () => {
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
         <StatusBar style="light" backgroundColor="#4f93ff" />
         <AppHeader
-          title={String("Edit Transaction")}
+          title={t("editTransaction")}
           videoId={videoId}
           rightComponent={
             <TouchableOpacity
@@ -766,16 +799,18 @@ const EditTransactionScreen = () => {
               style={[
                 styles.headerRight,
                 {
-                  opacity:
-                    isUpdating || !totalAmount || Number(totalAmount) <= 0
-                      ? 0.5
-                      : 1,
+                  /*           opacity:
+  isUpdating || !totalAmount || Number(totalAmount) <= 0
+    ? 0.5
+    : 1, */
+                  opacity: isUpdating || totalAmount === "" ? 0.5 : 1,
                 },
               ]}
-              disabled={isUpdating || !totalAmount || Number(totalAmount) <= 0}
+              //disabled={isUpdating || !totalAmount || Number(totalAmount) <= 0}
+              disabled={isUpdating || totalAmount === ""}
             >
               <Text style={styles.saveText}>
-                {isUpdating ? "Updating..." : "Update"}
+                {isUpdating ? t("updating...") : t("update")}
               </Text>
             </TouchableOpacity>
           }
@@ -839,21 +874,21 @@ const EditTransactionScreen = () => {
               </Animated.View>
             </View>
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Enter description</Text>
+              <Text style={styles.inputLabel}>{t("description")}</Text>
               <TextInput
                 style={styles.inputBox}
-                placeholder="Enter description"
+                placeholder={t("enterDescription")}
                 value={description}
                 onChangeText={setDescription}
               />
             </View>
 
             <View style={[styles.inputContainer, { marginBottom: 6 }]}>
-              <Text style={styles.inputLabel}>Enter amount</Text>
+              <Text style={styles.inputLabel}>{t("amount")}</Text>
               <View style={styles.amountRow}>
                 <TextInput
                   style={[styles.inputBox, styles.amountInput]}
-                  placeholder="Enter amount"
+                  placeholder={t("enterAmount")}
                   keyboardType="numeric"
                   value={totalAmount}
                   onChangeText={setTotalAmount}
@@ -904,7 +939,7 @@ const EditTransactionScreen = () => {
 
             {/* Partner Cards */}
             <View style={{ marginTop: 12 }}>
-              <Text style={styles.sectionTitle}>Partners</Text>
+              <Text style={styles.sectionTitle}>{t("partners")}</Text>
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingVertical: 8 }}
@@ -1018,7 +1053,7 @@ const EditTransactionScreen = () => {
                                   fontWeight: "500",
                                 }}
                               >
-                                Available Money to use: ₹
+                                {t("availableMoneytoUse")} ₹
                                 {(
                                   Number(r.availableMoney ?? 0) +
                                   Number(
@@ -1157,7 +1192,7 @@ const EditTransactionScreen = () => {
                     <View style={styles.sheetHeader}>
                       <Text style={styles.sheetHeaderTitle}>Split Options</Text>
                       <TouchableOpacity onPress={applySheet}>
-                        <Text style={styles.sheetDone}>Done</Text>
+                        <Text style={styles.sheetDone}>{t("done")}</Text>
                       </TouchableOpacity>
                     </View>
 

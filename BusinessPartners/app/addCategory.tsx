@@ -1,10 +1,12 @@
 import AppHeader from "@/src/components/AppHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Image,
   Keyboard,
   StyleSheet,
   Text,
@@ -25,11 +27,13 @@ export default function AddCategory() {
     name: editName,
     description: editDesc,
     quantityType: editQty,
+    imageUrl: editImageUrl, // ✅ ADD THIS
   } = useLocalSearchParams();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [quantityType, setQuantityType] = useState<"KG" | "LITERS">("KG");
+  const [image, setImage] = useState<any | null>(null);
 
   /* ------------------ IMAGE PICKERS ------------------ */
   useEffect(() => {
@@ -37,54 +41,102 @@ export default function AddCategory() {
       if (editName) setName(editName as string);
       if (editDesc) setDescription(editDesc as string);
       if (editQty) setQuantityType(editQty as "KG" | "LITERS");
+
+      // ✅ SET EXISTING IMAGE
+      if (editImageUrl) {
+        setImage({
+          uri: editImageUrl,
+          isExisting: true, // 🔥 important flag
+        });
+      }
     }
-  }, [isEdit, editName, editDesc, editQty]);
+  }, [isEdit, editName, editDesc, editQty, editImageUrl]);
 
   /* ------------------ SAVE CATEGORY ------------------ */
   const saveCategory = async () => {
     Keyboard.dismiss();
+
     if (!name.trim()) return Alert.alert("Enter category name");
 
     const token = await AsyncStorage.getItem("token");
     if (!token) return Alert.alert("Token missing");
 
     try {
+      const payload = {
+        businessId: Number(businessId),
+        name,
+        description,
+        quantityType,
+        createdBy: 1,
+      };
+
       if (isEdit === "true") {
-        // UPDATE
-        await updateCategory(
-          Number(categoryId),
-          {
-            name,
-            description,
-            quantityType,
-          },
-          token,
-        );
+        let finalImage = null;
+        let payload: any = {
+          name,
+          description,
+          quantityType,
+        };
+
+        // ✅ NEW IMAGE
+        if (image && !image.isExisting) {
+          finalImage = image;
+        }
+
+        // ✅ IMAGE REMOVED
+        if (!image) {
+          payload.removeImage = true;
+        }
+
+        await updateCategory(Number(categoryId), payload, finalImage, token);
 
         Alert.alert("Success", "Category updated successfully");
         router.back();
         return;
       }
 
-      // CREATE
+      // ✅ CREATE WITH IMAGE
       await createCategory(
-        {
-          businessId: Number(businessId),
-          name,
-          description,
-          quantityType,
-          createdBy: 1,
-        },
+        payload,
+        image, // ✅ send image
         token,
       );
 
       Alert.alert("Success", "Category created");
       router.back();
     } catch (err: any) {
+      console.log(err);
       Alert.alert("Error", err.message || "Failed to save");
     }
   };
 
+  const pickFromGallery = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    //if (!perm.granted) return Alert.alert("Permission required");
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setImage(result.assets[0]);
+    }
+  };
+
+  const pickFromCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) return Alert.alert("Camera permission required");
+
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setImage(result.assets[0]);
+    }
+  };
+
+  const removeImage = () => setImage(null);
   return (
     <>
       <SafeAreaView edges={["top"]} style={styles.safeTop}>
@@ -138,6 +190,39 @@ export default function AddCategory() {
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/* Image */}
+            <Text style={styles.label}>Image</Text>
+
+            <View style={styles.imageRow}>
+              <TouchableOpacity
+                style={styles.imageButton}
+                onPress={pickFromGallery}
+              >
+                <Text>Gallery</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.imageButton}
+                onPress={pickFromCamera}
+              >
+                <Text>Camera</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Preview */}
+            {image && (
+              <View style={{ marginTop: 12, position: "relative", width: 120 }}>
+                <Image source={{ uri: image.uri }} style={styles.thumbnail} />
+
+                <TouchableOpacity
+                  style={styles.removeImageBtn}
+                  onPress={removeImage}
+                >
+                  <Text style={{ color: "#fff" }}>X</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             {/* Save */}
             <TouchableOpacity style={styles.saveBtn} onPress={saveCategory}>

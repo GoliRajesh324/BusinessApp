@@ -1,11 +1,13 @@
 import AppHeader from "@/src/components/AppHeader";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -33,23 +35,37 @@ export default function CategoryDetails() {
     setVideoId(id);
   };
   /* ---------------- Load Category Details ---------------- */
-  useEffect(() => {
-    (async () => {
-      const token = await AsyncStorage.getItem("token");
-      if (!token) return;
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-      try {
-        const data = await fetchCategoryById(Number(categoryId), token);
-        setCategory(data);
-        setCategory(data);
-        console.log("🔥 Loaded Category:", data);
-      } catch (err) {
-        console.log("❌ Error loading category:", err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [categoryId]);
+      const loadCategory = async () => {
+        setLoading(true);
+
+        const token = await AsyncStorage.getItem("token");
+        if (!token) return;
+
+        try {
+          const data = await fetchCategoryById(Number(categoryId), token);
+
+          if (isActive) {
+            setCategory(data);
+            console.log("🔥 Refreshed Category:", data);
+          }
+        } catch (err) {
+          console.log("❌ Error loading category:", err);
+        } finally {
+          if (isActive) setLoading(false);
+        }
+      };
+
+      loadCategory();
+
+      return () => {
+        isActive = false;
+      };
+    }, [categoryId]),
+  );
 
   const handleEdit = () => {
     router.push({
@@ -60,7 +76,7 @@ export default function CategoryDetails() {
         name: category.name,
         description: category.description,
         quantityType: category.quantityType,
-        imageUrl: "",
+        imageUrl: category.imageUrl,
         businessId: category.businessId,
       },
     });
@@ -111,6 +127,21 @@ export default function CategoryDetails() {
 
             <Text style={styles.label}>Quantity Type</Text>
             <Text style={styles.value}>{category.quantityType}</Text>
+
+            {/* Image */}
+            <Text style={styles.label}>Image</Text>
+
+            {category.imageUrl ? (
+              <Image
+                source={{ uri: category.imageUrl }}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.noImageBox}>
+                <Text style={{ color: "#888" }}>No Image</Text>
+              </View>
+            )}
           </ScrollView>
         </View>
       </SafeAreaView>

@@ -1198,9 +1198,12 @@ const EditTransactionScreen = () => {
 
                     {/* Body */}
                     <ScrollView
-                      style={{ maxHeight: "70%", paddingHorizontal: 12 }}
+                      style={{ flex: 1 }} // ✅ FULL HEIGHT
+                      contentContainerStyle={{
+                        paddingBottom: 40,
+                        paddingHorizontal: 12,
+                      }}
                       keyboardShouldPersistTaps="handled"
-                      contentContainerStyle={{ paddingBottom: 40 }}
                     >
                       {/* Mode Buttons */}
                       <View style={styles.splitModeRow}>
@@ -1577,7 +1580,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 40,
-    minHeight: 300,
+    height: "90%",
   },
   partnerCardRow: {
     flexDirection: "row",

@@ -266,8 +266,9 @@ const Input = ({
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start", // ✅ move up
     padding: 20,
+    paddingTop: 90, // ✅ control spacing from top
   },
 
   header: {

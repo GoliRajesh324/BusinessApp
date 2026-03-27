@@ -57,9 +57,29 @@ const toTitleCase = (str?: string) => {
 
 const formatDateForDisplay = (dateStr?: string) => {
   if (!dateStr) return "";
-  const parts = dateStr.split("-");
-  if (parts.length !== 3) return dateStr;
-  const [year, month, day] = parts;
+
+  const date = new Date(dateStr);
+
+  const day = date.getDate().toString().padStart(2, "0");
+
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+
   return `${day}-${month}-${year}`;
 };
 
@@ -298,6 +318,46 @@ export default function SimpleInterestPage() {
     const regex = /^\d{4}-\d{2}-\d{2}$/;
     return regex.test(value);
   };
+
+  const getDueInfo = (records: Interest[]) => {
+    const today = new Date();
+
+    const list = records
+      .filter((r) => r.startDate)
+      .map((r) => {
+        const start = new Date(r.startDate!);
+
+        const currentYear = today.getFullYear();
+
+        // 🔥 current year cycle
+        let due = new Date(start);
+        due.setFullYear(currentYear);
+
+        let overdueYears = 0;
+
+        if (due < today) {
+          // ❌ this year already passed → move to next year
+          due.setFullYear(currentYear + 1);
+
+          // calculate overdue
+          overdueYears = currentYear - start.getFullYear();
+        } else {
+          // still upcoming this year
+          overdueYears = currentYear - start.getFullYear() - 1;
+        }
+
+        if (overdueYears < 0) overdueYears = 0;
+
+        return {
+          dueDate: due,
+          overdueYears,
+        };
+      });
+
+    if (list.length === 0) return null;
+
+    return list.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())[0];
+  };
   return (
     <>
       <SafeAreaView edges={["top"]} style={{ backgroundColor: "#4f93ff" }}>
@@ -398,125 +458,234 @@ export default function SimpleInterestPage() {
                 </View>
               )}
 
-              {Object.keys(grouped).map((name) => {
-                const records = grouped[name];
-                const netAmount = records.reduce(
-                  (s, r) => s + (r.amount || 0),
-                  0,
-                );
-                const type = records[0].type;
+              {Object.keys(grouped)
+                .sort((a, b) => {
+                  if (!showActive) return 0;
 
-                return (
-                  <View key={name} style={styles.personCard}>
-                    <View style={styles.personHeader}>
-                      <TouchableOpacity
-                        style={{ flex: 1 }}
-                        onPress={() => toggleExpand(name)}
-                      >
-                        <Text style={styles.personName} numberOfLines={1}>
-                          {toTitleCase(name)}
-                        </Text>
-                        <Text style={styles.personSub}>
-                          {records.length} record{records.length > 1 ? "s" : ""}
-                        </Text>
-                      </TouchableOpacity>
+                  const aInfo = getDueInfo(grouped[a]);
+                  const bInfo = getDueInfo(grouped[b]);
 
-                      {/* PER-USER PDF DOWNLOAD */}
-                      <TouchableOpacity
-                        onPress={() => handleDownloadUserPDF(name)}
-                        style={{ padding: 8, marginRight: 6 }}
-                      >
-                        <Ionicons
-                          name="download-outline"
-                          size={20}
-                          color="#007bff"
-                        />
-                      </TouchableOpacity>
+                  if (!aInfo || !bInfo) return 0;
 
-                      <View style={styles.personAmountBox}>
-                        <Text
-                          style={[
-                            styles.personAmount,
-                            type === "given"
-                              ? styles.givenValue
-                              : styles.takenValue,
-                          ]}
+                  // 🔥 Priority: overdue first
+                  if (aInfo.overdueYears > 0 && bInfo.overdueYears === 0)
+                    return -1;
+                  if (aInfo.overdueYears === 0 && bInfo.overdueYears > 0)
+                    return 1;
+
+                  // 🔥 More overdue years first
+                  if (aInfo.overdueYears !== bInfo.overdueYears) {
+                    return bInfo.overdueYears - aInfo.overdueYears;
+                  }
+
+                  // 🔥 Then nearest due date
+                  return aInfo.dueDate.getTime() - bInfo.dueDate.getTime();
+                })
+                .map((name) => {
+                  const records = grouped[name];
+                  // ✅ Upcoming date only for Active records
+                  let upcomingDate;
+
+                  if (showActive) {
+                    const today = new Date();
+
+                    const upcomingRecord = records
+                      .filter((r) => r.startDate)
+                      .map((r) => {
+                        const start = new Date(r.startDate!);
+
+                        // ✅ ADD 1 YEAR
+                        const nextDue = new Date(start);
+                        nextDue.setFullYear(start.getFullYear() + 1);
+
+                        return {
+                          ...r,
+                          dueDate: nextDue,
+                        };
+                      })
+                      .sort((a, b) => {
+                        const aDiff = a.dueDate.getTime() - today.getTime();
+                        const bDiff = b.dueDate.getTime() - today.getTime();
+
+                        // future first
+                        if (aDiff >= 0 && bDiff >= 0) return aDiff - bDiff;
+                        if (aDiff >= 0) return -1;
+                        if (bDiff >= 0) return 1;
+
+                        // past → latest
+                        return b.dueDate.getTime() - a.dueDate.getTime();
+                      })[0];
+
+                    upcomingDate = upcomingRecord
+                      ? upcomingRecord.dueDate.toISOString().split("T")[0]
+                      : undefined;
+                  }
+                  const netAmount = records.reduce(
+                    (s, r) => s + (r.amount || 0),
+                    0,
+                  );
+                  const type = records[0].type;
+
+                  return (
+                    <View key={name} style={styles.personCard}>
+                      <View style={styles.personHeader}>
+                        <TouchableOpacity
+                          style={{ flex: 1 }}
+                          onPress={() => toggleExpand(name)}
                         >
-                          ₹ {formatAmountIndian(netAmount)}
-                        </Text>
+                          <Text style={styles.personName} numberOfLines={1}>
+                            {toTitleCase(name)}
+                          </Text>
+                          <Text style={styles.personSub}>
+                            {records.length} record
+                            {records.length > 1 ? "s" : ""}
+                          </Text>
+
+                          {showActive &&
+                            (() => {
+                              const info = getDueInfo(records);
+                              if (!info) return null;
+
+                              const dateStr = info.dueDate
+                                .toISOString()
+                                .split("T")[0];
+
+                              return (
+                                <>
+                                  {/* ✅ Upcoming */}
+                                  <Text style={{ fontSize: 12, marginTop: 2 }}>
+                                    <Text style={{ color: "#000" }}>
+                                      Upcoming:{" "}
+                                    </Text>
+                                    <Text
+                                      style={
+                                        type === "given"
+                                          ? styles.givenValue
+                                          : styles.takenValue
+                                      }
+                                    >
+                                      {formatDateForDisplay(dateStr)}
+                                    </Text>
+                                  </Text>
+
+                                  {/* ✅ Overdue */}
+                                  {info.overdueYears > 0 && (
+                                    <Text style={{ fontSize: 12 }}>
+                                      <Text style={{ color: "#000" }}>
+                                        Overdue:{" "}
+                                      </Text>
+                                      <Text style={{ color: "red" }}>
+                                        {info.overdueYears} year
+                                        {info.overdueYears > 1 ? "s" : ""}
+                                      </Text>
+                                    </Text>
+                                  )}
+                                </>
+                              );
+                            })()}
+                        </TouchableOpacity>
+
+                        {/* PER-USER PDF DOWNLOAD */}
+                        <TouchableOpacity
+                          onPress={() => handleDownloadUserPDF(name)}
+                          style={{ padding: 8, marginRight: 6 }}
+                        >
+                          <Ionicons
+                            name="download-outline"
+                            size={20}
+                            color="#007bff"
+                          />
+                        </TouchableOpacity>
+
+                        <View style={styles.personAmountBox}>
+                          <Text
+                            style={[
+                              styles.personAmount,
+                              type === "given"
+                                ? styles.givenValue
+                                : styles.takenValue,
+                            ]}
+                          >
+                            ₹ {formatAmountIndian(netAmount)}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
 
-                    {expanded === name && (
-                      <View style={styles.recordsContainer}>
-                        {records.map((rec) => (
-                          <View key={String(rec.id)} style={styles.recordCard}>
-                            <View style={styles.recordTop}>
-                              <Text
-                                style={[
-                                  styles.recordType,
-                                  rec.type === "given"
-                                    ? styles.givenValue
-                                    : styles.takenValue,
-                                ]}
-                              >
-                                {rec.type === "given"
-                                  ? "Money Taken By You"
-                                  : "Money Given By You"}
-                              </Text>
-
-                              <TouchableOpacity
-                                onPress={() => onEditOpen(rec)}
-                                style={styles.recordEditBtn}
-                              >
-                                <FontAwesome
-                                  name="edit"
-                                  size={16}
-                                  color="#007bff"
-                                />
-                              </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.recordRow}>
-                              <Text style={styles.recordLabel}>Amount</Text>
-                              <Text style={styles.recordValue}>
-                                ₹ {formatAmountIndian(rec.amount)}
-                              </Text>
-                            </View>
-
-                            <View style={styles.recordRow}>
-                              <Text style={styles.recordLabel}>Interest</Text>
-                              <Text style={styles.recordValue}>
-                                {rec.rate ?? 0} %
-                              </Text>
-                            </View>
-
-                            <View style={styles.recordRow}>
-                              <Text style={styles.recordLabel}>Date</Text>
-                              <Text style={styles.recordValue}>
-                                {formatDateForDisplay(rec.startDate)}
-                              </Text>
-                            </View>
-
-                            {rec.comment ? (
-                              <View style={styles.recordRow}>
-                                <Text style={styles.recordLabel}>Comment</Text>
+                      {expanded === name && (
+                        <View style={styles.recordsContainer}>
+                          {records.map((rec) => (
+                            <View
+                              key={String(rec.id)}
+                              style={styles.recordCard}
+                            >
+                              <View style={styles.recordTop}>
                                 <Text
-                                  style={styles.commentText}
-                                  numberOfLines={3}
-                                  ellipsizeMode="tail"
+                                  style={[
+                                    styles.recordType,
+                                    rec.type === "given"
+                                      ? styles.givenValue
+                                      : styles.takenValue,
+                                  ]}
                                 >
-                                  {rec.comment}
+                                  {rec.type === "given"
+                                    ? "Money Taken By You"
+                                    : "Money Given By You"}
+                                </Text>
+
+                                <TouchableOpacity
+                                  onPress={() => onEditOpen(rec)}
+                                  style={styles.recordEditBtn}
+                                >
+                                  <FontAwesome
+                                    name="edit"
+                                    size={16}
+                                    color="#007bff"
+                                  />
+                                </TouchableOpacity>
+                              </View>
+
+                              <View style={styles.recordRow}>
+                                <Text style={styles.recordLabel}>Amount</Text>
+                                <Text style={styles.recordValue}>
+                                  ₹ {formatAmountIndian(rec.amount)}
                                 </Text>
                               </View>
-                            ) : null}
-                          </View>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
+
+                              <View style={styles.recordRow}>
+                                <Text style={styles.recordLabel}>Interest</Text>
+                                <Text style={styles.recordValue}>
+                                  {rec.rate ?? 0} %
+                                </Text>
+                              </View>
+
+                              <View style={styles.recordRow}>
+                                <Text style={styles.recordLabel}>Date</Text>
+                                <Text style={styles.recordValue}>
+                                  {formatDateForDisplay(rec.startDate)}
+                                </Text>
+                              </View>
+
+                              {rec.comment ? (
+                                <View style={styles.recordRow}>
+                                  <Text style={styles.recordLabel}>
+                                    Comment
+                                  </Text>
+                                  <Text
+                                    style={styles.commentText}
+                                    numberOfLines={3}
+                                    ellipsizeMode="tail"
+                                  >
+                                    {rec.comment}
+                                  </Text>
+                                </View>
+                              ) : null}
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
             </ScrollView>
           )}
 

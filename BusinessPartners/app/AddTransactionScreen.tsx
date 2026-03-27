@@ -1137,9 +1137,12 @@ const AddTransactionScreen = () => {
 
                     {/* Body */}
                     <ScrollView
-                      style={{ maxHeight: "70%", paddingHorizontal: 12 }}
+                      style={{ flex: 1 }} // ✅ FULL HEIGHT
+                      contentContainerStyle={{
+                        paddingBottom: 40,
+                        paddingHorizontal: 12,
+                      }}
                       keyboardShouldPersistTaps="handled"
-                      contentContainerStyle={{ paddingBottom: 40 }}
                     >
                       {/* Mode Buttons */}
                       <View style={styles.splitModeRow}>
@@ -1570,11 +1573,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
   },
-  /*   partnerName: {
-    flex: 1,
-    fontWeight: "600",
-    fontSize: 14,
-  }, */
   partnerAmountInput: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -1586,13 +1584,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fafafa",
   },
   sheetContainer: {
+    height: "90%",
     backgroundColor: "#f5f5f8ff",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 40,
-    minHeight: 300,
   },
   partnerCardRow: {
     flexDirection: "row",

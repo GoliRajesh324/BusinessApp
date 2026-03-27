@@ -4,17 +4,17 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Alert,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { addInterest, updateInterest } from "../src/services/interestService";
@@ -273,9 +273,9 @@ export default function AddEditInterest() {
                     }));
                   }}
                 />
-
                 {/* Rate */}
                 <Text style={styles.label}>Interest Rate *</Text>
+
                 <Text
                   style={{
                     paddingBottom: 5,
@@ -285,36 +285,64 @@ export default function AddEditInterest() {
                   }}
                 >
                   {rateType === "rupee"
-                    ? "₹1 = 12%"
+                    ? "Enter Rupee (₹1 = 12%, ₹1.5 = 18%)"
                     : "Enter percentage (e.g. 12%)"}
                 </Text>
-                <View style={styles.rateRow}>
-                  <TextInput
-                    placeholder="Enter Rate"
-                    style={[styles.input, { flex: 1, marginBottom: 0 }]}
-                    keyboardType="numeric"
-                    value={formData.rate != null ? String(formData.rate) : ""}
-                    onChangeText={(t) =>
-                      setFormData((p) => ({
-                        ...p,
-                        rate: t === "" ? undefined : Number(t),
-                      }))
-                    }
+
+                {/* 🔥 SEGMENT CONTROL */}
+                <View style={styles.segmentContainer}>
+                  <View
+                    style={[
+                      styles.segmentIndicator,
+                      {
+                        left: rateType === "rupee" ? "0%" : "50%",
+                      },
+                    ]}
                   />
 
                   <TouchableOpacity
-                    style={styles.rateTypeBtn}
-                    onPress={() =>
-                      setRateType((prev) =>
-                        prev === "percent" ? "rupee" : "percent",
-                      )
-                    }
+                    style={styles.segmentItem}
+                    onPress={() => setRateType("rupee")}
                   >
-                    <Text style={styles.rateTypeText}>
-                      {rateType === "percent" ? "%" : "₹"}
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        rateType === "rupee" && styles.segmentTextActive,
+                      ]}
+                    >
+                      ₹
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.segmentItem}
+                    onPress={() => setRateType("percent")}
+                  >
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        rateType === "percent" && styles.segmentTextActive,
+                      ]}
+                    >
+                      %
                     </Text>
                   </TouchableOpacity>
                 </View>
+
+                {/* Rate Input */}
+                <TextInput
+                  placeholder="Enter Rate of Interest"
+                  placeholderTextColor="#999" // ✅ FIX
+                  style={[styles.input, { color: "#000" }]} // ✅ FIX
+                  keyboardType="numeric"
+                  value={formData.rate != null ? String(formData.rate) : ""}
+                  onChangeText={(t) =>
+                    setFormData((p) => ({
+                      ...p,
+                      rate: t === "" ? undefined : Number(t),
+                    }))
+                  }
+                />
 
                 {/* Start Date */}
                 <Text style={styles.label}>Start Date *</Text>
@@ -334,24 +362,52 @@ export default function AddEditInterest() {
 
                 {/* End Date */}
                 <Text style={styles.label}>End Date</Text>
-                <TouchableOpacity
-                  style={styles.input}
-                  onPress={openEndDatePicker}
+                <View
+                  style={[
+                    styles.input,
+                    { flexDirection: "row", alignItems: "center" },
+                  ]}
                 >
-                  <View style={styles.dateRow}>
+                  {/* Date Picker Click */}
+                  <TouchableOpacity
+                    style={{ flex: 1 }}
+                    onPress={openEndDatePicker}
+                  >
                     <Text>
                       {formData.endDate
                         ? formatDate(formData.endDate)
                         : "Select End Date"}
                     </Text>
+                  </TouchableOpacity>
+                  {/* ❌ Clear Button */}
+                  {formData.endDate && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        setFormData((p) => ({ ...p, endDate: "" }))
+                      }
+                    >
+                      <Text
+                        style={{
+                          marginRight: 10,
+                          color: "red",
+                          fontWeight: "700",
+                        }}
+                      >
+                        ✕
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {/* 📅 Icon */}
+                  <TouchableOpacity onPress={openEndDatePicker}>
                     <Text>📅</Text>
-                  </View>
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                </View>
 
                 {/* Comment */}
                 <Text style={styles.label}>Comment</Text>
                 <TextInput
                   placeholder="Enter Comment"
+                  placeholderTextColor="#999" // ✅ FIX
                   style={[styles.input, { height: 80 }]}
                   multiline
                   onFocus={() =>
@@ -375,7 +431,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: "600", marginBottom: 4 },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#4f4949",
     borderRadius: 8,
     padding: 12,
     marginBottom: 10,
@@ -407,4 +463,71 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
   },
   rateTypeText: { fontWeight: "700", fontSize: 16 },
+  pillContainer: {
+    flexDirection: "row",
+    backgroundColor: "#f1f3f6",
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 12,
+  },
+
+  pillButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 10,
+  },
+
+  pillActive: {
+    backgroundColor: "#007bff",
+    elevation: 2, // Android shadow
+  },
+
+  pillText: {
+    color: "#555",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+
+  pillTextActive: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
+  segmentContainer: {
+    flexDirection: "row",
+    backgroundColor: "#e6f0fa",
+    borderRadius: 14,
+    position: "relative",
+    height: 45,
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+
+  segmentIndicator: {
+    position: "absolute",
+    width: "50%",
+    height: "100%",
+    backgroundColor: "#36c21a",
+    borderRadius: 12,
+    elevation: 3, // Android shadow
+  },
+
+  segmentItem: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+
+  segmentText: {
+    fontSize: 16,
+    color: "#007bff",
+    fontWeight: "600",
+  },
+
+  segmentTextActive: {
+    fontWeight: "700",
+  },
 });

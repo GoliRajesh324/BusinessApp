@@ -1,4 +1,5 @@
 import AppHeader from "@/src/components/AppHeader";
+import BASE_URL from "@/src/config/config";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
@@ -27,6 +28,11 @@ export default function InventoryScreen() {
 
   const [videoId, setVideoId] = useState("");
 
+  const [logs, setLogs] = useState<any[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 10;
+
   useEffect(() => {
     loadVideo();
   }, []);
@@ -45,6 +51,7 @@ export default function InventoryScreen() {
         if (!t || !businessId || !isActive) return;
 
         await loadCategories(t);
+        await fetchLogs(0);
       };
 
       load();
@@ -62,6 +69,32 @@ export default function InventoryScreen() {
       setCategories(response);
     } catch (err) {
       console.log("❌ Category Fetch Error:", err);
+    }
+  };
+
+  const fetchLogs = async (pageNumber = 0) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+
+      const res = await fetch(
+        `${BASE_URL}/api/inventory/logs/${businessId}?page=${pageNumber}&size=${PAGE_SIZE}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      const data = await res.json();
+      const safeContent = data?.content ?? [];
+
+      if (pageNumber === 0) {
+        setLogs(safeContent);
+      } else {
+        setLogs((prev) => [...prev, ...safeContent]);
+      }
+
+      setHasMore(!data?.last);
+    } catch (e) {
+      console.log("❌ Logs error", e);
     }
   };
 
@@ -93,27 +126,109 @@ export default function InventoryScreen() {
         <View style={styles.container}>
           {/* Category list */}
           <FlatList
-            data={categories}
-            keyExtractor={(item) => String(item.id)}
+            data={logs || []} // 👈 MAIN LIST = LOGS
+            keyExtractor={(item, index) => String(item?.id ?? index)}
             contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
-            ListEmptyComponent={
-              <Text style={styles.empty}>
-                No categories yet. Click "Add Category".
-              </Text>
-            }
-            renderItem={({ item }) => (
-              <CategoryCard
-                category={item}
-                onPress={() =>
-                  router.push({
-                    pathname: "/categoryDetails",
-                    params: { categoryId: item.id },
-                  })
-                }
-              />
-            )}
-          />
+            /* 🔥 HEADER = CATEGORIES */
+            ListHeaderComponent={
+              <>
+                {/* Categories */}
+                {categories.length === 0 ? (
+                  <Text style={styles.empty}>
+                    No categories yet. Click "Add Category".
+                  </Text>
+                ) : (
+                  categories.map((item) => (
+                    <CategoryCard
+                      key={item.id}
+                      category={item}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/categoryDetails",
+                          params: { categoryId: item.id },
+                        })
+                      }
+                    />
+                  ))
+                )}
 
+                {/* 🔥 HISTORY TITLE */}
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    marginTop: 30,
+                    marginBottom: 12,
+                  }}
+                >
+                  History
+                </Text>
+              </>
+            }
+            /* 🔥 HISTORY LIST (STEP 5 HERE) */
+            renderItem={({ item }) => {
+              if (!item) return null;
+
+              return (
+                <View style={styles.logCard}>
+                  {/* Top Row */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Text style={styles.logTitle}>
+                      Category: {item.categoryName} {item.quantityType}
+                    </Text>
+
+                    <Text
+                      style={{
+                        color: item.changeType === "ADD" ? "green" : "red",
+                        fontWeight: "700",
+                      }}
+                    >
+                      {item.changeType}
+                    </Text>
+                  </View>
+
+                  {/* Quantity */}
+                  <Text>
+                    <Text style={styles.logTitle}>Qty: </Text>
+                    <Text style={styles.quantity}>{item.quantity} </Text>
+                    <Text style={styles.unit}>{item.quantityType}</Text>
+                  </Text>
+
+                  {/* Note */}
+                  {item.note && <Text>Note: {item.note}</Text>}
+
+                  {/* Footer */}
+                  <View style={styles.footerRow}>
+                    <Text style={styles.userText}>👤 {item.username}</Text>
+
+                    <Text style={styles.dateText}>
+                      {new Date(item.createdAt).toLocaleString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </Text>
+                  </View>
+                </View>
+              );
+            }}
+            /* 🔥 STEP 6 (PAGINATION HERE) */
+            onEndReached={() => {
+              if (hasMore) {
+                const nextPage = page + 1;
+                setPage(nextPage);
+                fetchLogs(nextPage);
+              }
+            }}
+            onEndReachedThreshold={0.5}
+          />
           {/* FOOTER BUTTONS */}
           <View style={styles.footer}>
             {/* Add Stock */}
@@ -219,5 +334,63 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
+  },
+  logCard: {
+    backgroundColor: "#ffffff",
+    padding: 14,
+    marginHorizontal: 12,
+    marginBottom: 14,
+    borderRadius: 14,
+
+    // Shadow (iOS)
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+
+    // Android
+    elevation: 4,
+
+    // Border for separation
+    borderWidth: 1,
+    borderColor: "#f0f0f0",
+  },
+
+  logTitle: {
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
+  logFooter: {
+    marginTop: 6,
+    fontSize: 12,
+    color: "#777",
+  },
+  unit: {
+    fontSize: 15,
+    color: "#777",
+    fontWeight: "500",
+  },
+  quantity: {
+    fontSize: 20,
+    color: "#777",
+    fontWeight: "500",
+  },
+  footerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+  },
+
+  userText: {
+    fontSize: 12,
+    color: "#444",
+    fontWeight: "600",
+  },
+
+  dateText: {
+    fontSize: 12,
+    color: "#888",
   },
 });

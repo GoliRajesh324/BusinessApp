@@ -45,6 +45,8 @@ export default function Dashboard() {
 
   const [videoId, setVideoId] = useState("");
 
+  const [deleteFlag, setDeleteFlag] = useState("N"); // default Active
+
   useEffect(() => {
     loadVideo();
   }, []);
@@ -86,13 +88,16 @@ export default function Dashboard() {
     try {
       setLoading(true);
 
-      const response = await fetch(`${BASE_URL}/api/business/user/${userId}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${BASE_URL}/api/business/user/${userId}/${deleteFlag}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       // 🔒 HANDLE EXPIRED TOKEN
       if (response.status === 401 || response.status === 403) {
@@ -127,8 +132,11 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (token && userId) fetchBusinesses();
-  }, [token, userId]);
+    if (token && userId) {
+      console.log("🔥 API CALL with deleteFlag:", deleteFlag);
+      fetchBusinesses();
+    }
+  }, [token, userId, deleteFlag]); // ✅ ADD THIS
 
   // Save (add/edit)
   const handleSaveBusiness = async () => {
@@ -170,17 +178,41 @@ export default function Dashboard() {
     }
   };
 
+  const handleUndoDelete = async (business: any) => {
+    try {
+      await axios.put(
+        `${BASE_URL}/api/business/delete/${business.id}?deleteFlag=N`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      Alert.alert("Success", "Business restored");
+
+      await fetchBusinesses();
+    } catch (err: any) {
+      console.log("❌ Undo error:", err);
+      Alert.alert("Error", "Failed to restore business");
+    }
+  };
+
   // ✅ Delete
   const handleDeleteBusiness = async () => {
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(`${BASE_URL}/api/business/${confirmDelete.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+      await axios.put(
+        `${BASE_URL}/api/business/delete/${confirmDelete.id}?deleteFlag=Y`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       setConfirmDelete(null);
       await fetchBusinesses();
@@ -319,8 +351,53 @@ export default function Dashboard() {
           </TouchableOpacity>
         </ScrollView>
       </View>
-      <View style={{ padding: 16, backgroundColor: "#fff" }}>
+      <View
+        style={{
+          padding: 16,
+          backgroundColor: "#fff",
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Text>{t("YourBusinesses")}</Text>
+
+        {/* Toggle */}
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity
+            style={[
+              styles.toggleOption,
+              deleteFlag === "N" && styles.toggleActive,
+            ]}
+            onPress={() => setDeleteFlag("N")}
+          >
+            <Text
+              style={[
+                styles.toggleText,
+                deleteFlag === "N" && styles.toggleTextActive,
+              ]}
+            >
+              Active
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.toggleOption,
+              deleteFlag === "Y" && styles.toggleActive,
+            ]}
+            onPress={() => setDeleteFlag("Y")}
+          >
+            <Text
+              style={[
+                styles.toggleText,
+                deleteFlag === "Y" && styles.toggleTextActive,
+              ]}
+            >
+              Inactive
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
       {/* BUSINESS LIST */}
       <FlatList
@@ -343,9 +420,15 @@ export default function Dashboard() {
               style={styles.emptySticker}
             />
 
-            <Text style={styles.emptyMessage}>No Businesses Added Yet</Text>
+            <Text style={styles.emptyMessage}>
+              {deleteFlag === "Y"
+                ? "No businesses deleted"
+                : "No Businesses Added Yet"}
+            </Text>
             <Text style={styles.emptySubText}>
-              Tap the “+ Add Business” button below to start
+              {deleteFlag === "Y"
+                ? "Deleted businesses will appear here"
+                : "Tap the “+ Add Business” button below to start"}
             </Text>
           </View>
         }
@@ -435,19 +518,35 @@ export default function Dashboard() {
 
                 <View style={styles.bizActions}>
                   {longPressedId === item.id ? (
-                    <TouchableOpacity
-                      style={styles.deleteBtn}
-                      onPress={() => {
-                        if (deleteTimeoutRef.current) {
-                          clearTimeout(deleteTimeoutRef.current);
-                        }
-
-                        Alert.alert("Delete", "Delete coming soon");
-                        setLongPressedId(null);
-                      }}
-                    >
-                      <Text style={styles.btnText}>{t("delete")}</Text>
-                    </TouchableOpacity>
+                    deleteFlag === "Y" ? (
+                      // 🔥 UNDO DELETE
+                      <TouchableOpacity
+                        style={styles.undoBtn}
+                        onPress={() => {
+                          if (deleteTimeoutRef.current) {
+                            clearTimeout(deleteTimeoutRef.current);
+                          }
+                          handleUndoDelete(item);
+                          setLongPressedId(null);
+                        }}
+                      >
+                        <Text style={styles.btnText}>Undo Delete</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      // 🔥 NORMAL DELETE
+                      <TouchableOpacity
+                        style={styles.deleteBtn}
+                        onPress={() => {
+                          if (deleteTimeoutRef.current) {
+                            clearTimeout(deleteTimeoutRef.current);
+                          }
+                          setConfirmDelete(item);
+                          setLongPressedId(null);
+                        }}
+                      >
+                        <Text style={styles.btnText}>{t("delete")}</Text>
+                      </TouchableOpacity>
+                    )
                   ) : item.cropInProgress ? (
                     <TouchableOpacity
                       style={styles.inprogressBtn}
@@ -528,10 +627,8 @@ export default function Dashboard() {
       <Modal visible={!!confirmStart} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.popupBox}>
-            <Text style={styles.popupTitle}>
-              {t("start")}
-              <Text style={styles.bold}> {confirmStart?.name}</Text> Business ?
-            </Text>
+            Delete <Text style={styles.bold}>{confirmDelete?.name}</Text>{" "}
+            Business?
             <View style={styles.popupButtons}>
               <TouchableOpacity
                 style={styles.confirmBtn}
@@ -818,6 +915,39 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     backgroundColor: "#ef4444",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  toggleContainer: {
+    flexDirection: "row",
+    backgroundColor: "#e5e7eb",
+    borderRadius: 20,
+    padding: 3,
+  },
+
+  toggleOption: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+
+  toggleActive: {
+    backgroundColor: "#4f93ff",
+  },
+
+  toggleText: {
+    fontSize: 13,
+    color: "#333",
+    fontWeight: "500",
+  },
+
+  toggleTextActive: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  undoBtn: {
+    backgroundColor: "#25a321",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,

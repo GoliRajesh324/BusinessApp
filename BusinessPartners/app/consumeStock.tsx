@@ -23,6 +23,7 @@ export default function ConsumeStock() {
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [quantity, setQuantity] = useState("");
+  const [notes, setNotes] = useState("");
 
   /* ---------------- Load categories ---------------- */
   useEffect(() => {
@@ -63,6 +64,7 @@ export default function ConsumeStock() {
     }
 
     const token = await AsyncStorage.getItem("token");
+    const userId = await AsyncStorage.getItem("userId");
     if (!token) return;
 
     try {
@@ -72,7 +74,8 @@ export default function ConsumeStock() {
           categoryId: selectedCategory.id,
           changeType: "CONSUME",
           quantity: qty,
-          note: "",
+          note: notes,
+          createdBy: userId,
         },
         token,
       );
@@ -115,6 +118,16 @@ export default function ConsumeStock() {
                 onChangeText={setQuantity}
                 keyboardType="numeric"
                 placeholder="Enter quantity"
+                placeholderTextColor={"#ccc"}
+              />
+
+              <Text style={styles.label}>Description</Text>
+              <TextInput
+                style={styles.notes}
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Enter Description"
+                placeholderTextColor={"#ccc"}
               />
             </>
           )}
@@ -203,6 +216,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginHorizontal: 10,
     borderRadius: 10,
+    fontSize: 16,
+  },
+  notes: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 6,
     fontSize: 16,
   },
 });

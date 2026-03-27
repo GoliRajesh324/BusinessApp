@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { t } from "i18next";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -143,6 +144,14 @@ export default function AddCategory() {
         <StatusBar style="light" backgroundColor="#4f93ff" />
         <AppHeader
           title={isEdit === "true" ? "Edit Category" : "Add Category"}
+          rightComponent={
+            <TouchableOpacity
+              onPress={saveCategory}
+              style={[styles.headerRight]}
+            >
+              <Text style={styles.saveText}>{t("save")}</Text>
+            </TouchableOpacity>
+          }
         />
       </SafeAreaView>
       <SafeAreaView edges={["bottom"]} style={styles.safeBottom}>
@@ -227,14 +236,6 @@ export default function AddCategory() {
             {/* Save */}
             <TouchableOpacity style={styles.saveBtn} onPress={saveCategory}>
               <Text style={{ color: "#fff", fontWeight: "700" }}>Save</Text>
-            </TouchableOpacity>
-
-            {/* Cancel */}
-            <TouchableOpacity
-              style={styles.cancelBtn}
-              onPress={() => router.back()}
-            >
-              <Text style={{ color: "#333", fontWeight: "600" }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </TouchableWithoutFeedback>
@@ -332,4 +333,16 @@ const styles = StyleSheet.create({
   },
   previewImage: { width: "90%", height: "70%" },
   previewClose: { position: "absolute", top: 50, right: 30 },
+
+  headerRight: {
+    width: 40,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+
+  saveText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
 });

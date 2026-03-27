@@ -24,6 +24,7 @@ export default function AddStock() {
     null,
   );
   const [quantity, setQuantity] = useState("");
+  const [notes, setNotes] = useState("");
 
   /* ---------------- Load categories ---------------- */
   useEffect(() => {
@@ -45,6 +46,7 @@ export default function AddStock() {
     if (!quantity.trim()) return Alert.alert("Enter quantity");
 
     const token = await AsyncStorage.getItem("token");
+    const userId = await AsyncStorage.getItem("userId");
     if (!token) return;
 
     try {
@@ -54,7 +56,8 @@ export default function AddStock() {
           categoryId: selectedCategoryId,
           changeType: "ADD",
           quantity: quantity,
-          note: "",
+          note: notes,
+          createdBy: userId,
         },
         token,
       );
@@ -96,6 +99,15 @@ export default function AddStock() {
               onChangeText={setQuantity}
               keyboardType="numeric"
               placeholder="Enter quantity"
+              placeholderTextColor={"#ccc"}
+            />
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={styles.notes}
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Enter Description"
+              placeholderTextColor={"#ccc"}
             />
             <Text style={styles.label}>Select Category</Text>
 
@@ -164,6 +176,14 @@ const styles = StyleSheet.create({
   },
 
   input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 6,
+    fontSize: 16,
+  },
+  notes: {
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 10,

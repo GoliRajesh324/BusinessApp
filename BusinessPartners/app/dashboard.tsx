@@ -627,8 +627,10 @@ export default function Dashboard() {
       <Modal visible={!!confirmStart} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.popupBox}>
-            Delete <Text style={styles.bold}>{confirmDelete?.name}</Text>{" "}
-            Business?
+            <Text style={styles.popupTitle}>
+              Delete <Text style={styles.bold}>{confirmDelete?.name}</Text>{" "}
+              Business?
+            </Text>
             <View style={styles.popupButtons}>
               <TouchableOpacity
                 style={styles.confirmBtn}

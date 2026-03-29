@@ -41,14 +41,20 @@ export default function ChangeHistoryScreen() {
   const businessId = params.businessId as string;
   const businessName = params.businessName as string;
   const [cards, setCards] = useState<AuditCard[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const [videoId, setVideoId] = useState("");
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+
+  const [loading, setLoading] = useState(true); // initial load
+  const [loadingMore, setLoadingMore] = useState(false); // pagination
 
   useEffect(() => {
     loadVideo();
   }, []);
-
+  useEffect(() => {
+    setPage(0);
+  }, [businessId]);
   const loadVideo = async () => {
     const id = await getVideoId("changeHistory");
     setVideoId(id);
@@ -57,12 +63,16 @@ export default function ChangeHistoryScreen() {
     if (!businessId) return;
     const fetchAuditLogs = async () => {
       try {
-        setLoading(true);
+        if (page === 0) {
+          setLoading(true);
+        } else {
+          setLoadingMore(true);
+        }
 
         const token = await AsyncStorage.getItem("token");
 
         const response = await fetch(
-          `${BASE_URL}/api/audit/business/${businessId}`,
+          `${BASE_URL}/api/audit/business/${businessId}?page=${page}&size=5`,
           {
             method: "GET",
             headers: {
@@ -79,16 +89,26 @@ export default function ChangeHistoryScreen() {
         if (!response.ok) throw new Error("Failed to fetch audit logs");
 
         const data = await response.json();
-        setCards(data);
+        if (page === 0) {
+          setCards(data.content);
+        } else {
+          setCards((prev) => [...prev, ...data.content]);
+        }
+
+        setHasMore(!data.last);
       } catch (err) {
         console.log("Error fetching audit logs:", err);
       } finally {
-        setLoading(false);
+        if (page === 0) {
+          setLoading(false);
+        } else {
+          setLoadingMore(false);
+        }
       }
     };
 
     fetchAuditLogs();
-  }, [businessId]);
+  }, [businessId, page]);
   const partnerAllowedFields = [
     "investedAmount",
     "investableAmount",
@@ -182,6 +202,20 @@ export default function ChangeHistoryScreen() {
               data={cards}
               renderItem={renderCard}
               keyExtractor={(_, index) => index.toString()}
+              onEndReached={() => {
+                if (hasMore && !loadingMore) {
+                  setPage((prev) => prev + 1);
+                }
+              }}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={
+                loadingMore ? (
+                  <ActivityIndicator
+                    size="small"
+                    style={{ marginVertical: 10 }}
+                  />
+                ) : null
+              }
               contentContainerStyle={{ padding: 16 }}
             />
           )}

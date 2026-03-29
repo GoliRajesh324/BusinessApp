@@ -25,6 +25,7 @@ export default function ConsumeStock() {
   const [quantity, setQuantity] = useState("");
   const [notes, setNotes] = useState("");
 
+  const [saving, setSaving] = useState(false);
   /* ---------------- Load categories ---------------- */
   useEffect(() => {
     (async () => {
@@ -68,6 +69,7 @@ export default function ConsumeStock() {
     if (!token) return;
 
     try {
+      setSaving(true);
       await changeStock(
         {
           businessId: Number(businessId),
@@ -84,6 +86,8 @@ export default function ConsumeStock() {
       router.back();
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to consume stock");
+    } finally {
+      setSaving(false);
     }
   };
   return (
@@ -94,8 +98,10 @@ export default function ConsumeStock() {
           title={String("Consume Stock")}
           videoId={videoId}
           rightComponent={
-            <TouchableOpacity onPress={saveConsumption}>
-              <Text style={styles.headerRightText}>Save</Text>
+            <TouchableOpacity onPress={saveConsumption} disabled={saving}>
+              <Text style={styles.headerRightText}>
+                {saving ? "Saving" : "Save"}
+              </Text>
             </TouchableOpacity>
           }
         />

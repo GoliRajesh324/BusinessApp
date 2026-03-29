@@ -1,6 +1,7 @@
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import BASE_URL from "@/src/config/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from "@react-native-community/netinfo";
 import {
   DarkTheme,
   DefaultTheme,
@@ -25,6 +26,7 @@ import {
 } from "react-native";
 import "../src/i18n/i18n";
 import i18n from "../src/i18n/i18n";
+import NoInternet from "./NoInternet";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -41,6 +43,15 @@ export default function RootLayout() {
   const appState = useRef(AppState.currentState);
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [langReady, setLangReady] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsConnected(!!state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, []);
   // 1️⃣ Run biometric if needed
   const runBiometric = async () => {
     const lockEnabled = await AsyncStorage.getItem("appLockEnabled");
@@ -332,6 +343,11 @@ export default function RootLayout() {
         </Text>
       </View>
     );
+  }
+
+  // 🚨 No Internet Screen
+  if (!isConnected) {
+    return <NoInternet onRetry={(status) => setIsConnected(status)} />;
   }
 
   // 6️⃣ Normal app content

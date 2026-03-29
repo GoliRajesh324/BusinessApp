@@ -33,15 +33,16 @@ export default function AddCategory() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [quantityType, setQuantityType] = useState<"KG" | "LITERS">("KG");
+  const [quantityType, setQuantityType] = useState<string>("KG");
   const [image, setImage] = useState<any | null>(null);
-
+  const [saving, setSaving] = useState(false);
+  const quantityTypes = ["KG", "LITER", "BAG", "PACKET"];
   /* ------------------ IMAGE PICKERS ------------------ */
   useEffect(() => {
     if (isEdit === "true") {
       if (editName) setName(editName as string);
       if (editDesc) setDescription(editDesc as string);
-      if (editQty) setQuantityType(editQty as "KG" | "LITERS");
+      if (editQty) setQuantityType(editQty as string);
 
       // ✅ SET EXISTING IMAGE
       if (editImageUrl) {
@@ -70,7 +71,7 @@ export default function AddCategory() {
         quantityType,
         createdBy: 1,
       };
-
+      setSaving(true);
       if (isEdit === "true") {
         let finalImage = null;
         let payload: any = {
@@ -108,6 +109,8 @@ export default function AddCategory() {
     } catch (err: any) {
       console.log(err);
       Alert.alert("Error", err.message || "Failed to save");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -147,9 +150,12 @@ export default function AddCategory() {
           rightComponent={
             <TouchableOpacity
               onPress={saveCategory}
+              disabled={saving}
               style={[styles.headerRight]}
             >
-              <Text style={styles.saveText}>{t("save")}</Text>
+              <Text style={styles.saveText}>
+                {saving ? t("saving") : t("save")}
+              </Text>
             </TouchableOpacity>
           }
         />
@@ -179,10 +185,10 @@ export default function AddCategory() {
             {/* Quantity Type */}
             <Text style={styles.label}>Quantity Type</Text>
             <View style={styles.qtyRow}>
-              {["KG"].map((v) => (
+              {quantityTypes.map((v) => (
                 <TouchableOpacity
                   key={v}
-                  onPress={() => setQuantityType(v as "KG" | "LITERS")}
+                  onPress={() => setQuantityType(v)}
                   style={[
                     styles.qtyOption,
                     quantityType === v && styles.qtySelected,
@@ -232,11 +238,6 @@ export default function AddCategory() {
                 </TouchableOpacity>
               </View>
             )}
-
-            {/* Save */}
-            <TouchableOpacity style={styles.saveBtn} onPress={saveCategory}>
-              <Text style={{ color: "#fff", fontWeight: "700" }}>Save</Text>
-            </TouchableOpacity>
           </View>
         </TouchableWithoutFeedback>
       </SafeAreaView>
@@ -269,7 +270,7 @@ const styles = StyleSheet.create({
   },
 
   /* Quantity */
-  qtyRow: { flexDirection: "row", marginTop: 10 },
+  qtyRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 10 },
   qtyOption: {
     padding: 12,
     borderRadius: 8,

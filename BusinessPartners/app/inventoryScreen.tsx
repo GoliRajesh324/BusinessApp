@@ -72,6 +72,21 @@ export default function InventoryScreen() {
     }
   };
 
+  const formatUnit = (type: string) => {
+    switch (type) {
+      case "KG":
+        return "Kgs";
+      case "LITER":
+        return "Liters";
+      case "BAG":
+        return "Bags";
+      case "PACKET":
+        return "Packets";
+      default:
+        return type;
+    }
+  };
+
   const fetchLogs = async (pageNumber = 0) => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -153,16 +168,18 @@ export default function InventoryScreen() {
                 )}
 
                 {/* 🔥 HISTORY TITLE */}
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "700",
-                    marginTop: 30,
-                    marginBottom: 12,
-                  }}
-                >
-                  History
-                </Text>
+                {logs && logs.length > 0 && (
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: "700",
+                      marginTop: 30,
+                      marginBottom: 12,
+                    }}
+                  >
+                    History
+                  </Text>
+                )}
               </>
             }
             /* 🔥 HISTORY LIST (STEP 5 HERE) */
@@ -178,10 +195,8 @@ export default function InventoryScreen() {
                       justifyContent: "space-between",
                     }}
                   >
-                    <Text style={styles.logTitle}>
-                      Category: {item.categoryName} {item.quantityType}
-                    </Text>
-
+                    {/* <Text style={styles.logTitle}>Category: </Text> */}
+                    <Text style={styles.quantity}>{item.categoryName}</Text>
                     <Text
                       style={{
                         color: item.changeType === "ADD" ? "green" : "red",
@@ -194,9 +209,11 @@ export default function InventoryScreen() {
 
                   {/* Quantity */}
                   <Text>
-                    <Text style={styles.logTitle}>Qty: </Text>
+                    {/* <Text style={styles.logTitle}>Qty: </Text> */}
                     <Text style={styles.quantity}>{item.quantity} </Text>
-                    <Text style={styles.unit}>{item.quantityType}</Text>
+                    <Text style={styles.unit}>
+                      {formatUnit(item.quantityType)}
+                    </Text>
                   </Text>
 
                   {/* Note */}
@@ -204,8 +221,9 @@ export default function InventoryScreen() {
 
                   {/* Footer */}
                   <View style={styles.footerRow}>
-                    <Text style={styles.userText}>👤 {item.username}</Text>
-
+                    <Text style={styles.userText}>
+                      👤 {item.username?.toUpperCase()}
+                    </Text>
                     <Text style={styles.dateText}>
                       {new Date(item.createdAt).toLocaleString("en-GB", {
                         day: "2-digit",

@@ -26,6 +26,8 @@ export default function AddStock() {
   const [quantity, setQuantity] = useState("");
   const [notes, setNotes] = useState("");
 
+  const [saving, setSaving] = useState(false);
+
   /* ---------------- Load categories ---------------- */
   useEffect(() => {
     (async () => {
@@ -50,6 +52,7 @@ export default function AddStock() {
     if (!token) return;
 
     try {
+      setSaving(true);
       await changeStock(
         {
           businessId: Number(businessId),
@@ -66,6 +69,8 @@ export default function AddStock() {
       router.back();
     } catch (err: any) {
       Alert.alert("Error", err.message || "Could not add stock");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -78,9 +83,18 @@ export default function AddStock() {
         <AppHeader
           title="Add Stock"
           rightComponent={
-            <TouchableOpacity onPress={saveStock}>
-              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>
-                Save
+            <TouchableOpacity
+              onPress={saveStock}
+              disabled={saving} // ✅ disable button
+            >
+              <Text
+                style={{
+                  color: saving ? "#ccc" : "#fff",
+                  fontSize: 16,
+                  fontWeight: "700",
+                }}
+              >
+                {saving ? "Saving..." : "Save"}
               </Text>
             </TouchableOpacity>
           }

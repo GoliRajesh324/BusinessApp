@@ -9,6 +9,7 @@ npx expo start --no-dev --minify
 
 ## To create .aab file
 
+Check BASE_URL
 eas build -p android --profile production
 
 ## To create .apk file

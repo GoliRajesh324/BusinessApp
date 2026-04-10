@@ -1,12 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Dimensions,
     FlatList,
     Image,
-    KeyboardAvoidingView,
+    Keyboard,
     Modal,
-    Platform,
     StyleSheet,
     Text,
     TextInput,
@@ -41,6 +40,25 @@ const ImagePreviewModal: React.FC<Props> = ({
   businessName,
 }) => {
   const [caption, setCaption] = useState("");
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  const flatListRef = React.useRef<FlatList>(null);
+
+  // ✅ KEYBOARD LISTENER (MAIN FIX)
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleDelete = () => {
     if (images.length === 0) return;
@@ -59,11 +77,11 @@ const ImagePreviewModal: React.FC<Props> = ({
     setImages(updated);
     setSelectedIndex(newIndex);
   };
-  const flatListRef = React.useRef<FlatList>(null);
+
   return (
     <Modal visible={visible} animationType="slide" statusBarTranslucent>
       <View style={styles.container}>
-        {/* 🔝 TOP SAFE AREA */}
+        {/* 🔝 TOP */}
         <SafeAreaView edges={["top"]} style={styles.topSafe}>
           <View style={styles.topBar}>
             <TouchableOpacity onPress={onClose}>
@@ -75,14 +93,15 @@ const ImagePreviewModal: React.FC<Props> = ({
             </TouchableOpacity>
           </View>
         </SafeAreaView>
+
         {/* 🔥 IMAGE SWIPE */}
         <View style={styles.imageContainer}>
           {images.length > 0 && (
             <FlatList
               data={images}
               horizontal
-              keyboardShouldPersistTaps="handled"
               pagingEnabled
+              keyboardShouldPersistTaps="handled"
               showsHorizontalScrollIndicator={false}
               extraData={selectedIndex}
               initialScrollIndex={selectedIndex}
@@ -99,6 +118,7 @@ const ImagePreviewModal: React.FC<Props> = ({
                 <Image source={{ uri: item.uri }} style={styles.mainImage} />
               )}
               ref={flatListRef}
+              onScrollToIndexFailed={() => {}}
             />
           )}
         </View>
@@ -109,12 +129,10 @@ const ImagePreviewModal: React.FC<Props> = ({
             horizontal
             data={images}
             keyExtractor={(_, i) => i.toString()}
-            onScrollToIndexFailed={() => {}}
             renderItem={({ item, index }) => (
               <TouchableOpacity
                 onPress={() => {
                   setSelectedIndex(index);
-
                   flatListRef.current?.scrollToIndex({
                     index,
                     animated: true,
@@ -137,10 +155,12 @@ const ImagePreviewModal: React.FC<Props> = ({
           </TouchableOpacity>
         </View>
 
-        {/* 🔻 BOTTOM SAFE AREA */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
+        {/* 🔥 FLOATING BOTTOM (KEY FIX) */}
+        <View
+          style={[
+            styles.bottomContainer,
+            { bottom: keyboardHeight }, // 🔥 moves with keyboard
+          ]}
         >
           <SafeAreaView edges={["bottom"]} style={styles.bottomSafe}>
             {/* Caption */}
@@ -151,6 +171,7 @@ const ImagePreviewModal: React.FC<Props> = ({
                 value={caption}
                 onChangeText={setCaption}
                 style={styles.captionInput}
+                blurOnSubmit={false}
               />
             </View>
 
@@ -170,7 +191,7 @@ const ImagePreviewModal: React.FC<Props> = ({
               </TouchableOpacity>
             </View>
           </SafeAreaView>
-        </KeyboardAvoidingView>
+        </View>
       </View>
     </Modal>
   );
@@ -193,23 +214,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 10, // ✅ FIX spacing
+    paddingVertical: 10,
   },
 
   cancelText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "600",
-  },
-  topButton: {
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-
-  topText: {
-    color: "#fff",
     fontWeight: "600",
   },
 
@@ -253,6 +263,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 6,
+  },
+
+  bottomContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
   },
 
   captionContainer: {

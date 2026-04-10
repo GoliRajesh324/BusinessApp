@@ -6,6 +6,7 @@ import {
     Image,
     Keyboard,
     Modal,
+    Platform,
     StyleSheet,
     Text,
     TextInput,
@@ -89,7 +90,7 @@ const ImagePreviewModal: React.FC<Props> = ({
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-              <Ionicons name="close" size={20} color="#fff" />
+              <Ionicons name="close" size={25} color="#fff" />
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -156,42 +157,41 @@ const ImagePreviewModal: React.FC<Props> = ({
         </View>
 
         {/* 🔥 FLOATING BOTTOM (KEY FIX) */}
-        <View
+        <SafeAreaView
+          edges={["bottom"]}
           style={[
-            styles.bottomContainer,
-            { bottom: keyboardHeight }, // 🔥 moves with keyboard
+            styles.bottomSafe,
+            { marginBottom: keyboardHeight }, // ✅ PUSHES UP WITHOUT OVERLAY
           ]}
         >
-          <SafeAreaView edges={["bottom"]} style={styles.bottomSafe}>
-            {/* Caption */}
-            <View style={styles.captionContainer}>
-              <TextInput
-                placeholder="Add a caption..."
-                placeholderTextColor="#aaa"
-                value={caption}
-                onChangeText={setCaption}
-                style={styles.captionInput}
-                blurOnSubmit={false}
-              />
-            </View>
+          {/* Caption */}
+          <View style={styles.captionContainer}>
+            <TextInput
+              placeholder="Add a caption..."
+              placeholderTextColor="#aaa"
+              value={caption}
+              onChangeText={setCaption}
+              style={styles.captionInput}
+              blurOnSubmit={false}
+            />
+          </View>
 
-            {/* Bottom Row */}
-            <View style={styles.bottomRow}>
-              <Text style={styles.businessName} numberOfLines={1}>
-                {businessName}
-              </Text>
+          {/* Bottom Row */}
+          <View style={styles.bottomRow}>
+            <Text style={styles.businessName} numberOfLines={1}>
+              {businessName}
+            </Text>
 
-              <TouchableOpacity
-                onPress={() => {
-                  console.log("Caption:", caption);
-                  onSend();
-                }}
-              >
-                <Ionicons name="send" size={35} color="#4CAF50" />
-              </TouchableOpacity>
-            </View>
-          </SafeAreaView>
-        </View>
+            <TouchableOpacity
+              onPress={() => {
+                console.log("Caption:", caption);
+                onSend();
+              }}
+            >
+              <Ionicons name="send" size={35} color="#4CAF50" />
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
       </View>
     </Modal>
   );
@@ -215,6 +215,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
+    paddingTop: Platform.OS === "ios" ? 6 : 2, // ✅ FIX
   },
 
   cancelText: {
@@ -263,12 +264,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 6,
-  },
-
-  bottomContainer: {
-    position: "absolute",
-    left: 0,
-    right: 0,
   },
 
   captionContainer: {

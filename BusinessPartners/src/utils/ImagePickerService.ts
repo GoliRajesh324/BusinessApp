@@ -21,26 +21,32 @@ async function compressImage(uri: string) {
   return result.uri;
 }
 
-export const pickImageFromGallery = async (): Promise<ImageFile | null> => {
+export const pickImageFromGallery = async (): Promise<ImageFile[]> => {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ["images"],
+    allowsMultipleSelection: true, // ✅ multi select
     allowsEditing: false,
-    quality: 1, // keep original first
+    quality: 1,
   });
 
   if (!result.canceled) {
-    const compressedUri = await compressImage(result.assets[0].uri);
+    const compressedImages = await Promise.all(
+      result.assets.map(async (asset) => {
+        const compressedUri = await compressImage(asset.uri);
 
-    return {
-      uri: compressedUri,
-      name: "image.jpg",
-      type: "image/jpeg",
-    };
+        return {
+          uri: compressedUri,
+          name: "image.jpg",
+          type: "image/jpeg",
+        };
+      }),
+    );
+
+    return compressedImages;
   }
 
-  return null;
+  return [];
 };
-
 export const pickImageFromCamera = async (): Promise<ImageFile | null> => {
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: ["images"],

@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 import DropDownPicker from "react-native-dropdown-picker";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -17,8 +18,15 @@ import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import AppHeader from "@/src/components/AppHeader";
+import ImagePickerModal from "@/src/components/ImagePickerModal";
+import ImagePreviewModal from "@/src/components/ImagePreviewModal";
 import { InvestmentDTO } from "@/src/types/types";
 import { generateBusinessStatementPDF } from "@/src/utils/BusinessStatementPDF";
+import {
+  ImageFile,
+  pickImageFromCamera,
+  pickImageFromGallery,
+} from "@/src/utils/ImagePickerService";
 import { normalizeInvestmentForEdit } from "@/src/utils/InvestmentNormalizer";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import { useFocusEffect } from "@react-navigation/native";
@@ -28,7 +36,6 @@ import { Calendar, DateData } from "react-native-calendars";
 import { SafeAreaView } from "react-native-safe-area-context";
 import InvestmentAudit from "../src/components/InvestmentAudit";
 import BASE_URL from "../src/config/config";
-
 type Partner = {
   partnerId: number;
   username: string;
@@ -113,6 +120,11 @@ export default function BusinessDetail() {
   const [loadingInvestments, setLoadingInvestments] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [images, setImages] = useState<ImageFile[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [pickerSheetVisible, setPickerSheetVisible] = useState(false);
+
   const [items, setItems] = useState([
     { label: t("yourTransactions"), value: "byLoggedInUser" },
     { label: t("yourInvestments"), value: "byInvestment" },
@@ -149,6 +161,42 @@ export default function BusinessDetail() {
     };
     loadData();
   }, []);
+
+  const handleCamera = async () => {
+    const img = await pickImageFromCamera();
+
+    if (img) {
+      setImages((prev) => {
+        const updated = [...prev, img];
+        setSelectedIndex(updated.length - 1);
+        return updated;
+      });
+
+      setPickerSheetVisible(false);
+
+      setTimeout(() => {
+        setImageModalVisible(true);
+      }, 150);
+    }
+  };
+
+  const handleGallery = async () => {
+    const imgs = await pickImageFromGallery();
+
+    if (imgs.length > 0) {
+      setImages((prev) => {
+        const updated = [...prev, ...imgs];
+        setSelectedIndex(updated.length - 1);
+        return updated;
+      });
+
+      setTimeout(() => {
+        setImageModalVisible(true); // 👈 reopen preview
+      }, 200);
+    }
+
+    setPickerSheetVisible(false);
+  };
 
   // 🏷 Get label text dynamically based on selected value
   const currentLabel =
@@ -1218,6 +1266,17 @@ export default function BusinessDetail() {
             removeClippedSubviews={false}
           />
           <View style={styles.fabContainer}>
+            {/* 📷 Upload Button */}
+            <TouchableOpacity
+              style={[
+                styles.fab,
+                { marginBottom: 12, backgroundColor: "#28a745" },
+              ]}
+              onPress={() => setPickerSheetVisible(true)}
+            >
+              <Ionicons name="camera" size={26} color="#fff" />
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.fab}
               onPress={() => {
@@ -1295,7 +1354,27 @@ export default function BusinessDetail() {
               <Text style={styles.bottomButtonText}>{t("history")}</Text>
             </TouchableOpacity>
           </View>
+          <ImagePreviewModal
+            visible={imageModalVisible}
+            images={images}
+            selectedIndex={selectedIndex}
+            setSelectedIndex={setSelectedIndex}
+            onClose={() => setImageModalVisible(false)}
+            onAddMore={() => {
+              setImageModalVisible(false); // 👈 close preview first
 
+              setTimeout(() => {
+                setPickerSheetVisible(true); // 👈 open picker after
+              }, 150);
+            }}
+            onSend={() => {
+              Alert.alert("Info", "Backend logic implemented soon 🚀");
+              setImages([]);
+              setImageModalVisible(false);
+            }}
+            setImages={setImages}
+            businessName={safeBusinessName}
+          />
           {showAuditPopup && (
             <InvestmentAudit
               businessId={String(businessId || "")}
@@ -1305,6 +1384,13 @@ export default function BusinessDetail() {
             />
           )}
 
+          <ImagePickerModal
+            visible={pickerSheetVisible}
+            onClose={() => setPickerSheetVisible(false)}
+            onCamera={handleCamera}
+            onGallery={handleGallery}
+          />
+          {/* EXISTING */}
           {calendarVisible && (
             <View style={styles.popupOverlay}>
               <View style={[styles.popupContent, { padding: 10 }]}>

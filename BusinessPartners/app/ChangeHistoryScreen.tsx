@@ -89,13 +89,16 @@ export default function ChangeHistoryScreen() {
         if (!response.ok) throw new Error("Failed to fetch audit logs");
 
         const data = await response.json();
+
+        const newData = data?.content ?? [];
+
         if (page === 0) {
-          setCards(data.content);
+          setCards(newData);
         } else {
-          setCards((prev) => [...prev, ...data.content]);
+          setCards((prev) => [...prev, ...newData]);
         }
 
-        setHasMore(!data.last);
+        setHasMore(!data?.last);
       } catch (err) {
         console.log("Error fetching audit logs:", err);
       } finally {
@@ -193,7 +196,7 @@ export default function ChangeHistoryScreen() {
               color="#3498db"
               style={{ marginTop: 20 }}
             />
-          ) : cards.length === 0 ? (
+          ) : !cards || cards.length === 0 ? (
             <Text style={styles.noDataText}>
               No changes found for this business.
             </Text>

@@ -333,6 +333,7 @@ const EditTransactionScreen = () => {
       // 1️⃣ Update visible records (Investment, Sold, Withdraw)
       const visibleUpdates = investmentDataState.map((inv, index) => ({
         investmentId: inv.investmentId,
+        businessId: businessId,
         createdAt: inv.createdAt,
         createdBy: inv.createdBy,
         cropId: inv.cropId,
@@ -453,6 +454,7 @@ const EditTransactionScreen = () => {
           if (Number(totalAmount) === 0) {
             return {
               ...hidden,
+              businessId: businessId,
               transactionType: "INVESTMENT_WITHDRAW",
               withdrawn: 0,
               reduceLeftOver: 0,
@@ -464,6 +466,7 @@ const EditTransactionScreen = () => {
             // checkbox removed → reset values
             return {
               ...hidden,
+              businessId: businessId,
               transactionType: "INVESTMENT_WITHDRAW",
               withdrawn: 0,
               reduceLeftOver: 0,
@@ -474,6 +477,7 @@ const EditTransactionScreen = () => {
 
           return {
             ...hidden,
+            businessId: businessId,
             transactionType: "INVESTMENT_WITHDRAW",
             withdrawn: reduceValue,
             reduceLeftOver: reduceValue,

@@ -1,17 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-    Dimensions,
-    FlatList,
-    Image,
-    Keyboard,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  FlatList,
+  Image,
+  Keyboard,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,9 +24,11 @@ interface Props {
   setSelectedIndex: (i: number) => void;
   onClose: () => void;
   onAddMore: () => void;
-  onSend: () => void;
+  onSend: () => Promise<void>;
   setImages: (imgs: any[]) => void;
   businessName: string;
+  caption: string;
+  setCaption: (text: string) => void;
 }
 
 const ImagePreviewModal: React.FC<Props> = ({
@@ -39,9 +41,11 @@ const ImagePreviewModal: React.FC<Props> = ({
   onSend,
   setImages,
   businessName,
+  caption,
+  setCaption,
 }) => {
-  const [caption, setCaption] = useState("");
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isSending, setIsSending] = useState(false);
 
   const flatListRef = React.useRef<FlatList>(null);
 
@@ -183,15 +187,33 @@ const ImagePreviewModal: React.FC<Props> = ({
             </Text>
 
             <TouchableOpacity
-              onPress={() => {
-                console.log("Caption:", caption);
-                onSend();
+              disabled={isSending}
+              style={{ opacity: isSending ? 0.5 : 1 }}
+              onPress={async () => {
+                if (isSending) return;
+
+                try {
+                  setIsSending(true);
+
+                  await onSend(); // ✅ IMPORTANT: must return promise from parent
+                } catch (e) {
+                  console.error("Send failed:", e);
+                } finally {
+                  setIsSending(false);
+                }
               }}
             >
               <Ionicons name="send" size={35} color="#4CAF50" />
             </TouchableOpacity>
           </View>
         </SafeAreaView>
+        {isSending && (
+          <View style={styles.loadingOverlay}>
+            <View style={styles.loadingBox}>
+              <Text style={styles.loadingText}>Saving images...</Text>
+            </View>
+          </View>
+        )}
       </View>
     </Modal>
   );
@@ -298,5 +320,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     maxWidth: "70%",
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+
+  loadingBox: {
+    backgroundColor: "#111",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+  },
+
+  loadingText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

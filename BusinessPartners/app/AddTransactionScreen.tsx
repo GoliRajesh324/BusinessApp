@@ -56,6 +56,10 @@ const AddTransactionScreen = () => {
   const cropDetails = params.cropDetails
     ? JSON.parse(params.cropDetails as string)
     : undefined;
+
+  const investmentGroupId = params.investmentGroupId
+    ? Number(params.investmentGroupId)
+    : null;
   const shakeAnimations = useRef<Record<string, Animated.Value>>({}).current;
   const [splitMode, setSplitMode] = useState<"share" | "equal" | "manual">(
     "share",
@@ -107,6 +111,21 @@ const AddTransactionScreen = () => {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    if (params.images) {
+      try {
+        const parsedImages = JSON.parse(params.images as string);
+        setImages(parsedImages); // ✅ preload images
+      } catch (e) {
+        console.log("Error parsing images", e);
+      }
+    }
+
+    if (params.caption) {
+      setDescription(params.caption as string); // optional
+    }
+  }, [params.images, params.caption]);
 
   useEffect(() => {
     if (!token || !businessId) return;
@@ -551,6 +570,8 @@ const AddTransactionScreen = () => {
         return {
           partnerId: r.id,
           cropId: cropDetails?.id,
+          businessId: params.businessId,
+          investmentGroupId,
           description: description || "",
           comments: description || "",
           totalAmount: expected,
@@ -570,6 +591,8 @@ const AddTransactionScreen = () => {
         return {
           partnerId: r.id,
           cropId: cropDetails?.id,
+          investmentGroupId,
+          businessId: params.businessId,
           description: description || "",
           comments: description || "",
           totalAmount: expected,
@@ -589,6 +612,8 @@ const AddTransactionScreen = () => {
         return {
           partnerId: r.id,
           cropId: cropDetails?.id,
+          investmentGroupId,
+          businessId: params.businessId,
           description: description || "",
           comments: description || "",
           totalAmount: expected,

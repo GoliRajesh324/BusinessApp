@@ -1,18 +1,18 @@
 import {
-    ImageFile,
-    pickImageFromCamera,
-    pickImageFromGallery,
+  ImageFile,
+  pickImageFromCamera,
+  pickImageFromGallery,
 } from "@/src/utils/ImagePickerService";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface Props {
@@ -36,14 +36,29 @@ const CommonImagePicker: React.FC<Props> = ({
       return;
     }
 
-    const file =
+    const result =
       type === "camera"
         ? await pickImageFromCamera()
         : await pickImageFromGallery();
 
-    if (file) {
-      onChange([...images, file]);
-    }
+    if (!result) return;
+
+    // ✅ HANDLE ARRAY (multi select)
+    const files = Array.isArray(result) ? result : [result];
+
+    // ✅ NORMALIZE (IMPORTANT)
+    const normalized = files.map((file) => ({
+      uri: file.uri, // 🔥 critical fix
+      name:
+        file.name ||
+        `image_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`,
+      type: file.type || "image/jpeg",
+      existing: false,
+    }));
+
+    const updated = [...images, ...normalized].slice(0, maxImages);
+
+    onChange(updated);
   };
 
   const removeImage = (index: number) => {

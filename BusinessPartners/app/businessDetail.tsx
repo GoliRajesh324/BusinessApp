@@ -124,6 +124,7 @@ export default function BusinessDetail() {
   const [images, setImages] = useState<ImageFile[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [pickerSheetVisible, setPickerSheetVisible] = useState(false);
+  const [imageTransactions, setImageTransactions] = useState<any[]>([]);
 
   const [items, setItems] = useState([
     { label: t("yourTransactions"), value: "byLoggedInUser" },
@@ -134,7 +135,7 @@ export default function BusinessDetail() {
   ]);
 
   const [videoId, setVideoId] = useState("");
-
+  const [caption, setCaption] = useState("");
   useEffect(() => {
     loadVideo();
   }, []);
@@ -243,6 +244,28 @@ export default function BusinessDetail() {
     } catch (error) {
       console.log("Supplier click error:", error);
       Alert.alert("Error", "Unable to open supplier transaction");
+    }
+  };
+
+  const fetchImageTransactions = async () => {
+    if (!token || !safeBusinessId) return;
+
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/investment-images/business/${safeBusinessId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!res.ok) throw new Error("Failed");
+
+      const data = await res.json();
+      setImageTransactions(data || []);
+    } catch (err) {
+      console.log("Image fetch error", err);
     }
   };
 
@@ -600,6 +623,134 @@ export default function BusinessDetail() {
     }
   };
 
+  const uploadImages = async () => {
+    const formData = new FormData();
+
+    images
+      .filter((img: any) => !img.isExisting) // ✅ only new images
+      .forEach((img: any, index: number) => {
+        formData.append("files", {
+          uri: img.uri,
+          name: `image_${index}.jpg`,
+          type: "image/jpeg",
+        } as any);
+      });
+
+    formData.append("businessId", String(businessId));
+    formData.append("caption", caption || "");
+
+    const response = await fetch(`${BASE_URL}/api/investment-images/upload`, {
+      method: "POST",
+      body: formData,
+      headers: {
+        Authorization: `Bearer ${token}`, // ✅ REQUIRED
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Upload failed");
+    }
+  };
+
+  const groupedImages = useMemo(() => {
+    const map: any = {};
+
+    imageTransactions.forEach((img) => {
+      const key = img.investmentId; // ✅ IMPORTANT
+
+      if (!map[key]) {
+        map[key] = {
+          investmentId: key,
+          caption: img.caption,
+          createdBy: img.createdBy,
+          createdAt: img.createdAt,
+          images: [],
+        };
+      }
+
+      map[key].images.push(img.imageUrl);
+    });
+
+    return Object.values(map);
+  }, [imageTransactions]);
+
+  const renderImageCard = (item: any, index: number) => {
+    return (
+      <View style={styles.newCard}>
+        {/* TOP */}
+        <View>
+          <Text style={styles.caption}>{item.caption || "No Description"}</Text>
+
+          <TouchableOpacity
+            style={styles.fillBtn}
+            onPress={() => {
+              const formatted = item.images.map((url: string) => ({
+                uri: url,
+                isExisting: true,
+              }));
+
+              router.push({
+                pathname: "/AddTransactionScreen",
+                params: {
+                  businessId: safeBusinessId,
+                  businessName: safeBusinessName,
+                  cropDetails: JSON.stringify(cropDetails),
+                  images: JSON.stringify(formatted), // ✅ PASS IMAGES
+                  caption: item.caption || "",
+                  investmentGroupId: item.investmentId || null,
+                },
+              });
+            }}
+          >
+            <Text style={styles.fillBtnText}>Press to add details.</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* IMAGE ROW */}
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={[...item.images, "ADD_BUTTON"]}
+          keyExtractor={(_, i) => i.toString()}
+          renderItem={({ item: img, index }) => {
+            if (img === "ADD_BUTTON") {
+              return (
+                <TouchableOpacity
+                  style={styles.addImageBtn}
+                  onPress={() => {
+                    const formatted = item.images.map((url: string) => ({
+                      uri: url,
+                      isExisting: true, // ✅ VERY IMPORTANT
+                    }));
+
+                    setImages(formatted);
+                    setSelectedIndex(0);
+
+                    setTimeout(() => {
+                      setImageModalVisible(true);
+                    }, 150);
+                  }}
+                >
+                  <Ionicons name="add" size={28} color="#fff" />
+                </TouchableOpacity>
+              );
+            }
+
+            return <Image source={{ uri: img }} style={styles.imageThumbNew} />;
+          }}
+        />
+
+        {/* FOOTER */}
+        <View style={styles.footerRow}>
+          <Text style={styles.footerLeft}>Created By: {item.createdBy}</Text>
+          <Text style={styles.footerRight}>
+            {formatDateTime(item.createdAt)}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   useFocusEffect(
     React.useCallback(() => {
       if (!token) return;
@@ -607,7 +758,7 @@ export default function BusinessDetail() {
       setPage(0);
       setHasMore(true);
       setAllInvestments([]);
-
+      fetchImageTransactions();
       fetchInvestments(0, true);
       fetchSuppliers();
 
@@ -1007,9 +1158,14 @@ export default function BusinessDetail() {
           )}
           {/* Investment Cards */}
           <FlatList
-            data={filteredInvestments}
+            data={[...groupedImages, ...filteredInvestments]}
             keyExtractor={(item, index) => `${item.investmentId}-${index}`}
-            renderItem={({ item, index }) => renderInvestmentCard(item, index)}
+            renderItem={({ item, index }) => {
+              if (item.images) {
+                return renderImageCard(item, index);
+              }
+              return renderInvestmentCard(item, index);
+            }}
             ListHeaderComponent={
               <View
                 style={{ paddingHorizontal: 16, paddingTop: 16, zIndex: 10 }}
@@ -1367,13 +1523,27 @@ export default function BusinessDetail() {
                 setPickerSheetVisible(true); // 👈 open picker after
               }, 150);
             }}
-            onSend={() => {
-              Alert.alert("Info", "Backend logic implemented soon 🚀");
-              setImages([]);
-              setImageModalVisible(false);
+            onSend={async () => {
+              try {
+                console.log("DATA →", {
+                  businessId,
+
+                  caption,
+                  images: images.map((i) => i.uri),
+                });
+                await uploadImages();
+                await fetchImageTransactions(); // refresh first
+                setImages([]);
+                setImageModalVisible(false);
+                Alert.alert("Success", "Uploaded successfully ✅");
+              } catch (e) {
+                Alert.alert("Error", "Upload failed ❌");
+              }
             }}
             setImages={setImages}
             businessName={safeBusinessName}
+            caption={caption}
+            setCaption={setCaption}
           />
           {showAuditPopup && (
             <InvestmentAudit
@@ -1918,6 +2088,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  caption: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "700",
+    paddingBottom: 10,
+    color: "#111",
+    marginRight: 10,
+  },
   newDescription: {
     flex: 1,
     fontSize: 16,
@@ -2102,5 +2280,65 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 10,
+  },
+  imageCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 14,
+    elevation: 2,
+  },
+
+  imageCaption: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+
+  imagePreview: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+
+  addBtnImage: {
+    marginTop: 10,
+    alignSelf: "flex-end",
+    backgroundColor: "#4CAF50",
+    padding: 8,
+    borderRadius: 20,
+  },
+  imageThumbNew: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+    marginRight: 8,
+  },
+
+  addImageBtn: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+    backgroundColor: "#4CAF50",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 4,
+  },
+
+  fillBtn: {
+    alignSelf: "flex-start",
+    backgroundColor: "#7c3aed",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+
+  fillBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
   },
 });

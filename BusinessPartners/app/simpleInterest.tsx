@@ -133,11 +133,14 @@ export default function SimpleInterestPage() {
   /* ************************************
      ALWAYS SHOW TOTALS FROM ALL RECORDS
      ************************************ */
-  const totalTakenAll = persons
+  const activePersons = persons.filter((p) => !p.endDate || p.endDate === "");
+
+  // ✅ Only ACTIVE records
+  const totalTakenAll = activePersons
     .filter((p) => p.type === "given")
     .reduce((s, p) => s + (p.amount || 0), 0);
 
-  const totalGivenAll = persons
+  const totalGivenAll = activePersons
     .filter((p) => p.type === "taken")
     .reduce((s, p) => s + (p.amount || 0), 0);
 

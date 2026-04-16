@@ -1,6 +1,7 @@
 // AddInvestmentPopup.tsx
 import AppHeader from "@/src/components/AppHeader";
 import SupplierPopup from "@/src/components/SupplierPopup";
+import { showToast } from "@/src/utils/ToastService";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -44,7 +45,10 @@ interface PartnerRow {
   checked: boolean;
   reduceLeftOver: string;
 }
-
+type ImageFile = {
+  uri: string;
+  isExisting?: boolean;
+};
 const SLIDER_THUMB_SIZE = 18;
 const AddTransactionScreen = () => {
   const router = useRouter();
@@ -116,7 +120,12 @@ const AddTransactionScreen = () => {
     if (params.images) {
       try {
         const parsedImages = JSON.parse(params.images as string);
-        setImages(parsedImages); // ✅ preload images
+        const formattedImages = parsedImages.map((img: any) => ({
+          uri: typeof img === "string" ? img : img.uri,
+          isExisting: true, // ✅ VERY IMPORTANT
+        }));
+
+        setImages(formattedImages);
       } catch (e) {
         console.log("Error parsing images", e);
       }
@@ -640,13 +649,23 @@ const AddTransactionScreen = () => {
       formData.append("investmentData", JSON.stringify(investmentData));
 
       // 3️⃣ Append images
-      images.forEach((img, index) => {
-        formData.append("files", {
-          uri: img.uri,
-          name: img.fileName || `image_${Date.now()}_${index}.jpg`,
-          type: img.mimeType || "image/jpeg",
-        } as any);
-      });
+      // ✅ 1. EXISTING IMAGES (KEEP)
+      const existingImages = images
+        .filter((img) => img.isExisting)
+        .map((img) => img.uri);
+
+      formData.append("existingImages", JSON.stringify(existingImages));
+
+      // ✅ 2. NEW IMAGES (UPLOAD)
+      images
+        .filter((img) => !img.isExisting)
+        .forEach((img, index) => {
+          formData.append("files", {
+            uri: img.uri,
+            name: img.fileName || `image_${Date.now()}_${index}.jpg`,
+            type: img.mimeType || "image/jpeg",
+          } as any);
+        });
 
       // 4️⃣ Send request
       const response = await axios.post(
@@ -662,12 +681,12 @@ const AddTransactionScreen = () => {
 
       console.log("✅ Success:", response.data);
       //setImages([]); // clear images
-      Alert.alert("Success", "Transaction saved successfully", [
-        {
-          text: "OK",
-          onPress: () => router.back(),
-        },
-      ]);
+      showToast("Transaction saved successfully", "success");
+
+      // ⏳ wait for toast to finish (same duration: 3s)
+      setTimeout(() => {
+        router.back();
+      }, 2000);
     } catch (error: any) {
       console.log("❌ FULL ERROR:", error);
 
@@ -676,9 +695,9 @@ const AddTransactionScreen = () => {
         console.log("❌ Backend Message:", error.response.data);
       }
 
-      Alert.alert(
-        "Server Error",
+      showToast(
         error.response?.data?.message || "Something went wrong",
+        "error",
       );
     } finally {
       setIsSaving(false);
@@ -726,7 +745,15 @@ const AddTransactionScreen = () => {
     });
 
     if (!result.canceled) {
-      setImages((prev) => [...prev, result.assets[0]]);
+      setImages((prev) => [
+        ...prev,
+        {
+          uri: result.assets[0].uri,
+          fileName: result.assets[0].fileName,
+          mimeType: result.assets[0].mimeType,
+          isExisting: false, // ✅ NEW IMAGE
+        },
+      ]);
     }
   };
 
@@ -742,7 +769,15 @@ const AddTransactionScreen = () => {
     });
 
     if (!result.canceled) {
-      setImages((prev) => [...prev, result.assets[0]]);
+      setImages((prev) => [
+        ...prev,
+        {
+          uri: result.assets[0].uri,
+          fileName: result.assets[0].fileName,
+          mimeType: result.assets[0].mimeType,
+          isExisting: false, // ✅ NEW IMAGE
+        },
+      ]);
     }
   };
 

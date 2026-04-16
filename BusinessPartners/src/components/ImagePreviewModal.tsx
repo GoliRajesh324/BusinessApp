@@ -103,13 +103,14 @@ const ImagePreviewModal: React.FC<Props> = ({
         <View style={styles.imageContainer}>
           {images.length > 0 && (
             <FlatList
+              key={images.length}
               data={images}
               horizontal
               pagingEnabled
-              keyboardShouldPersistTaps="handled"
+              keyboardShouldPersistTaps="always"
               showsHorizontalScrollIndicator={false}
-              extraData={selectedIndex}
-              initialScrollIndex={selectedIndex}
+              extraData={images}
+              initialScrollIndex={0}
               getItemLayout={(_, index) => ({
                 length: width,
                 offset: width * index,
@@ -249,6 +250,7 @@ const styles = StyleSheet.create({
   deleteBtn: {
     backgroundColor: "rgba(0,0,0,0.6)",
     padding: 8,
+    paddingTop: 20,
     borderRadius: 20,
   },
 

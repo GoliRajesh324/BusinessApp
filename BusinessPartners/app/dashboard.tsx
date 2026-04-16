@@ -1,4 +1,5 @@
 import ScreenHelpVideo from "@/src/components/ScreenHelpVideo";
+import { showToast } from "@/src/utils/ToastService";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -9,7 +10,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   FlatList,
   Image,
@@ -46,6 +46,24 @@ export default function Dashboard() {
   const [videoId, setVideoId] = useState("");
 
   const [deleteFlag, setDeleteFlag] = useState("N"); // default Active
+
+  const [isTelugu, setIsTelugu] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const savedLang = await AsyncStorage.getItem("appLanguage");
+      const lang = savedLang || "en";
+      await i18n.changeLanguage(lang);
+      setIsTelugu(lang === "te");
+    })();
+  }, []);
+
+  const toggleLanguage = async () => {
+    const newLang = isTelugu ? "en" : "te";
+    await AsyncStorage.setItem("appLanguage", newLang);
+    await i18n.changeLanguage(newLang);
+    setIsTelugu(!isTelugu);
+  };
 
   useEffect(() => {
     loadVideo();
@@ -125,7 +143,7 @@ export default function Dashboard() {
       setBusinesses(updated);
     } catch (err) {
       console.log("❌ Fetch error:", err);
-      Alert.alert("Error", "Error loading businesses");
+      showToast("Error loading businesses", "error");
     } finally {
       setLoading(false);
     }
@@ -172,7 +190,7 @@ export default function Dashboard() {
       });
     } catch (err: any) {
       console.log("❌ Start crop error:", err.response?.data || err.message);
-      Alert.alert("Error", "Error while starting crop");
+      showToast("Error while starting crop", "error");
     } finally {
       setConfirmStart(null);
     }
@@ -190,12 +208,12 @@ export default function Dashboard() {
         },
       );
 
-      Alert.alert("Success", "Business restored");
+      showToast("Business restored", "success");
 
       await fetchBusinesses();
     } catch (err: any) {
       console.log("❌ Undo error:", err);
-      Alert.alert("Error", "Failed to restore business");
+      showToast("Failed to restore business", "error");
     }
   };
 
@@ -227,7 +245,7 @@ export default function Dashboard() {
       }
 
       console.log("❌ Delete error:", err);
-      Alert.alert("Error", "Error deleting business");
+      showToast("Error deleting business", "error");
     }
   };
 
@@ -261,12 +279,18 @@ export default function Dashboard() {
 
         {/* RIGHT SIDE ICONS */}
         <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity onPress={toggleLanguage} style={styles.langIcon}>
+            <Ionicons name="language-outline" size={24} color="#fff" />
+          </TouchableOpacity>
+
           <View style={{ marginRight: 25 }}>
             <ScreenHelpVideo videoId={videoId} />
           </View>
 
           <TouchableOpacity
-            onPress={() => alert("Notifications feature coming soon")}
+            onPress={() =>
+              showToast("Notifications feature coming soon", "info")
+            }
           >
             <Ionicons name="notifications-outline" size={28} color="#fff" />
           </TouchableOpacity>
@@ -953,5 +977,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
+  },
+  langIcon: {
+    marginRight: 15,
+  },
+
+  langText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 13,
   },
 });

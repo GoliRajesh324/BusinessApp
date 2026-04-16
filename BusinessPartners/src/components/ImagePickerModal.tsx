@@ -44,9 +44,13 @@ const ImagePickerModal: React.FC<Props> = ({
     setIsProcessing(true);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    await fn();
-
-    setTimeout(() => setIsProcessing(false), 300);
+    try {
+      await fn();
+    } catch (e) {
+      console.log("Picker error", e);
+    } finally {
+      setIsProcessing(false); // ✅ ALWAYS RESET
+    }
   };
 
   return (
@@ -107,6 +111,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.4)", // ✅ ADD THIS
   },
   background: {
     ...StyleSheet.absoluteFillObject,

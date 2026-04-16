@@ -1,3 +1,4 @@
+import { showToast } from "@/src/utils/ToastService";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
@@ -37,7 +38,7 @@ export default function ProfileScreen() {
       router.replace("/login");
     } catch (err) {
       console.log("❌ Logout error:", err);
-      Alert.alert("Error", "Failed to logout");
+      showToast("Failed to logout. Please try again.", "error");
     }
   };
 

@@ -8,7 +8,7 @@ export interface ImageFile {
   existing?: boolean; // ✅ ADD THIS
 }
 
-async function compressImage(uri: string) {
+export const compressImage = async (uri: string) => {
   const result = await ImageManipulator.manipulateAsync(
     uri,
     [], // no resize needed usually
@@ -19,37 +19,28 @@ async function compressImage(uri: string) {
   );
 
   return result.uri;
-}
-
+};
 export const pickImageFromGallery = async (): Promise<ImageFile[]> => {
   const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ["images"],
-    allowsMultipleSelection: true, // ✅ multi select
+    mediaTypes: ["images"] as any,
+    allowsMultipleSelection: true,
     allowsEditing: false,
-    quality: 1,
+    quality: 0.8,
   });
 
-  if (!result.canceled) {
-    const compressedImages = await Promise.all(
-      result.assets.map(async (asset) => {
-        const compressedUri = await compressImage(asset.uri);
+  if (result.canceled) return [];
 
-        return {
-          uri: compressedUri,
-          name: "image.jpg",
-          type: "image/jpeg",
-        };
-      }),
-    );
-
-    return compressedImages;
-  }
-
-  return [];
+  // ✅ RETURN RAW IMMEDIATELY (NO COMPRESSION HERE)
+  return result.assets.map((asset) => ({
+    uri: asset.uri,
+    name: "image.jpg",
+    type: "image/jpeg",
+  }));
 };
+
 export const pickImageFromCamera = async (): Promise<ImageFile | null> => {
   const result = await ImagePicker.launchCameraAsync({
-    mediaTypes: ["images"],
+    mediaTypes: ["images"] as any,
     allowsEditing: false,
     quality: 1,
   });

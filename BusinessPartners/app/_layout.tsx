@@ -1,4 +1,5 @@
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import GlobalToast from "@/src/components/GlobalToast";
 import BASE_URL from "@/src/config/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
@@ -486,6 +487,13 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="AddAvailableMoney"
+            options={{
+              headerShown: false,
+            }}
+          />
+
+          <Stack.Screen
             name="businessNews"
             options={{
               headerShown: false,
@@ -499,6 +507,7 @@ export default function RootLayout() {
         </Stack>
 
         <StatusBar style="auto" />
+        <GlobalToast />
       </ThemeProvider>
     </View>
   );

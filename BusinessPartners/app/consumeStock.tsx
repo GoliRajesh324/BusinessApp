@@ -1,4 +1,5 @@
 import AppHeader from "@/src/components/AppHeader";
+import { showToast } from "@/src/utils/ToastService";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -81,11 +82,10 @@ export default function ConsumeStock() {
         },
         token,
       );
-
-      Alert.alert("Success", "Stock consumed successfully");
+      showToast("Stock consumed successfully", "success");
       router.back();
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to consume stock");
+      showToast(err.message || "Failed to consume stock", "error");
     } finally {
       setSaving(false);
     }

@@ -1,5 +1,6 @@
 import AppHeader from "@/src/components/AppHeader";
 import BASE_URL from "@/src/config/config";
+import { showToast } from "@/src/utils/ToastService";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -68,7 +69,7 @@ export default function ResetPasswordScreen() {
         throw new Error(data || "Something went wrong");
       }
 
-      Alert.alert("Success", "Password updated successfully ✅");
+      showToast("Password updated successfully ✅", "success");
       router.back();
     } catch (error: any) {
       Alert.alert("Error", error.message);

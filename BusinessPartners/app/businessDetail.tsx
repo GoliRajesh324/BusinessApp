@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   StyleSheet,
@@ -20,14 +19,17 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import AppHeader from "@/src/components/AppHeader";
 import ImagePickerModal from "@/src/components/ImagePickerModal";
 import ImagePreviewModal from "@/src/components/ImagePreviewModal";
+import ViewImage from "@/src/components/ViewImage";
 import { InvestmentDTO } from "@/src/types/types";
 import { generateBusinessStatementPDF } from "@/src/utils/BusinessStatementPDF";
 import {
+  compressImage,
   ImageFile,
   pickImageFromCamera,
   pickImageFromGallery,
 } from "@/src/utils/ImagePickerService";
 import { normalizeInvestmentForEdit } from "@/src/utils/InvestmentNormalizer";
+import { showToast } from "@/src/utils/ToastService";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
@@ -120,12 +122,16 @@ export default function BusinessDetail() {
   const [loadingInvestments, setLoadingInvestments] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerImages, setViewerImages] = useState<string[]>([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
+
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [images, setImages] = useState<ImageFile[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [pickerSheetVisible, setPickerSheetVisible] = useState(false);
   const [imageTransactions, setImageTransactions] = useState<any[]>([]);
-
+  const [currentGroupId, setCurrentGroupId] = useState<number | null>(null);
   const [items, setItems] = useState([
     { label: t("yourTransactions"), value: "byLoggedInUser" },
     { label: t("yourInvestments"), value: "byInvestment" },
@@ -164,39 +170,56 @@ export default function BusinessDetail() {
   }, []);
 
   const handleCamera = async () => {
+    if (imageModalVisible) return;
+
     const img = await pickImageFromCamera();
 
-    if (img) {
-      setImages((prev) => {
-        const updated = [...prev, img];
-        setSelectedIndex(updated.length - 1);
-        return updated;
-      });
-
-      setPickerSheetVisible(false);
-
-      setTimeout(() => {
-        setImageModalVisible(true);
-      }, 150);
-    }
-  };
-
-  const handleGallery = async () => {
-    const imgs = await pickImageFromGallery();
-
-    if (imgs.length > 0) {
-      setImages((prev) => {
-        const updated = [...prev, ...imgs];
-        setSelectedIndex(updated.length - 1);
-        return updated;
-      });
-
-      setTimeout(() => {
-        setImageModalVisible(true); // 👈 reopen preview
-      }, 200);
-    }
+    if (!img) return;
 
     setPickerSheetVisible(false);
+
+    setImages((prev) => {
+      const updated = [...prev, { ...img }];
+      return updated;
+    });
+
+    setSelectedIndex((prev) => prev ?? 0);
+
+    setTimeout(() => {
+      setImageModalVisible(true);
+    }, 150);
+  };
+  const handleGallery = async () => {
+    if (imageModalVisible) return;
+
+    setPickerSheetVisible(false);
+
+    const imgs = await pickImageFromGallery();
+
+    if (!imgs.length) return;
+
+    // ✅ STEP 1: SHOW IMMEDIATELY (NO WAIT)
+    setImages((prev) => {
+      const updated = [...prev, ...imgs.map((i) => ({ ...i }))];
+      return updated;
+    });
+    setSelectedIndex((prev) => prev ?? 0);
+    setImageModalVisible(true);
+
+    // ✅ STEP 2: COMPRESS IN BACKGROUND (SAFE)
+    imgs.forEach(async (img) => {
+      try {
+        const compressed = await compressImage(img.uri);
+
+        setImages((prev) => {
+          return prev.map((p) =>
+            p.uri === img.uri ? { ...p, uri: compressed } : p,
+          );
+        });
+      } catch (e) {
+        console.log("Compression failed", e);
+      }
+    });
   };
 
   // 🏷 Get label text dynamically based on selected value
@@ -207,7 +230,7 @@ export default function BusinessDetail() {
   const handleSupplierClick = async (supplier: Supplier) => {
     try {
       if (!token) {
-        Alert.alert("Error", "User not authenticated");
+        showToast("User not authenticated", "error");
         return;
       }
 
@@ -228,7 +251,7 @@ export default function BusinessDetail() {
       const data: InvestmentDTO[] = await response.json();
 
       if (!Array.isArray(data) || data.length === 0) {
-        Alert.alert("No transactions found for this supplier");
+        showToast("No transactions found for this supplier", "error");
         return;
       }
 
@@ -243,7 +266,7 @@ export default function BusinessDetail() {
       });
     } catch (error) {
       console.log("Supplier click error:", error);
-      Alert.alert("Error", "Unable to open supplier transaction");
+      showToast("Unable to open supplier transaction", "error");
     }
   };
 
@@ -308,7 +331,7 @@ export default function BusinessDetail() {
       setSuppliers(grouped);
     } catch (err) {
       console.log(err);
-      Alert.alert("Error", "Error fetching suppliers");
+      showToast("Error fetching suppliers", "error");
     }
   };
 
@@ -581,7 +604,7 @@ export default function BusinessDetail() {
       setHasMore(!data?.last);
       setPage(pageNumber);
     } catch (err) {
-      Alert.alert("Error", "Error fetching investments");
+      showToast("Error fetching investments", "error");
     } finally {
       setLoadingInvestments(false);
       setRefreshing(false);
@@ -626,8 +649,9 @@ export default function BusinessDetail() {
   const uploadImages = async () => {
     const formData = new FormData();
 
+    // ✅ NEW IMAGES ONLY
     images
-      .filter((img: any) => !img.isExisting) // ✅ only new images
+      .filter((img: any) => !img.isExisting)
       .forEach((img: any, index: number) => {
         formData.append("files", {
           uri: img.uri,
@@ -639,17 +663,34 @@ export default function BusinessDetail() {
     formData.append("businessId", String(businessId));
     formData.append("caption", caption || "");
 
+    // ✅ GROUP ID (CRITICAL)
+    if (currentGroupId) {
+      formData.append("investmentGroupId", String(currentGroupId));
+    }
+
+    // ✅ EXISTING IMAGES (FOR DELETE)
+    const existing = images
+      .filter((img: any) => img.isExisting)
+      .map((img: any) => img.uri);
+
+    formData.append("existingImages", JSON.stringify(existing));
+
     const response = await fetch(`${BASE_URL}/api/investment-images/upload`, {
       method: "POST",
       body: formData,
       headers: {
-        Authorization: `Bearer ${token}`, // ✅ REQUIRED
+        Authorization: `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
       throw new Error("Upload failed");
     }
+
+    const newGroupId = await response.json();
+
+    // ✅ UPDATE GROUP ID (IMPORTANT FOR NEXT ADD)
+    setCurrentGroupId(newGroupId);
   };
 
   const groupedImages = useMemo(() => {
@@ -686,8 +727,14 @@ export default function BusinessDetail() {
             onPress={() => {
               const formatted = item.images.map((url: string) => ({
                 uri: url,
-                isExisting: true,
+                isExisting: true, // ✅ REQUIRED FOR DELETE LOGIC
               }));
+
+              setImages(formatted);
+              setSelectedIndex(0);
+
+              // ✅ ADD THIS
+              setCurrentGroupId(item.investmentId);
 
               router.push({
                 pathname: "/AddTransactionScreen",
@@ -722,9 +769,11 @@ export default function BusinessDetail() {
                       uri: url,
                       isExisting: true, // ✅ VERY IMPORTANT
                     }));
-
                     setImages(formatted);
                     setSelectedIndex(0);
+
+                    // ✅ IMPORTANT
+                    setCurrentGroupId(item.investmentId); // 👈 THIS FIXES GROUP ISSUE
 
                     setTimeout(() => {
                       setImageModalVisible(true);
@@ -736,7 +785,17 @@ export default function BusinessDetail() {
               );
             }
 
-            return <Image source={{ uri: img }} style={styles.imageThumbNew} />;
+            return (
+              <TouchableOpacity
+                onPress={() => {
+                  setViewerImages(item.images);
+                  setViewerIndex(index);
+                  setViewerVisible(true);
+                }}
+              >
+                <Image source={{ uri: img }} style={styles.imageThumbNew} />
+              </TouchableOpacity>
+            );
           }}
         />
 
@@ -937,6 +996,10 @@ export default function BusinessDetail() {
       label: "Investment Withdraw",
       color: "#F59E0B", // amber/orange (mixed meaning)
     },
+    DEPOSIT: {
+      label: "Deposit",
+      color: "#059669", // green (you can change)
+    },
   };
 
   // Render intelligent card based on flags
@@ -1054,6 +1117,16 @@ export default function BusinessDetail() {
                   ₹{formatAmount(totalAmount)}
                 </Text>
               </View>
+            </>
+          )}
+
+          {/* Deposit Layout */}
+          {type === "Deposit" && (
+            <>
+              <Text style={styles.investedLabel}>Amount</Text>
+              <Text style={styles.investedValue}>
+                ₹{formatAmount(totalAmount)}
+              </Text>
             </>
           )}
         </View>
@@ -1410,13 +1483,36 @@ export default function BusinessDetail() {
               ) : null
             }
             ListEmptyComponent={
-              <View style={styles.noDataContainer}>
+              /*       <View style={styles.noDataContainer}>
                 <Image
                   source={require("../assets/stickers/no-transaction.png")}
                   style={styles.sticker}
                   resizeMode="contain"
                 />
                 <Text style={styles.noDataText}>No Transaction's found</Text>
+              </View> */
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyTitle}>Ongoing Business</Text>
+                <Text style={styles.emptySubtitle}>
+                  Add your partners' available money to start tracking
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.addMoneyBtn}
+                  onPress={() => {
+                    router.push({
+                      pathname: "/AddAvailableMoney",
+                      params: {
+                        businessId,
+                        businessName,
+                        cropId: cropDetails?.id,
+                        mode: "add",
+                      },
+                    });
+                  }}
+                >
+                  <Text style={styles.addMoneyText}>Add Available Money</Text>
+                </TouchableOpacity>
               </View>
             }
             removeClippedSubviews={false}
@@ -1534,16 +1630,23 @@ export default function BusinessDetail() {
                 await uploadImages();
                 await fetchImageTransactions(); // refresh first
                 setImages([]);
+                setCurrentGroupId(null); // ✅ RESET
                 setImageModalVisible(false);
-                Alert.alert("Success", "Uploaded successfully ✅");
+                showToast("Uploaded successfully", "success");
               } catch (e) {
-                Alert.alert("Error", "Upload failed ❌");
+                showToast("Upload failed ", "error");
               }
             }}
             setImages={setImages}
             businessName={safeBusinessName}
             caption={caption}
             setCaption={setCaption}
+          />
+          <ViewImage
+            visible={viewerVisible}
+            images={viewerImages}
+            initialIndex={viewerIndex}
+            onClose={() => setViewerVisible(false)}
           />
           {showAuditPopup && (
             <InvestmentAudit
@@ -1579,7 +1682,7 @@ export default function BusinessDetail() {
                       setSelectingStart(false);
                     } else {
                       if (customStartDate && day.dateString < customStartDate) {
-                        Alert.alert("End date must be after start date");
+                        showToast("End date must be after start date", "error");
                         return;
                       }
                       setCustomEndDate(day.dateString);
@@ -1608,7 +1711,7 @@ export default function BusinessDetail() {
                     style={styles.moveBtn}
                     onPress={() => {
                       if (!customStartDate) {
-                        Alert.alert("Please select a date");
+                        showToast("Please select a date", "info");
                         return;
                       }
 
@@ -2340,5 +2443,35 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 15,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 80,
+  },
+
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+
+  emptySubtitle: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+
+  addMoneyBtn: {
+    backgroundColor: "#007bff",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+  },
+
+  addMoneyText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });

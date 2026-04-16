@@ -1,4 +1,5 @@
 import AppHeader from "@/src/components/AppHeader";
+import { showToast } from "@/src/utils/ToastService";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -70,7 +71,7 @@ export default function InvestmentDetail() {
 
           // 🔒 handle token expiry
           if (res.status === 401 || res.status === 403) {
-            Alert.alert("Session expired", "Please login again.");
+            showToast("Session expired. Please login again.", "error");
             return;
           }
 
@@ -212,17 +213,34 @@ export default function InvestmentDetail() {
               onPress={() => {
                 if (!investmentGroupId) return;
 
-                router.push({
-                  pathname: "/EditTransactionScreen",
-                  params: {
-                    businessId: businessId || "",
-                    businessName: businessName || "",
-                    investmentData: JSON.stringify(
-                      normalizeForEditPopup(editInvestments),
-                    ),
-                    images: JSON.stringify(images),
-                  },
-                });
+                const first = investments?.[0];
+
+                // ✅ CONDITION
+                if (first?.transactionType === "DEPOSIT") {
+                  router.push({
+                    pathname: "/AddAvailableMoney",
+                    params: {
+                      businessId: businessId || "",
+                      businessName: businessName || "",
+                      mode: "edit", // ✅ important
+                      cropId: first?.cropId ? String(first.cropId) : "",
+                      investmentGroupId: investmentGroupId,
+                    },
+                  });
+                } else {
+                  // ✅ EXISTING FLOW (UNCHANGED)
+                  router.push({
+                    pathname: "/EditTransactionScreen",
+                    params: {
+                      businessId: businessId || "",
+                      businessName: businessName || "",
+                      investmentData: JSON.stringify(
+                        normalizeForEditPopup(editInvestments),
+                      ),
+                      images: JSON.stringify(images),
+                    },
+                  });
+                }
               }}
             >
               <MaterialIcons name="edit" size={26} color="#fff" />

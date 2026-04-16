@@ -1,16 +1,16 @@
 import AppHeader from "@/src/components/AppHeader";
+import { showToast } from "@/src/utils/ToastService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   FlatList,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { changeStock, fetchCategories } from "../src/services/inventory";
@@ -44,8 +44,8 @@ export default function AddStock() {
 
   /* ---------------- Save Stock ---------------- */
   const saveStock = async () => {
-    if (!selectedCategoryId) return Alert.alert("Select a category");
-    if (!quantity.trim()) return Alert.alert("Enter quantity");
+    if (!selectedCategoryId) return showToast("Select a category", "info");
+    if (!quantity.trim()) return showToast("Enter quantity", "info");
 
     const token = await AsyncStorage.getItem("token");
     const userId = await AsyncStorage.getItem("userId");
@@ -65,10 +65,10 @@ export default function AddStock() {
         token,
       );
 
-      Alert.alert("Success", "Stock added successfully");
+      showToast("Stock added successfully", "success");
       router.back();
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Could not add stock");
+      showToast(err.message || "Could not add stock", "error");
     } finally {
       setSaving(false);
     }

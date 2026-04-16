@@ -1,10 +1,10 @@
 import AppHeader from "@/src/components/AppHeader";
+import { showToast } from "@/src/utils/ToastService";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -104,23 +104,19 @@ export default function ForgotPasswordScreen() {
         },
       );
 
-      Alert.alert(
-        "Success",
-        res?.data?.message || "Password reset successful",
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/login"),
-          },
-        ],
-      );
+      showToast(res?.data?.message || "Password reset successful", "success");
+
+      setTimeout(() => {
+        router.replace("/login");
+      }, 2500); // slightly faster than 3s feels better here
     } catch (err: any) {
-      Alert.alert("Error", err.response?.data?.message || "Reset failed", [
+      /*  Alert.alert("Error", err.response?.data?.message || "Reset failed", [
         {
           text: "OK",
           onPress: () => router.replace("/login"),
         },
-      ]);
+      ]); */
+      showToast(err.response?.data?.message || "Reset failed", "error");
     } finally {
       setLoading(false);
     }

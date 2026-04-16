@@ -9,6 +9,7 @@ import {
 } from "react-native";
 
 import AppHeader from "@/src/components/AppHeader";
+import { showToast } from "@/src/utils/ToastService";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -73,9 +74,9 @@ export default function SettingsScreen() {
     const enrolled = await LocalAuthentication.isEnrolledAsync();
 
     if (!compatible) {
-      Alert.alert(
-        "Not Supported",
+      showToast(
         "Biometric authentication is not supported on this device.",
+        "error",
       );
       return false;
     }
@@ -104,11 +105,11 @@ export default function SettingsScreen() {
 
     if (result.success) {
       console.log("✅ Authentication successful");
-      Alert.alert("Success", "App Lock enabled successfully!");
+      showToast("App Lock enabled successfully!", "success");
       return true;
     } else {
       console.log("❌ Authentication failed or cancelled");
-      Alert.alert("Failed", "Authentication failed or cancelled.");
+      showToast("Authentication failed or cancelled.", "error");
       return false;
     }
   };

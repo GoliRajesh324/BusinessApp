@@ -1,4 +1,5 @@
 import AppHeader from "@/src/components/AppHeader";
+import { showToast } from "@/src/utils/ToastService";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -111,7 +112,7 @@ export default function AddEditInterest() {
           const iso = selectedDate.toISOString().split("T")[0];
 
           if (formData.startDate && iso < formData.startDate) {
-            Alert.alert("Invalid Date", "End date cannot be before start date");
+            showToast("End date cannot be before start date", "error");
             return;
           }
 
@@ -122,13 +123,10 @@ export default function AddEditInterest() {
   };
 
   const handleSave = async () => {
-    if (!formData.name) return Alert.alert("Validation", "Name is required");
-    if (!formData.amount)
-      return Alert.alert("Validation", "Amount is required");
-    if (!formData.rate)
-      return Alert.alert("Validation", "Interest rate is required");
-    if (!formData.startDate)
-      return Alert.alert("Validation", "Start date is required");
+    if (!formData.name) return showToast("Name is required", "info");
+    if (!formData.amount) return showToast("Amount is required", "info");
+    if (!formData.rate) return showToast("Interest rate is required", "info");
+    if (!formData.startDate) return showToast("Start date is required", "info");
 
     setSaving(true);
 

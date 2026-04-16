@@ -1,4 +1,5 @@
 import AppHeader from "@/src/components/AppHeader";
+import { showToast } from "@/src/utils/ToastService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -6,7 +7,6 @@ import { StatusBar } from "expo-status-bar";
 import { t } from "i18next";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Image,
   Keyboard,
   StyleSheet,
@@ -14,7 +14,7 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createCategory, updateCategory } from "../src/services/inventory";
@@ -58,10 +58,10 @@ export default function AddCategory() {
   const saveCategory = async () => {
     Keyboard.dismiss();
 
-    if (!name.trim()) return Alert.alert("Enter category name");
+    if (!name.trim()) return showToast("Enter category name", "info");
 
     const token = await AsyncStorage.getItem("token");
-    if (!token) return Alert.alert("Token missing");
+    if (!token) return showToast("Token missing", "error");
 
     try {
       const payload = {
@@ -92,7 +92,7 @@ export default function AddCategory() {
 
         await updateCategory(Number(categoryId), payload, finalImage, token);
 
-        Alert.alert("Success", "Category updated successfully");
+        showToast("Category updated successfully", "success");
         router.back();
         return;
       }
@@ -104,11 +104,11 @@ export default function AddCategory() {
         token,
       );
 
-      Alert.alert("Success", "Category created");
+      showToast("Category created successfully", "success");
       router.back();
     } catch (err: any) {
       console.log(err);
-      Alert.alert("Error", err.message || "Failed to save");
+      showToast(err.message || "Error creating category", "error");
     } finally {
       setSaving(false);
     }
@@ -129,7 +129,7 @@ export default function AddCategory() {
 
   const pickFromCamera = async () => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) return Alert.alert("Camera permission required");
+    if (!perm.granted) return showToast("Camera permission required", "error");
 
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.7,

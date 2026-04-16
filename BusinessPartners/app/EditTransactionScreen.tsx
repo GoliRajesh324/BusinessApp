@@ -27,6 +27,7 @@ const SLIDER_THUMB_SIZE = 18;
 
 import AppHeader from "@/src/components/AppHeader";
 import SupplierPopup from "@/src/components/SupplierPopup";
+import { showToast } from "@/src/utils/ToastService";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -321,7 +322,7 @@ const EditTransactionScreen = () => {
       } */
 
       if (!token) {
-        Alert.alert("Error", "User not authenticated");
+        showToast("User not authenticated", "error");
         return;
       }
 
@@ -432,7 +433,6 @@ const EditTransactionScreen = () => {
             "Invalid Withdraw Amount",
             `${names} Withdraw amount cannot be greater than available money. \n Please adjust the amounts before saving.`,
           );
-
           return;
         }
       }
@@ -527,23 +527,22 @@ const EditTransactionScreen = () => {
 
       // handle token expiry
       if (response.status === 401 || response.status === 403) {
-        Alert.alert("Session expired", "Please login again.");
+        showToast("Session expired. Please login again.", "error");
         return;
       }
 
       if (!response.ok) {
         const text = await response.text();
         console.log("❌ Backend error:", text);
-        Alert.alert("Error", "Failed to update investment");
+        showToast("Failed to update investment", "error");
         return;
       }
-
-      Alert.alert("✅ Success", "Investment updated successfully");
+      showToast("Investment updated successfully", "success");
       setOriginalReduceMap({});
       router.back();
     } catch (err) {
       console.log("❌ handleSave error:", err);
-      Alert.alert("Error", "Unexpected error occurred");
+      showToast("Unexpected error occurred", "error");
     } finally {
       setIsUpdating(false); // 🔓 always unlock
     }
@@ -654,7 +653,7 @@ const EditTransactionScreen = () => {
     // 🔒 Block for Withdraw / Sold
 
     if (!totalAmount || Number(totalAmount) <= 0) {
-      Alert.alert("Error", "Please enter a valid amount first");
+      showToast("Please enter a valid amount first", "error");
       return;
     }
 
@@ -1087,6 +1086,7 @@ const EditTransactionScreen = () => {
                                     "Invalid Amount",
                                     `Entered amount cannot exceed available money (₹${available.toFixed(2)})`,
                                   );
+
                                   return; // ⛔ stop here
                                 }
                                 setInvestmentDataState((prev) => {

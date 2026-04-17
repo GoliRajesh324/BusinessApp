@@ -112,7 +112,17 @@ export default function ChangeHistoryScreen() {
 
     fetchAuditLogs();
   }, [businessId, page]);
+  const isDepositCase = (item: AuditCard) => {
+    const amounts = item.partnerChanges
+      .map((p) => p.changes?.totalAmount?.newValue)
+      .filter(Boolean);
+
+    const unique = new Set(amounts);
+
+    return unique.size > 1; // ✅ different values = deposit case
+  };
   const partnerAllowedFields = [
+    "totalAmount",
     "investedAmount",
     "investableAmount",
     "soldAmount",
@@ -227,10 +237,10 @@ export default function ChangeHistoryScreen() {
     </>
   );
 }
-const formatFieldName = (field: string) => {
+const formatFieldName = (field: string, isDeposit?: boolean) => {
   const map: Record<string, string> = {
     description: "Description",
-    totalAmount: "Total Amount",
+    totalAmount: isDeposit ? "Deposit Amount" : "Total Amount", // ✅ dynamic
     splitType: "Split Type",
     investedAmount: "Invested Amount",
     investableAmount: "Investable Amount",

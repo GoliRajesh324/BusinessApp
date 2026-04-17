@@ -880,6 +880,7 @@ const EditTransactionScreen = () => {
               <Text style={styles.inputLabel}>{t("description")}</Text>
               <TextInput
                 style={styles.inputBox}
+                placeholderTextColor={"#ccc"}
                 placeholder={t("enterDescription")}
                 value={description}
                 onChangeText={setDescription}
@@ -891,6 +892,7 @@ const EditTransactionScreen = () => {
               <View style={styles.amountRow}>
                 <TextInput
                   style={[styles.inputBox, styles.amountInput]}
+                  placeholderTextColor={"#ccc"}
                   placeholder={t("enterAmount")}
                   keyboardType="numeric"
                   value={totalAmount}
@@ -923,6 +925,7 @@ const EditTransactionScreen = () => {
 
                 <TextInput
                   style={styles.inputBox}
+                  placeholderTextColor={"#ccc"}
                   placeholder="Enter supplier name"
                   value={supplierName}
                   onChangeText={(val) => {
@@ -1069,8 +1072,8 @@ const EditTransactionScreen = () => {
                             <TextInput
                               style={styles.leftOverInput}
                               keyboardType="numeric"
+                              placeholderTextColor={"#ccc"}
                               placeholder="Enter amount to use..."
-                              placeholderTextColor="#888"
                               value={String(r.reduceLeftOver) ?? ""}
                               onChangeText={(val) => {
                                 const entered = Number(val) || 0;

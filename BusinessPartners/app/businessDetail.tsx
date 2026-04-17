@@ -1437,13 +1437,13 @@ export default function BusinessDetail() {
                       style={{ flexDirection: "row", alignItems: "center" }}
                     >
                       <TouchableOpacity
-                        onPress={() =>
-                          generateBusinessStatementPDF({
+                        onPress={async () => {
+                          await generateBusinessStatementPDF({
                             businessName: safeBusinessName,
                             downloadedBy: userName || "Unknown",
                             transactions: filteredInvestments,
-                          })
-                        }
+                          });
+                        }}
                         style={{ marginRight: 12 }}
                       >
                         <Ionicons

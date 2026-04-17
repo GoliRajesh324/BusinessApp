@@ -3,11 +3,14 @@ import BASE_URL from "@/src/config/config";
 import { numberToWords } from "@/src/utils/numberToWords";
 import { showToast } from "@/src/utils/ToastService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -28,9 +31,13 @@ const AddAvailableMoney = () => {
   const { mode, investmentGroupId } = params;
   const isEdit = mode === "edit";
 
+  const [images, setImages] = useState<any[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [rows, setRows] = useState<any[]>([]);
   const [token, setToken] = useState<string | null>(null);
   const [description, setDescription] = useState("");
+
+  const [isSaving, setIsSaving] = useState(false);
 
   // ✅ Load token
   useEffect(() => {
@@ -103,16 +110,13 @@ const AddAvailableMoney = () => {
     }
   };
 
-  // ✅ PRELOAD LOGIC (FIXED)
   const preloadDepositData = (data: any[]) => {
     if (!data || !data.length) return;
 
     const first = data[0];
 
-    // ✅ description
     setDescription(first.description || "");
 
-    // ✅ map partner-wise amounts
     const mapped = data.map((inv) => ({
       id: inv.partnerId,
       name: inv.partnerName,
@@ -120,10 +124,67 @@ const AddAvailableMoney = () => {
     }));
 
     setRows(mapped);
+
+    // ✅ ADD THIS (images preload)
+    if (first?.images) {
+      const formatted = first.images.map((img: string) => ({
+        uri: img,
+        isExisting: true,
+      }));
+      setImages(formatted);
+    }
+  };
+
+  const pickFromGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      setImages((prev) => [
+        ...prev,
+        {
+          uri: result.assets[0].uri,
+          fileName: result.assets[0].fileName,
+          mimeType: result.assets[0].mimeType,
+          isExisting: false,
+        },
+      ]);
+    }
+  };
+
+  const pickFromCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      showToast("Camera permission required", "error");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+
+    if (!result.canceled) {
+      setImages((prev) => [
+        ...prev,
+        {
+          uri: result.assets[0].uri,
+          fileName: result.assets[0].fileName,
+          mimeType: result.assets[0].mimeType,
+          isExisting: false,
+        },
+      ]);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const updated = [...images];
+    updated.splice(index, 1);
+    setImages(updated);
   };
 
   // ✅ SAVE (UNCHANGED for now)
   const handleSave = async () => {
+    if (isSaving) return; // ✅ prevent double click
     if (!description || description.trim() === "") {
       Alert.alert("Error", "Description is required");
       return;
@@ -137,12 +198,12 @@ const AddAvailableMoney = () => {
     }
 
     try {
+      setIsSaving(true); // ✅ START LOADING
       const payload = {
         businessId: Number(businessId),
         cropId: Number(cropId),
         description,
         createdBy: await AsyncStorage.getItem("userName"),
-        // ✅ ADD THIS LINE
         investmentGroupId: isEdit ? Number(investmentGroupId) : null,
 
         partners: rows
@@ -155,13 +216,38 @@ const AddAvailableMoney = () => {
 
       console.log("🚀 Payload:", payload);
 
+      // ✅ 1. Create FormData
+      const formData = new FormData();
+
+      // ✅ 2. Append JSON
+      formData.append("depositData", JSON.stringify(payload));
+
+      // ✅ 3. EXISTING IMAGES (for edit)
+      const existingImages = images
+        .filter((img) => img.isExisting)
+        .map((img) => img.uri);
+
+      formData.append("existingImages", JSON.stringify(existingImages));
+
+      // ✅ 4. NEW IMAGES
+      images
+        .filter((img) => !img.isExisting)
+        .forEach((img, index) => {
+          formData.append("files", {
+            uri: img.uri,
+            name: img.fileName || `image_${Date.now()}_${index}.jpg`,
+            type: img.mimeType || "image/jpeg",
+          } as any);
+        });
+
+      // ✅ 5. API CALL (IMPORTANT: remove content-type)
       const res = await fetch(`${BASE_URL}/api/investment/initial-deposit`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          // ❌ DO NOT SET Content-Type
         },
-        body: JSON.stringify(payload),
+        body: formData,
       });
 
       const data = await res.json();
@@ -170,12 +256,12 @@ const AddAvailableMoney = () => {
         throw new Error(data?.message || "Failed to save");
       }
 
-      Alert.alert("Success", "Available money saved successfully", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      showToast("Available money saved successfully", "success");
     } catch (err: any) {
       console.log("❌ Save error:", err);
-      Alert.alert("Error", err.message || "Something went wrong");
+      showToast(err.message || "Failed to save", "error");
+    } finally {
+      setIsSaving(false); // ✅ STOP LOADING
     }
   };
 
@@ -191,8 +277,13 @@ const AddAvailableMoney = () => {
         <AppHeader
           title={isEdit ? "Edit Available Money" : "Add Available Money"}
           rightComponent={
-            <TouchableOpacity onPress={handleSave} disabled={!isValid}>
-              <Text style={{ color: isValid ? "#fff" : "#ccc" }}>Save</Text>
+            <TouchableOpacity
+              onPress={handleSave}
+              disabled={!isValid || isSaving}
+            >
+              <Text style={{ color: !isValid || isSaving ? "#ccc" : "#fff" }}>
+                {isSaving ? "Saving..." : "Save"}
+              </Text>
             </TouchableOpacity>
           }
         />
@@ -216,6 +307,7 @@ const AddAvailableMoney = () => {
             <Text style={styles.inputLabel}>Description *</Text>
             <TextInput
               style={styles.inputBox}
+              placeholderTextColor={"#ccc"}
               placeholder="Enter description"
               value={description}
               onChangeText={setDescription}
@@ -232,6 +324,7 @@ const AddAvailableMoney = () => {
 
                 <TextInput
                   style={styles.partnerInput}
+                  placeholderTextColor={"#ccc"}
                   placeholder="Enter amount"
                   keyboardType="numeric"
                   value={r.amount}
@@ -250,6 +343,58 @@ const AddAvailableMoney = () => {
               </View>
             ))}
           </View>
+
+          <Text style={styles.sectionTitle}>Images</Text>
+
+          <View style={{ flexDirection: "row", marginBottom: 10 }}>
+            <TouchableOpacity onPress={pickFromGallery}>
+              <Text style={styles.icon}>🖼️</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={pickFromCamera}>
+              <Text style={styles.icon}>📷</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView horizontal>
+            {images.map((img, i) => (
+              <TouchableOpacity
+                key={i}
+                onPress={() => setPreviewImage(img.uri)}
+              >
+                <Image
+                  source={{ uri: img.uri }}
+                  style={{
+                    width: 70,
+                    height: 70,
+                    borderRadius: 8,
+                    marginRight: 8,
+                  }}
+                />
+                <TouchableOpacity
+                  onPress={() => removeImage(i)}
+                  style={styles.removeBtn}
+                >
+                  <Text style={{ color: "#fff" }}>X</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Preview */}
+          {previewImage && (
+            <Modal transparent>
+              <TouchableOpacity
+                style={styles.previewContainer}
+                onPress={() => setPreviewImage(null)}
+              >
+                <Image
+                  source={{ uri: previewImage }}
+                  style={styles.previewImage}
+                />
+              </TouchableOpacity>
+            </Modal>
+          )}
         </ScrollView>
       </View>
     </>
@@ -327,5 +472,46 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     color: "#666",
     marginTop: 4,
+  },
+  imageBtn: {
+    backgroundColor: "#4f93ff",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+
+  imageBtnText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+
+  removeBtn: {
+    position: "absolute",
+    top: -6,
+    right: 2,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    borderRadius: 10,
+    width: 18,
+    height: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  previewContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  previewImage: {
+    width: "90%",
+    height: "70%",
+    resizeMode: "contain",
+    borderRadius: 12,
+  },
+  icon: {
+    fontSize: 36,
   },
 });

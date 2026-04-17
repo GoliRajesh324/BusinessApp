@@ -91,8 +91,8 @@ export default function ResetPasswordScreen() {
         <View style={styles.container}>
           <View style={styles.form}>
             <TextInput
+              placeholderTextColor={"#ccc"}
               placeholder="Old Password"
-              placeholderTextColor="#999"
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
@@ -104,8 +104,8 @@ export default function ResetPasswordScreen() {
             />
 
             <TextInput
+              placeholderTextColor={"#ccc"}
               placeholder="New Password"
-              placeholderTextColor="#999"
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
@@ -117,8 +117,8 @@ export default function ResetPasswordScreen() {
             />
 
             <TextInput
+              placeholderTextColor={"#ccc"}
               placeholder="Confirm Password"
-              placeholderTextColor="#999"
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}

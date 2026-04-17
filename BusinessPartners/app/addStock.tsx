@@ -10,7 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { changeStock, fetchCategories } from "../src/services/inventory";
@@ -112,16 +112,16 @@ export default function AddStock() {
               value={quantity}
               onChangeText={setQuantity}
               keyboardType="numeric"
-              placeholder="Enter quantity"
               placeholderTextColor={"#ccc"}
+              placeholder="Enter quantity"
             />
             <Text style={styles.label}>Description</Text>
             <TextInput
               style={styles.notes}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Enter Description"
               placeholderTextColor={"#ccc"}
+              placeholder="Enter Description"
             />
             <Text style={styles.label}>Select Category</Text>
 

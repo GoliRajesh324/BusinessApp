@@ -172,8 +172,8 @@ const ImagePreviewModal: React.FC<Props> = ({
           {/* Caption */}
           <View style={styles.captionContainer}>
             <TextInput
+              placeholderTextColor={"#ccc"}
               placeholder="Add a caption..."
-              placeholderTextColor="#aaa"
               value={caption}
               onChangeText={setCaption}
               style={styles.captionInput}

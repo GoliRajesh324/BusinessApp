@@ -92,8 +92,8 @@ export default function SupplierPopup({
           <Text style={styles.label}>Supplier Name</Text>
           <TextInput
             style={styles.input}
+            placeholderTextColor={"#ccc"}
             placeholder="Enter Supplier Name"
-            placeholderTextColor="#666" // ✅ ADD THIS
             value={supplierNameInput}
             onChangeText={setSupplierNameInput}
           />

@@ -1,5 +1,5 @@
 import { Asset } from "expo-asset";
-import { File, Paths } from "expo-file-system";
+import { File } from "expo-file-system";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 
@@ -249,16 +249,14 @@ export const generateBusinessStatementPDF = async ({
       throw new Error("PDF generation failed");
     }
 
-    const originalFile = new File(result.uri);
-    const destinationFile = new File(Paths.cache, newFileName);
-    originalFile.copy(destinationFile);
-
     const canShare = await Sharing.isAvailableAsync();
+
     if (!canShare) {
       throw new Error("Sharing not available on this device");
     }
 
-    await Sharing.shareAsync(destinationFile.uri, {
+    // ✅ USE DIRECT URI (THIS FIXES APK ISSUE)
+    await Sharing.shareAsync(result.uri, {
       mimeType: "application/pdf",
     });
   } catch (error) {

@@ -123,8 +123,8 @@ export default function ConsumeStock() {
                 value={quantity}
                 onChangeText={setQuantity}
                 keyboardType="numeric"
-                placeholder="Enter quantity"
                 placeholderTextColor={"#ccc"}
+                placeholder="Enter quantity"
               />
 
               <Text style={styles.label}>Description</Text>
@@ -132,8 +132,8 @@ export default function ConsumeStock() {
                 style={styles.notes}
                 value={notes}
                 onChangeText={setNotes}
-                placeholder="Enter Description"
                 placeholderTextColor={"#ccc"}
+                placeholder="Enter Description"
               />
             </>
           )}

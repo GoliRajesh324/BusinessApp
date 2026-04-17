@@ -305,8 +305,8 @@ export default function AddBusinessPopup({
             <Text style={styles.label}> {t("businessName")}</Text>
             <TextInput
               style={styles.input}
+              placeholderTextColor={"#ccc"}
               placeholder={t("enterBusinessName")}
-              placeholderTextColor="#888" // Add this line
               value={businessName}
               onChangeText={setBusinessName}
             />
@@ -316,8 +316,8 @@ export default function AddBusinessPopup({
             </Text>
             <TextInput
               style={styles.input}
+              placeholderTextColor={"#ccc"}
               placeholder={t("enterPartnerName")}
-              placeholderTextColor="#888" // Add this line
               value={partnerName}
               onChangeText={setPartnerName}
             />
@@ -325,8 +325,8 @@ export default function AddBusinessPopup({
             <View style={styles.partnerRow}>
               <TextInput
                 style={[styles.input, styles.shareInput]}
+                placeholderTextColor={"#ccc"}
                 placeholder={t("enterSharePercentage")}
-                placeholderTextColor="#888" // Add this line
                 keyboardType="numeric"
                 value={share}
                 onChangeText={setShare}

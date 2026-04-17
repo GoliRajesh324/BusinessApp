@@ -235,6 +235,7 @@ export default function BusinessNews() {
 
                     <View style={styles.inputContainer}>
                       <TextInput
+                        placeholderTextColor={"#ccc"}
                         placeholder="Enter business update..."
                         multiline
                         value={newsFeed}

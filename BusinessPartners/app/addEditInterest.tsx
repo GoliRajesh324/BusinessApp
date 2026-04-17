@@ -1,5 +1,4 @@
 import AppHeader from "@/src/components/AppHeader";
-import { showToast } from "@/src/utils/ToastService";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -112,7 +111,7 @@ export default function AddEditInterest() {
           const iso = selectedDate.toISOString().split("T")[0];
 
           if (formData.startDate && iso < formData.startDate) {
-            showToast("End date cannot be before start date", "error");
+            Alert.alert("Invalid Date", "End date cannot be before start date");
             return;
           }
 
@@ -123,10 +122,13 @@ export default function AddEditInterest() {
   };
 
   const handleSave = async () => {
-    if (!formData.name) return showToast("Name is required", "info");
-    if (!formData.amount) return showToast("Amount is required", "info");
-    if (!formData.rate) return showToast("Interest rate is required", "info");
-    if (!formData.startDate) return showToast("Start date is required", "info");
+    if (!formData.name) return Alert.alert("Validation", "Name is required");
+    if (!formData.amount)
+      return Alert.alert("Validation", "Amount is required");
+    if (!formData.rate)
+      return Alert.alert("Validation", "Interest rate is required");
+    if (!formData.startDate)
+      return Alert.alert("Validation", "Start date is required");
 
     setSaving(true);
 
@@ -217,6 +219,7 @@ export default function AddEditInterest() {
                 {/* Name */}
                 <Text style={styles.label}>Name *</Text>
                 <TextInput
+                  placeholderTextColor={"#ccc"}
                   placeholder="Enter Name"
                   style={styles.input}
                   value={String(formData.name ?? "")}
@@ -257,6 +260,7 @@ export default function AddEditInterest() {
                 {/* Amount */}
                 <Text style={styles.label}>Amount *</Text>
                 <TextInput
+                  placeholderTextColor={"#ccc"}
                   placeholder="Enter Amount"
                   style={styles.input}
                   keyboardType="numeric"
@@ -330,7 +334,7 @@ export default function AddEditInterest() {
                 {/* Rate Input */}
                 <TextInput
                   placeholder="Enter Rate of Interest"
-                  placeholderTextColor="#999" // ✅ FIX
+                  placeholderTextColor="#ccc" // ✅ FIX
                   style={[styles.input, { color: "#000" }]} // ✅ FIX
                   keyboardType="numeric"
                   value={formData.rate != null ? String(formData.rate) : ""}
@@ -405,7 +409,7 @@ export default function AddEditInterest() {
                 <Text style={styles.label}>Comment</Text>
                 <TextInput
                   placeholder="Enter Comment"
-                  placeholderTextColor="#999" // ✅ FIX
+                  placeholderTextColor={"#ccc"}
                   style={[styles.input, { height: 80 }]}
                   multiline
                   onFocus={() =>

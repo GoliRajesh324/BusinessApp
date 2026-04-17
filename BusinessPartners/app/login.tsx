@@ -157,6 +157,7 @@ export default function LoginScreen() {
 
               <Input
                 icon="person-outline"
+                placeholderTextColor={"#ccc"}
                 placeholder="Username / Email / Phone"
                 value={username}
                 onChangeText={
@@ -167,6 +168,7 @@ export default function LoginScreen() {
               {!isLogin && (
                 <Input
                   icon="mail-outline"
+                  placeholderTextColor={"#ccc"}
                   placeholder="Email"
                   value={email}
                   onChangeText={setEmail}
@@ -176,6 +178,7 @@ export default function LoginScreen() {
               {!isLogin && (
                 <Input
                   icon="call-outline"
+                  placeholderTextColor={"#ccc"}
                   placeholder="Phone"
                   value={phone}
                   onChangeText={(t: string) =>
@@ -186,6 +189,7 @@ export default function LoginScreen() {
 
               <Input
                 icon="lock-closed-outline"
+                placeholderTextColor={"#ccc"}
                 placeholder="Password"
                 value={password}
                 secure={!showPassword}
@@ -256,7 +260,7 @@ const Input = ({
       onChangeText={onChangeText}
       secureTextEntry={secure}
       style={styles.input}
-      placeholderTextColor="#94a3b8"
+      placeholderTextColor={"#ccc"}
       autoCapitalize="none"
     />
     {rightIcon}

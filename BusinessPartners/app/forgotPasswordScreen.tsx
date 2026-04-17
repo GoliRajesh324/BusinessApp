@@ -143,6 +143,7 @@ export default function ForgotPasswordScreen() {
               <>
                 <TextInput
                   style={styles.input}
+                  placeholderTextColor={"#ccc"}
                   placeholder="Enter your registered email"
                   value={email}
                   onChangeText={setEmail}
@@ -166,6 +167,7 @@ export default function ForgotPasswordScreen() {
               <>
                 <TextInput
                   style={styles.input}
+                  placeholderTextColor={"#ccc"}
                   placeholder="Enter OTP"
                   value={otp}
                   onChangeText={setOtp}
@@ -186,6 +188,7 @@ export default function ForgotPasswordScreen() {
               <>
                 <TextInput
                   style={styles.input}
+                  placeholderTextColor={"#ccc"}
                   placeholder="New Password"
                   value={newPassword}
                   secureTextEntry
@@ -194,6 +197,7 @@ export default function ForgotPasswordScreen() {
 
                 <TextInput
                   style={styles.input}
+                  placeholderTextColor={"#ccc"}
                   placeholder="Confirm Password"
                   value={confirmPassword}
                   secureTextEntry

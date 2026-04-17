@@ -7,6 +7,7 @@ import { StatusBar } from "expo-status-bar";
 import { t } from "i18next";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   Keyboard,
   StyleSheet,
@@ -14,7 +15,7 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createCategory, updateCategory } from "../src/services/inventory";
@@ -58,7 +59,7 @@ export default function AddCategory() {
   const saveCategory = async () => {
     Keyboard.dismiss();
 
-    if (!name.trim()) return showToast("Enter category name", "info");
+    if (!name.trim()) return Alert.alert("Enter category name");
 
     const token = await AsyncStorage.getItem("token");
     if (!token) return showToast("Token missing", "error");
@@ -129,7 +130,7 @@ export default function AddCategory() {
 
   const pickFromCamera = async () => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) return showToast("Camera permission required", "error");
+    if (!perm.granted) return Alert.alert("Camera permission required");
 
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.7,
@@ -169,6 +170,7 @@ export default function AddCategory() {
               style={styles.input}
               value={name}
               onChangeText={setName}
+              placeholderTextColor={"#ccc"}
               placeholder="Enter category name"
             />
 
@@ -178,6 +180,7 @@ export default function AddCategory() {
               style={[styles.input, { height: 80 }]}
               value={description}
               onChangeText={setDescription}
+              placeholderTextColor={"#ccc"}
               placeholder="Enter description"
               multiline
             />

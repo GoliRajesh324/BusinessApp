@@ -3,11 +3,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
-  Alert, StyleSheet,
+  Alert,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -45,6 +46,7 @@ export default function AddEditInterestScreen() {
         <View style={styles.container}>
           <View style={styles.form}>
             <TextInput
+              placeholderTextColor={"#ccc"}
               placeholder="Name"
               style={styles.input}
               value={form.name}
@@ -52,6 +54,7 @@ export default function AddEditInterestScreen() {
             />
 
             <TextInput
+              placeholderTextColor={"#ccc"}
               placeholder="Amount"
               keyboardType="numeric"
               style={styles.input}
@@ -60,6 +63,7 @@ export default function AddEditInterestScreen() {
             />
 
             <TextInput
+              placeholderTextColor={"#ccc"}
               placeholder="Rate (%)"
               keyboardType="numeric"
               style={styles.input}

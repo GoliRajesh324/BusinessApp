@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import LoadingOverlay from "./LoadingOverlay";
 
 const { width } = Dimensions.get("window");
 
@@ -208,13 +209,7 @@ const ImagePreviewModal: React.FC<Props> = ({
             </TouchableOpacity>
           </View>
         </SafeAreaView>
-        {isSending && (
-          <View style={styles.loadingOverlay}>
-            <View style={styles.loadingBox}>
-              <Text style={styles.loadingText}>Saving images...</Text>
-            </View>
-          </View>
-        )}
+        <LoadingOverlay visible={isSending} message="Saving images..." />
       </View>
     </Modal>
   );

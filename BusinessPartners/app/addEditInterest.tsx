@@ -25,6 +25,7 @@ type Interest = {
   type: "given" | "taken";
   amount: number;
   rate?: number;
+  rateInput?: string;
   startDate?: string;
   endDate?: string | null;
   comment?: string;
@@ -34,7 +35,8 @@ const emptyForm = (): Partial<Interest> => ({
   name: "",
   type: "taken",
   amount: undefined,
-  rate: undefined,
+  rate: undefined as number | undefined,
+  rateInput: "",
   startDate: "",
   endDate: "",
   comment: "",
@@ -70,6 +72,7 @@ export default function AddEditInterest() {
         type: (params.type as "given" | "taken") || "taken",
         amount: params.amount ? Number(params.amount) : undefined,
         rate: params.rate ? Number(params.rate) : undefined,
+        rateInput: params.rate ? String(params.rate) : "",
         startDate: (params.startDate as string) || "",
         endDate: (params.endDate as string) || "",
         comment: (params.comment as string) || "",
@@ -332,18 +335,22 @@ export default function AddEditInterest() {
                 </View>
 
                 {/* Rate Input */}
+
                 <TextInput
                   placeholder="Enter Rate of Interest"
-                  placeholderTextColor="#ccc" // ✅ FIX
-                  style={[styles.input, { color: "#000" }]} // ✅ FIX
-                  keyboardType="numeric"
-                  value={formData.rate != null ? String(formData.rate) : ""}
-                  onChangeText={(t) =>
-                    setFormData((p) => ({
-                      ...p,
-                      rate: t === "" ? undefined : Number(t),
-                    }))
-                  }
+                  placeholderTextColor="#ccc"
+                  style={[styles.input, { color: "#000" }]}
+                  keyboardType="decimal-pad"
+                  value={formData.rateInput}
+                  onChangeText={(t) => {
+                    if (/^\d*\.?\d{0,2}$/.test(t)) {
+                      setFormData((p) => ({
+                        ...p,
+                        rateInput: t,
+                        rate: t === "" ? undefined : parseFloat(t),
+                      }));
+                    }
+                  }}
                 />
 
                 {/* Start Date */}

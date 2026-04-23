@@ -132,6 +132,9 @@ export default function BusinessDetail() {
   const [pickerSheetVisible, setPickerSheetVisible] = useState(false);
   const [imageTransactions, setImageTransactions] = useState<any[]>([]);
   const [currentGroupId, setCurrentGroupId] = useState<number | null>(null);
+
+  const [isFirstLoadDone, setIsFirstLoadDone] = useState(false);
+
   const [items, setItems] = useState([
     { label: t("yourTransactions"), value: "byLoggedInUser" },
     { label: t("yourInvestments"), value: "byInvestment" },
@@ -597,6 +600,7 @@ export default function BusinessDetail() {
 
       if (reset) {
         setAllInvestments(content);
+        setIsFirstLoadDone(true);
       } else {
         setAllInvestments((prev) => [...prev, ...content]);
       }
@@ -605,6 +609,7 @@ export default function BusinessDetail() {
       setPage(pageNumber);
     } catch (err) {
       showToast("Error fetching investments", "error");
+      setIsFirstLoadDone(true);
     } finally {
       setLoadingInvestments(false);
       setRefreshing(false);
@@ -1478,42 +1483,40 @@ export default function BusinessDetail() {
               fetchInvestments(0, true);
             }}
             ListFooterComponent={
-              loadingInvestments ? (
+              isFirstLoadDone && loadingInvestments ? (
                 <ActivityIndicator size="small" color="#4f93ff" />
               ) : null
             }
             ListEmptyComponent={
-              /*       <View style={styles.noDataContainer}>
-                <Image
-                  source={require("../assets/stickers/no-transaction.png")}
-                  style={styles.sticker}
-                  resizeMode="contain"
-                />
-                <Text style={styles.noDataText}>No Transaction's found</Text>
-              </View> */
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyTitle}>Ongoing Business</Text>
-                <Text style={styles.emptySubtitle}>
-                  Add your partners' available money to start tracking
-                </Text>
+              !isFirstLoadDone ? (
+                <View style={{ marginTop: 80 }}>
+                  <ActivityIndicator size="large" color="#4f93ff" />
+                </View>
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyTitle}>Ongoing Business</Text>
+                  <Text style={styles.emptySubtitle}>
+                    Add your partners' available money to start tracking
+                  </Text>
 
-                <TouchableOpacity
-                  style={styles.addMoneyBtn}
-                  onPress={() => {
-                    router.push({
-                      pathname: "/AddAvailableMoney",
-                      params: {
-                        businessId,
-                        businessName,
-                        cropId: cropDetails?.id,
-                        mode: "add",
-                      },
-                    });
-                  }}
-                >
-                  <Text style={styles.addMoneyText}>Add Available Money</Text>
-                </TouchableOpacity>
-              </View>
+                  <TouchableOpacity
+                    style={styles.addMoneyBtn}
+                    onPress={() => {
+                      router.push({
+                        pathname: "/AddAvailableMoney",
+                        params: {
+                          businessId,
+                          businessName,
+                          cropId: cropDetails?.id,
+                          mode: "add",
+                        },
+                      });
+                    }}
+                  >
+                    <Text style={styles.addMoneyText}>Add Available Money</Text>
+                  </TouchableOpacity>
+                </View>
+              )
             }
             removeClippedSubviews={false}
           />

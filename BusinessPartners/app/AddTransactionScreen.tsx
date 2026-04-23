@@ -1,5 +1,6 @@
 // AddInvestmentPopup.tsx
 import AppHeader from "@/src/components/AppHeader";
+import LoadingOverlay from "@/src/components/LoadingOverlay";
 import SupplierPopup from "@/src/components/SupplierPopup";
 import { showToast } from "@/src/utils/ToastService";
 import { getVideoId } from "@/src/utils/VideoStorage";
@@ -416,6 +417,8 @@ const AddTransactionScreen = () => {
         const entered = Number(r.investing || 0); // withdraw amount entered
         const available = Number(r.leftOver || 0); // available money
 
+        // ✅ SKIP rows where nothing entered
+        if (entered === 0) return;
         if (entered > available) {
           withdrawErrors[r.id] = `Withdraw ₹${entered.toFixed(
             2,
@@ -680,13 +683,14 @@ const AddTransactionScreen = () => {
       );
 
       console.log("✅ Success:", response.data);
+      router.back();
       //setImages([]); // clear images
       showToast("Transaction saved successfully", "success");
 
       // ⏳ wait for toast to finish (same duration: 3s)
-      setTimeout(() => {
+      /* setTimeout(() => {
         router.back();
-      }, 2000);
+      }, 2000); */
     } catch (error: any) {
       console.log("❌ FULL ERROR:", error);
 
@@ -810,9 +814,7 @@ const AddTransactionScreen = () => {
                 !totalAmount || Number(totalAmount) <= 0 || hasRowErrors
               }
             >
-              <Text style={styles.saveText}>
-                {isSaving ? t("saving...") : t("save")}
-              </Text>
+              <Text style={styles.saveText}>{t("save")}</Text>
             </TouchableOpacity>
           }
         />
@@ -1314,6 +1316,18 @@ const AddTransactionScreen = () => {
               ))}
             </View>
           )}
+          <LoadingOverlay
+            visible={isSaving}
+            message={
+              transactionType === "Investment"
+                ? "Saving Investment..."
+                : transactionType === "Sold"
+                  ? "Saving Sale..."
+                  : transactionType === "Withdraw"
+                    ? "Processing withdrawal..."
+                    : "Saving Transaction..."
+            }
+          />
         </View>
       </SafeAreaView>
     </>
@@ -1437,15 +1451,17 @@ const styles = StyleSheet.create({
   previewThumb: { width: 60, height: 60, borderRadius: 8 },
   deleteBtn: {
     position: "absolute",
-    top: -5,
-    right: -5,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "red",
+    top: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 4, // ✅ square with slight curve (not circle)
+    backgroundColor: "rgba(232, 36, 36, 0.7)", // looks premium
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 2,
   },
+
   deleteText: { color: "white", fontSize: 12, fontWeight: "bold" },
   previewContainer: {
     flex: 1,

@@ -20,7 +20,7 @@ export default function AddEditInterestScreen() {
   const [form, setForm] = useState({
     name: record?.name || "",
     amount: record?.amount?.toString() || "",
-    rate: record?.rate?.toString() || "",
+    rate: record?.rate ? String(record.rate) : "",
     type: record?.type || "given",
   });
 
@@ -32,6 +32,12 @@ export default function AddEditInterestScreen() {
     Alert.alert("Saved", `${record ? "Updated" : "Added"} successfully`);
     router.back();
   };
+
+  const amount = parseFloat(form.amount) || 0;
+  const rate = parseFloat(form.rate) || 0;
+
+  const yearlyInterest = (amount * rate) / 100;
+  const monthlyInterest = yearlyInterest / 12;
 
   return (
     <>
@@ -65,12 +71,26 @@ export default function AddEditInterestScreen() {
             <TextInput
               placeholderTextColor={"#ccc"}
               placeholder="Rate (%)"
-              keyboardType="numeric"
+              keyboardType="numbers-and-punctuation"
               style={styles.input}
               value={form.rate}
-              onChangeText={(v) => setForm({ ...form, rate: v })}
+              onChangeText={(v) => {
+                // allow numbers + decimal
+                if (/^\d*\.?\d*$/.test(v)) {
+                  setForm({ ...form, rate: v });
+                }
+              }}
             />
-
+            {form.amount && form.rate ? (
+              <View style={{ marginTop: 10 }}>
+                <Text style={{ color: "#333" }}>
+                  Yearly Interest: ₹{yearlyInterest.toFixed(2)}
+                </Text>
+                <Text style={{ color: "#333" }}>
+                  Monthly Interest: ₹{monthlyInterest.toFixed(2)}
+                </Text>
+              </View>
+            ) : null}
             {/* Toggle */}
             <View style={styles.toggleContainer}>
               <TouchableOpacity
@@ -137,6 +157,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 12,
     backgroundColor: "#fff",
+    color: "#000",
   },
 
   toggleContainer: {

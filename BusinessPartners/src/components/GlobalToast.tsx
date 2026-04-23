@@ -30,7 +30,7 @@ const GlobalToast = () => {
 
       Animated.timing(progress, {
         toValue: 0,
-        duration: 3000,
+        duration: 2000,
         useNativeDriver: false,
       }).start();
 
@@ -40,7 +40,7 @@ const GlobalToast = () => {
           duration: 250,
           useNativeDriver: true,
         }).start(() => setVisible(false));
-      }, 3000);
+      }, 2000);
     }
   }, [visible]);
 

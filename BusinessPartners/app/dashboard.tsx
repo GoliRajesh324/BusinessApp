@@ -652,7 +652,7 @@ export default function Dashboard() {
         <View style={styles.modalOverlay}>
           <View style={styles.popupBox}>
             <Text style={styles.popupTitle}>
-              Delete <Text style={styles.bold}>{confirmDelete?.name}</Text>{" "}
+              Start <Text style={styles.bold}>{confirmDelete?.name}</Text>{" "}
               Business?
             </Text>
             <View style={styles.popupButtons}>

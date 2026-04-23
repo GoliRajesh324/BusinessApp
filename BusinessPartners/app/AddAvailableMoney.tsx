@@ -2,10 +2,12 @@ import AppHeader from "@/src/components/AppHeader";
 import BASE_URL from "@/src/config/config";
 import { numberToWords } from "@/src/utils/numberToWords";
 import { showToast } from "@/src/utils/ToastService";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { t } from "i18next";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -255,7 +257,7 @@ const AddAvailableMoney = () => {
       if (!res.ok) {
         throw new Error(data?.message || "Failed to save");
       }
-
+      router.back();
       showToast("Available money saved successfully", "success");
     } catch (err: any) {
       console.log("❌ Save error:", err);
@@ -344,15 +346,18 @@ const AddAvailableMoney = () => {
             ))}
           </View>
 
-          <Text style={styles.sectionTitle}>Images</Text>
+          <Text style={styles.sectionTitle}>{t("images")}</Text>
 
           <View style={{ flexDirection: "row", marginBottom: 10 }}>
-            <TouchableOpacity onPress={pickFromGallery}>
-              <Text style={styles.icon}>🖼️</Text>
+            <TouchableOpacity style={styles.cameraBtn} onPress={pickFromCamera}>
+              <Ionicons name="camera" size={28} color="white" />
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={pickFromCamera}>
-              <Text style={styles.icon}>📷</Text>
+            <TouchableOpacity
+              style={[styles.cameraBtn, { backgroundColor: "#28a745" }]}
+              onPress={pickFromGallery}
+            >
+              <Ionicons name="image" size={28} color="white" />
             </TouchableOpacity>
           </View>
 
@@ -488,14 +493,15 @@ const styles = StyleSheet.create({
 
   removeBtn: {
     position: "absolute",
-    top: -6,
-    right: 2,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    borderRadius: 10,
-    width: 18,
-    height: 18,
-    alignItems: "center",
+    top: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 4, // ✅ square with slight curve (not circle)
+    backgroundColor: "rgba(232, 36, 36, 0.7)", // looks premium
     justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2,
   },
 
   previewContainer: {
@@ -513,5 +519,14 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 36,
+  },
+  cameraBtn: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    backgroundColor: "#007bff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
 });

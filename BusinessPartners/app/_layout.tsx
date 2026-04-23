@@ -46,6 +46,8 @@ export default function RootLayout() {
   const [langReady, setLangReady] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
 
+  const lastNotificationResponse = Notifications.useLastNotificationResponse();
+
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       setIsConnected(!!state.isConnected);
@@ -214,26 +216,26 @@ export default function RootLayout() {
   const lastHandledNotification = useRef<string | null>(null);
 
   const openInvestmentFromNotification = (data: any) => {
+    console.log("NOTIFICATION DATA:", data);
+
     const type = data?.type;
     const investmentGroupId = data?.investmentGroupId;
 
-    // prevent duplicate navigation
-    if (lastHandledNotification.current === investmentGroupId) {
-      return;
-    }
+    const uniqueKey = type + "_" + (investmentGroupId || data.businessId);
 
-    lastHandledNotification.current = investmentGroupId;
+    if (lastHandledNotification.current === uniqueKey) return;
+    lastHandledNotification.current = uniqueKey;
 
-    if (type === "INVESTMENT_ADDED") {
+    if (type === "TRANSACTION_ADDED") {
       router.push({
         pathname: "/investmentDetail",
         params: {
-          investmentGroupId: data.investmentGroupId,
+          investmentGroupId,
           businessId: data.businessId,
           businessName: data.businessName,
         },
       });
-    } else if (type === "INVESTMENT_UPDATED") {
+    } else if (type === "TRANSACTION_UPDATED") {
       router.push({
         pathname: "/ChangeHistoryScreen",
         params: {
@@ -242,6 +244,14 @@ export default function RootLayout() {
         },
       });
     } else if (type === "BUSINESS_CREATED") {
+      router.push({
+        pathname: "/businessDetail",
+        params: {
+          businessId: data.businessId,
+          businessName: data.businessName,
+        },
+      });
+    } else if (type === "IMAGE_UPLOADED" || type === "IMAGE_UPDATED") {
       router.push({
         pathname: "/businessDetail",
         params: {
@@ -265,18 +275,24 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    const checkInitialNotification = async () => {
-      const response = await Notifications.getLastNotificationResponseAsync();
+    if (!lastNotificationResponse) return;
 
-      if (!response) return;
+    // ✅ Only handle when user clicks notification
+    if (
+      lastNotificationResponse.actionIdentifier !==
+      Notifications.DEFAULT_ACTION_IDENTIFIER
+    ) {
+      return;
+    }
 
-      const data = response.notification.request.content.data;
+    const data = lastNotificationResponse.notification.request.content.data;
 
+    if (!data) return;
+
+    setTimeout(() => {
       openInvestmentFromNotification(data);
-    };
-
-    checkInitialNotification();
-  }, []);
+    }, 500);
+  }, [lastNotificationResponse]);
 
   // 2️⃣ Auto-lock when app goes to background
   useEffect(() => {

@@ -150,19 +150,21 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     position: "absolute",
-    top: -5,
-    right: -5,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "red",
+    top: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 4, // ✅ square with slight curve (not circle)
+    backgroundColor: "rgba(232, 36, 36, 0.7)", // looks premium
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 2,
   },
   deleteText: {
     color: "#fff",
     fontSize: 12,
-    fontWeight: "bold",
+    fontWeight: "700",
+    lineHeight: 14, // better vertical alignment
   },
   previewContainer: {
     flex: 1,

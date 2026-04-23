@@ -26,6 +26,7 @@ import {
 const SLIDER_THUMB_SIZE = 18;
 
 import AppHeader from "@/src/components/AppHeader";
+import LoadingOverlay from "@/src/components/LoadingOverlay";
 import SupplierPopup from "@/src/components/SupplierPopup";
 import { showToast } from "@/src/utils/ToastService";
 import { getVideoId } from "@/src/utils/VideoStorage";
@@ -537,9 +538,9 @@ const EditTransactionScreen = () => {
         showToast("Failed to update investment", "error");
         return;
       }
+      router.back();
       showToast("Investment updated successfully", "success");
       setOriginalReduceMap({});
-      router.back();
     } catch (err) {
       console.log("❌ handleSave error:", err);
       showToast("Unexpected error occurred", "error");
@@ -812,9 +813,7 @@ const EditTransactionScreen = () => {
               //disabled={isUpdating || !totalAmount || Number(totalAmount) <= 0}
               disabled={isUpdating || totalAmount === ""}
             >
-              <Text style={styles.saveText}>
-                {isUpdating ? t("updating...") : t("update")}
-              </Text>
+              <Text style={styles.saveText}>{t("update")}</Text>
             </TouchableOpacity>
           }
         />
@@ -1165,6 +1164,19 @@ const EditTransactionScreen = () => {
               }}
             />
           )}
+
+          <LoadingOverlay
+            visible={isUpdating}
+            message={
+              transactionType === "Investment"
+                ? "Updating investment ..."
+                : transactionType === "Sold"
+                  ? "Updating sale..."
+                  : transactionType === "Withdraw"
+                    ? "Processing withdrawal..."
+                    : "Updating transaction..."
+            }
+          />
           {errorVisible && (
             <Animated.View
               style={{

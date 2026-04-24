@@ -108,6 +108,8 @@ const resources = {
         "No partners have been added.You can add only partners who have an account.",
       nocategoryData: "No Categories added. Press Add Category",
       noBusinessData: "No Businesses Added. Press + Add Business",
+
+      deleted: "Deleted",
     },
   },
   te: {
@@ -213,6 +215,7 @@ const resources = {
         "పార్ట్నర్ని ఎవరిని యాడ్ చేయలేదు. అకౌంట్ వున పార్ట్నర్స్ ని యాడ్ చేయండి.",
       nocategoryData: "కేటగిరీ ఆడ్ చేయలేదు. యాడ్ కేటగిరీ ప్రెస్ చేయండి ",
       noBusinessData: "బిజినెస్ యాడ్ చేయలేదు. + యాడ్ బిజినెస్ ప్రెస్ చేయండి ",
+      deleted: "డిలీటెడ్",
     },
   },
 };

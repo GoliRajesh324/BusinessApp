@@ -309,6 +309,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     padding: 12,
+    color: "#000",
   },
 
   forgot: {

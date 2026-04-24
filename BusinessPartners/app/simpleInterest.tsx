@@ -655,9 +655,22 @@ export default function SimpleInterestPage() {
                               </View>
 
                               <View style={styles.recordRow}>
-                                <Text style={styles.recordLabel}>Interest</Text>
+                                <Text style={styles.recordLabel}>
+                                  Interest %
+                                </Text>
                                 <Text style={styles.recordValue}>
                                   {rec.rate ?? 0} %
+                                </Text>
+                              </View>
+                              <View style={styles.recordRow}>
+                                <Text style={styles.recordLabel}>
+                                  Interest in Rupee
+                                </Text>
+                                <Text style={styles.recordValue}>
+                                  ₹
+                                  {rec.rate
+                                    ? (rec.rate / 12).toFixed(2)
+                                    : "0.00"}
                                 </Text>
                               </View>
 

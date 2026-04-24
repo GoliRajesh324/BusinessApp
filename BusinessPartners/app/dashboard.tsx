@@ -584,7 +584,9 @@ export default function Dashboard() {
                         })
                       }
                     >
-                      <Text style={styles.btnText}> {t("inProgress")}</Text>
+                      <Text style={styles.btnText}>
+                        {deleteFlag === "Y" ? t("deleted") : t("inProgress")}
+                      </Text>
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
@@ -986,5 +988,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 13,
+  },
+  deletedText: {
+    color: "red",
+  },
+  inProgressText: {
+    color: "#ff8c00",
   },
 });

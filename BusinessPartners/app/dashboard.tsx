@@ -401,7 +401,7 @@ export default function Dashboard() {
                 deleteFlag === "N" && styles.toggleTextActive,
               ]}
             >
-              Active
+              {t("active")}
             </Text>
           </TouchableOpacity>
 
@@ -418,7 +418,7 @@ export default function Dashboard() {
                 deleteFlag === "Y" && styles.toggleTextActive,
               ]}
             >
-              Inactive
+              {t("inactive")}
             </Text>
           </TouchableOpacity>
         </View>

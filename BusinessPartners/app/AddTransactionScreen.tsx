@@ -2,6 +2,7 @@
 import AppHeader from "@/src/components/AppHeader";
 import LoadingOverlay from "@/src/components/LoadingOverlay";
 import SupplierPopup from "@/src/components/SupplierPopup";
+import TransactionConfirmModal from "@/src/components/TransactionConfirmModal";
 import { showToast } from "@/src/utils/ToastService";
 import { getVideoId } from "@/src/utils/VideoStorage";
 import { Ionicons } from "@expo/vector-icons";
@@ -45,6 +46,7 @@ interface PartnerRow {
   actual: string;
   checked: boolean;
   reduceLeftOver: string;
+  autoFilled?: boolean;
 }
 type ImageFile = {
   uri: string;
@@ -97,10 +99,12 @@ const AddTransactionScreen = () => {
   const [partners, setPartners] = useState<any[]>([]);
   const [token, setToken] = useState<string | null>(null);
 
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false);
+  const [supplierName, setSupplierName] = useState<string | null>(null);
+
   const [images, setImages] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [videoId, setVideoId] = useState("");
-
   useEffect(() => {
     loadVideo();
   }, []);
@@ -136,6 +140,191 @@ const AddTransactionScreen = () => {
       setDescription(params.caption as string); // optional
     }
   }, [params.images, params.caption]);
+
+  const handlePreSave = () => {
+    if (!transactionType) {
+      setErrorVisible(true);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+
+      setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }).start(() => setErrorVisible(false));
+      }, 2000);
+
+      return;
+    }
+    // 🚨 Withdraw validation: cannot exceed available money
+    if (transactionType === "Withdraw") {
+      const withdrawErrors: Record<string, string> = {};
+
+      rows.forEach((r) => {
+        const entered = Number(r.investing || 0); // withdraw amount entered
+        const available = Number(r.leftOver || 0); // available money
+
+        // ✅ SKIP rows where nothing entered
+        if (entered === 0) return;
+        if (entered > available) {
+          withdrawErrors[r.id] = `Withdraw ₹${entered.toFixed(
+            2,
+          )} exceeds available ₹${available.toFixed(2)}`;
+        }
+      });
+
+      if (Object.keys(withdrawErrors).length > 0) {
+        setRowErrors(withdrawErrors);
+
+        // 🔥 CLEAR OLD TIMEOUT
+        if (redTimeoutRef.current) {
+          clearTimeout(redTimeoutRef.current);
+        }
+
+        // 🔥 AUTO CLEAR AFTER 5 SECONDS
+        redTimeoutRef.current = setTimeout(() => {
+          setRowErrors({});
+        }, 5000);
+
+        // 🔥 Shake invalid cards (same animation logic you use above)
+        Object.keys(withdrawErrors).forEach((id) => {
+          if (!shakeAnimations[id]) {
+            shakeAnimations[id] = new Animated.Value(0);
+          }
+
+          Animated.sequence([
+            Animated.timing(shakeAnimations[id], {
+              toValue: 10,
+              duration: 50,
+              useNativeDriver: true,
+            }),
+            Animated.timing(shakeAnimations[id], {
+              toValue: -10,
+              duration: 50,
+              useNativeDriver: true,
+            }),
+            Animated.timing(shakeAnimations[id], {
+              toValue: 6,
+              duration: 50,
+              useNativeDriver: true,
+            }),
+            Animated.timing(shakeAnimations[id], {
+              toValue: 0,
+              duration: 50,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        });
+
+        Alert.alert(
+          "Invalid Withdraw Amount",
+          "Withdraw amount cannot be greater than available money.",
+        );
+
+        return; // ⛔ STOP SAVE
+      }
+    }
+    // ❌ Validate leftover usage
+    const errors: Record<string, string> = {};
+
+    rows.forEach((r) => {
+      if (r.checked) {
+        const used = Number(r.reduceLeftOver || 0);
+        const available = Number(r.leftOver || 0);
+
+        if (used > available) {
+          errors[r.id] = `Used amount ₹${used.toFixed(
+            2,
+          )} exceeds available ₹${available.toFixed(2)}`;
+        }
+      }
+    });
+
+    // ⛔ Stop save if any error
+    if (Object.keys(errors).length > 0) {
+      setRowErrors(errors);
+
+      // 🔥 CLEAR OLD TIMEOUT
+      if (redTimeoutRef.current) {
+        clearTimeout(redTimeoutRef.current);
+      }
+
+      // 🔥 AUTO CLEAR AFTER 5 SECONDS
+      redTimeoutRef.current = setTimeout(() => {
+        setRowErrors({});
+      }, 5000);
+
+      // 🔥 Trigger shake for invalid cards
+      Object.keys(errors).forEach((id) => {
+        if (!shakeAnimations[id]) {
+          shakeAnimations[id] = new Animated.Value(0);
+        }
+
+        Animated.sequence([
+          Animated.timing(shakeAnimations[id], {
+            toValue: 10,
+            duration: 50,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnimations[id], {
+            toValue: -10,
+            duration: 50,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnimations[id], {
+            toValue: 6,
+            duration: 50,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnimations[id], {
+            toValue: 0,
+            duration: 50,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+
+      return;
+    }
+
+    // ✅ Clear errors if valid
+    setRowErrors({});
+
+    const totalEntered = rows.reduce(
+      (sum, r) => sum + (parseFloat(r.actual) || 0),
+      0,
+    );
+
+    const expected = Number(totalAmount || 0);
+
+    console.log("entered:", totalEntered, "expected:", expected);
+
+    // 🔴 mismatch → supplier popup
+    if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
+      console.log("👉 Supplier popup triggered");
+
+      setRemaining(expected - totalEntered);
+      setShowSupplierPopup(true);
+      return;
+    }
+    // 🔥 Reset for non-investment
+    if (transactionType !== "Investment") {
+      setSupplierName(null);
+      setRemaining(0);
+    }
+    if (Math.round((totalEntered - expected) * 100) / 100 === 0) {
+      setSupplierName(null);
+      setRemaining(0);
+    }
+    // ✅ match → confirm
+    console.log("👉 Confirm popup triggered");
+
+    setShowConfirmPopup(true);
+  };
 
   useEffect(() => {
     if (!token || !businessId) return;
@@ -272,13 +461,14 @@ const AddTransactionScreen = () => {
 
   useEffect(() => {
     if (!partners.length) return;
-
     setRows((prev) =>
-      partners.map((p, idx) => {
-        const prevRow = prev[idx] || {};
+      prev.map((prevRow, idx) => {
+        const p = partners[idx];
+
+        if (!p) return prevRow;
 
         const base = {
-          ...prevRow, // ✅ PRESERVE checked, reduceLeftOver, leftOver
+          ...prevRow,
           id: p.id,
           name: p.username,
           share: p.share ?? 0,
@@ -288,31 +478,66 @@ const AddTransactionScreen = () => {
           return { ...base, actual: "", investing: "" };
         }
 
+        const liveAmount = Number(totalAmount || 0);
+
+        let actual = prevRow.actual;
+        let investing = prevRow.investing;
+
         if (splitMode === "share") {
           const percent = p.share ?? 0;
-          const actual = ((percent / 100) * expected).toFixed(2);
-          return { ...base, actual, investing: actual, share: percent };
+          actual = ((percent / 100) * liveAmount).toFixed(2);
+          investing = actual;
         }
 
         if (splitMode === "equal") {
-          const per = (expected / partners.length).toFixed(2);
-          return { ...base, actual: per, investing: per };
+          const per = (liveAmount / partners.length).toFixed(2);
+          actual = per;
+          investing = per;
         }
 
         if (splitMode === "manual") {
-          return {
-            ...base,
-            actual: prevRow.investing || "",
-            investing: prevRow.investing || "",
-          };
+          actual = prevRow.actual;
+          investing = prevRow.investing;
         }
 
-        return base;
+        return {
+          ...base,
+          actual,
+          investing,
+        };
       }),
     );
   }, [splitMode, totalAmount, partners]);
-
   // Inside AddInvestmentPopup.tsx, only update split options logic
+
+  useEffect(() => {
+    if (transactionType !== "Investment") return;
+    if (!totalAmount || Number(totalAmount) <= 0) return;
+
+    setRows((prev) =>
+      prev.map((r) => {
+        // ✅ Skip if no leftover
+        if (!r.leftOver || Number(r.leftOver) <= 0) return r;
+
+        // ✅ If user already touched → DO NOT override
+        if (r.autoFilled) return r;
+
+        const investable = Number(r.investing || 0);
+        const available = Number(r.leftOver || 0);
+
+        // 👉 how much can be used
+        const usable = Math.min(investable, available);
+
+        if (usable <= 0) return r;
+
+        return {
+          ...r,
+          checked: true,
+          reduceLeftOver: usable.toFixed(2),
+        };
+      }),
+    );
+  }, [totalAmount, transactionType]);
 
   const openSheet = () => {
     console.log("Opening split options sheet with mode:");
@@ -553,13 +778,13 @@ const AddTransactionScreen = () => {
       return;
     } */
 
-    if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
+    /*   if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
       console.log("Need supplier popup, diff:", expected - totalEntered);
       console.log(rows);
       setRemaining(expected - totalEntered);
       setShowSupplierPopup(true);
       return;
-    }
+    } */
     // ✅ If perfect match (no supplier needed)
     if (Math.round((totalEntered - expected) * 100) / 100 === 0) {
       saveInvestment(null);
@@ -800,7 +1025,7 @@ const AddTransactionScreen = () => {
           videoId={videoId}
           rightComponent={
             <TouchableOpacity
-              onPress={handleSave}
+              onPress={handlePreSave}
               style={[
                 styles.headerRight,
                 {
@@ -1010,7 +1235,14 @@ const AddTransactionScreen = () => {
                               onPress={() =>
                                 setRows((prev) => {
                                   const next = [...prev];
-                                  next[i].checked = !next[i].checked;
+                                  next[i] = {
+                                    ...next[i],
+                                    checked: !next[i].checked,
+                                    autoFilled: true,
+                                    reduceLeftOver: next[i].checked
+                                      ? ""
+                                      : next[i].reduceLeftOver,
+                                  };
                                   return next;
                                 })
                               }
@@ -1051,11 +1283,11 @@ const AddTransactionScreen = () => {
                                       next[i] = {
                                         ...next[i],
                                         reduceLeftOver: val,
+                                        autoFilled: true, // ✅ user override lock
                                       };
                                       return next;
                                     });
 
-                                    // ✅ Auto-clear error when value becomes valid
                                     const used = Number(val || 0);
                                     const available = Number(r.leftOver || 0);
 
@@ -1160,7 +1392,9 @@ const AddTransactionScreen = () => {
               onClose={() => setShowSupplierPopup(false)}
               onConfirm={(supplierName) => {
                 setShowSupplierPopup(false);
-                saveInvestment(supplierName); // ✅ call final save with name
+                setSupplierName(supplierName); // store
+                // 👉 ONLY open confirm here
+                setShowConfirmPopup(true);
               }}
             />
           )}
@@ -1179,7 +1413,21 @@ const AddTransactionScreen = () => {
               </TouchableOpacity>
             </View>
           </Modal>
-
+          <TransactionConfirmModal
+            visible={showConfirmPopup}
+            onClose={() => setShowConfirmPopup(false)}
+            onConfirm={() => {
+              setShowConfirmPopup(false);
+              saveInvestment(supplierName);
+            }}
+            description={description}
+            totalAmount={totalAmount}
+            splitMode={splitMode}
+            rows={rows}
+            transactionType={transactionType ?? "Investment"}
+            supplierName={supplierName}
+            remaining={remaining}
+          />
           {/* Split Sheet */}
           <Modal visible={sheetVisible} animationType="slide" transparent>
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>

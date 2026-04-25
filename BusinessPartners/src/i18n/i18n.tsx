@@ -45,6 +45,8 @@ const resources = {
       totalSoldAmount: "Total Sold Amount",
       yourWithdrawl: "Your Withdrawal",
       totalWithdrawl: "Total Withdrawal",
+      yourWithdrawal: "Your Withdrawal",
+      totalWithdrawal: "Total Withdrawal",
       createdBy: "Created By",
       createdAt: "Created At ",
       all: "ALL",
@@ -68,6 +70,7 @@ const resources = {
       investment: "Investment",
       sold: "Sold",
       withdraw: "Withdraw",
+      investmentWithdraw: "Investment Withdraw",
       add: "Add",
       consume: "Consume",
       addCategory: "Add Category",
@@ -110,6 +113,31 @@ const resources = {
       noBusinessData: "No Businesses Added. Press + Add Business",
 
       deleted: "Deleted",
+
+      confirmTransaction: "Confirm Transaction",
+
+      transactionType: "Transaction Type",
+      splitType: "Split Type",
+
+      supplierDetails: "Supplier Details",
+      supplierName: "Supplier Name",
+      investableAmount: "Investable Amount",
+      investedAmount: "Invested Amount",
+      pendingAmount: "Pending Amount",
+      extraAmount: "Extra Amount",
+
+      availableMoneyUsed: "Used from Available Money",
+      newMoneyFromOutside: "Newly invested money from outside",
+
+      soldDetails: "Sold Details",
+      soldAmount: "Sold Amount",
+
+      withdrawDetails: "Withdraw Details",
+      withdrawAmount: "Withdraw Amount",
+      deposit: "Deposit",
+      confirm: "Confirm",
+      active: "active",
+      inactive: "inactive",
     },
   },
   te: {
@@ -152,8 +180,8 @@ const resources = {
       totalAmount: "టోటల్ అమౌంట్ ",
       yourSoldAmount: "మీ అమీనా అమౌంట్ ",
       totalSoldAmount: "టోటల్ అమీనా అమౌంట్ ",
-      yourWithdrawl: "మీ విత్డ్రా",
-      totalWithdrawl: "టోటల్ విత్డ్రా ",
+      yourWithdrawal: "మీ విత్డ్రా",
+      totalWithdrawal: "టోటల్ విత్డ్రా ",
       createdBy: "క్రియేటెడ్ బై ",
       createdAt: "క్రియేటెడ్ ఎట్",
       all: "ఆల్",
@@ -175,8 +203,9 @@ const resources = {
       saving: "సేవింగ్...",
       updating: "అప్డేటింగ్...",
       investment: "ఇన్వెస్ట్మెంట్",
-      sold: "అమీనా",
+      sold: "సోల్డ్",
       withdraw: "విత్‌డ్రా",
+      investmentWithdraw: "ఇన్వెస్ట్మెంట్ విత్‌డ్రా",
       add: "యాడ్",
       consume: "కన్స్యూమ్",
       addCategory: "యాడ్ కేటగిరీ",
@@ -216,6 +245,32 @@ const resources = {
       nocategoryData: "కేటగిరీ ఆడ్ చేయలేదు. యాడ్ కేటగిరీ ప్రెస్ చేయండి ",
       noBusinessData: "బిజినెస్ యాడ్ చేయలేదు. + యాడ్ బిజినెస్ ప్రెస్ చేయండి ",
       deleted: "డిలీటెడ్",
+
+      confirmTransaction: "కన్ఫామ్ ట్రాన్సాక్షన్",
+
+      transactionType: "ట్రాన్సాక్షన్ టైప్",
+      splitType: "స్ప్లిట్ టైప్",
+
+      supplierDetails: "సప్లయర్ డీటెయిల్స్",
+      supplierName: "సప్లయర్ పేరు",
+
+      investableAmount: "ఇన్వెస్టబుల్ అమౌంట్",
+      investedAmount: "ఇన్వెస్టెడ్ అమౌంట్",
+      pendingAmount: "పెండింగ్ అమౌంట్",
+      extraAmount: "ఎక్స్‌ట్రా అమౌంట్",
+
+      availableMoneyUsed: "ని మనీ వాడుతున్నది",
+      newMoneyFromOutside: "కోతగా పేటిన మనీ",
+
+      soldDetails: "సోల్డ్ డీటెయిల్స్",
+      soldAmount: "సోల్డ్ అమౌంట్",
+
+      withdrawDetails: "విత్‌డ్రా డీటెయిల్స్",
+      withdrawAmount: "విత్‌డ్రా అమౌంట్",
+      deposit: "డిపాజిట్",
+      confirm: "కన్ఫామ్",
+      active: "యాక్టివ్",
+      inactive: "ఇనాక్టివ్",
     },
   },
 };

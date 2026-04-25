@@ -1,12 +1,20 @@
+import AppHeader from "@/src/components/AppHeader";
 import CommonImagePicker from "@/src/components/CommonImagePicker";
+import LoadingOverlay from "@/src/components/LoadingOverlay";
+import SupplierPopup from "@/src/components/SupplierPopup";
+import TransactionConfirmModal from "@/src/components/TransactionConfirmModal";
 import BASE_URL from "@/src/config/config";
 import { InvestmentDTO } from "@/src/types/types";
 import { ImageFile } from "@/src/utils/ImagePickerService";
 import { numberToWords } from "@/src/utils/numberToWords";
+import { showToast } from "@/src/utils/ToastService";
+import { getVideoId } from "@/src/utils/VideoStorage";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { t } from "i18next";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-
 import {
   Alert,
   Animated,
@@ -22,19 +30,9 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-
-const SLIDER_THUMB_SIZE = 18;
-
-import AppHeader from "@/src/components/AppHeader";
-import LoadingOverlay from "@/src/components/LoadingOverlay";
-import SupplierPopup from "@/src/components/SupplierPopup";
-import { showToast } from "@/src/utils/ToastService";
-import { getVideoId } from "@/src/utils/VideoStorage";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { t } from "i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const SLIDER_THUMB_SIZE = 18;
 const EditTransactionScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -52,6 +50,7 @@ const EditTransactionScreen = () => {
   const first = investmentData?.[0] || {};
   const [investmentDataState, setInvestmentDataState] =
     useState(investmentData);
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const [supplierName, setSupplierName] = useState(first.supplierName ?? "");
   const [isUpdating, setIsUpdating] = useState(false);
   const [originalReduceMap, setOriginalReduceMap] = useState<
@@ -284,6 +283,32 @@ const EditTransactionScreen = () => {
     setOriginalReduceMap(map);
   }, [investmentData]);
 
+  const handlePreSave = () => {
+    const totalEntered = investmentDataState.reduce((sum, r) => {
+      if (transactionType === "Withdraw") {
+        return sum + Number(r.withdrawn ?? 0);
+      }
+      if (transactionType === "Sold") {
+        return sum + Number(r.soldAmount ?? 0);
+      }
+      return sum + Number(r.invested ?? 0);
+    }, 0);
+
+    const enteredTotal = Number(totalAmount);
+    const diff = Math.round((totalEntered - enteredTotal) * 100) / 100;
+
+    console.log("PreSave:", totalEntered, enteredTotal, diff);
+
+    if (diff !== 0 && !supplierName) {
+      setRemaining(enteredTotal - totalEntered);
+      setShowSupplierPopup(true);
+      return;
+    }
+
+    // ✅ Only open confirm here
+    setShowConfirmPopup(true);
+  };
+
   const handleSave = async () => {
     try {
       investmentData.map((inv) =>
@@ -304,12 +329,12 @@ const EditTransactionScreen = () => {
 
       const enteredTotal = Number(totalAmount);
       const diff = Math.round((totalEntered - enteredTotal) * 100) / 100;
-
+      /* 
       if (diff !== 0 && !supplierName) {
         setRemaining(enteredTotal - totalEntered);
         setShowSupplierPopup(true);
         return;
-      }
+      } */
 
       console.log("handleSave called with: ", totalEntered, expected);
       // const enteredTotal = Number(totalAmount);
@@ -799,7 +824,7 @@ const EditTransactionScreen = () => {
           videoId={videoId}
           rightComponent={
             <TouchableOpacity
-              onPress={handleSave}
+              onPress={handlePreSave}
               style={[
                 styles.headerRight,
                 {
@@ -1148,8 +1173,10 @@ const EditTransactionScreen = () => {
               onConfirm={(name) => {
                 setShowSupplierPopup(false);
 
-                setSupplierName(name); // ✅ update main state
+                // ✅ store supplier name
+                setSupplierName(name);
 
+                // ✅ update state (optional, keep if needed)
                 setInvestmentDataState((prev) =>
                   prev.map((inv) => ({
                     ...inv,
@@ -1157,10 +1184,11 @@ const EditTransactionScreen = () => {
                   })),
                 );
 
-                // ✅ wait for state update
-                setTimeout(() => {
-                  handleSave();
-                }, 0);
+                // ❌ REMOVE handleSave call
+                // ❌ REMOVE setTimeout
+
+                // ✅ go to confirm popup instead
+                setShowConfirmPopup(true);
               }}
             />
           )}
@@ -1197,7 +1225,45 @@ const EditTransactionScreen = () => {
               </Text>
             </Animated.View>
           )}
+          <TransactionConfirmModal
+            visible={showConfirmPopup}
+            onClose={() => setShowConfirmPopup(false)}
+            onConfirm={() => {
+              setShowConfirmPopup(false);
 
+              // ✅ FINAL API CALL ONLY HERE
+              handleSave();
+            }}
+            description={description}
+            totalAmount={totalAmount}
+            splitMode={splitMode}
+            rows={investmentDataState.map((r) => ({
+              id: r.partnerId,
+              name: r.partnerName,
+
+              investing:
+                transactionType === "Investment"
+                  ? Number(r.investable ?? 0)
+                  : transactionType === "Sold"
+                    ? Number(r.soldAmount ?? 0)
+                    : Number(r.withdrawn ?? 0),
+
+              actual:
+                transactionType === "Investment"
+                  ? Number(r.invested ?? 0)
+                  : transactionType === "Sold"
+                    ? Number(r.soldAmount ?? 0)
+                    : Number(r.withdrawn ?? 0),
+
+              reduceLeftOver: Number(r.reduceLeftOver ?? 0),
+            }))}
+            transactionType={
+              (transactionType as "Investment" | "Sold" | "Withdraw") ??
+              "Investment"
+            }
+            supplierName={supplierName}
+            remaining={remaining}
+          />
           {/* Split Sheet */}
           <Modal visible={sheetVisible} animationType="slide" transparent>
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>

@@ -986,23 +986,23 @@ export default function BusinessDetail() {
 
   const transactionConfig: Record<string, { label: string; color: string }> = {
     INVESTMENT: {
-      label: "Investment",
+      label: t("investment"),
       color: "#2563EB", // blue
     },
     SOLD: {
-      label: "Sold",
+      label: t("sold"),
       color: "#16A34A", // green
     },
     WITHDRAW: {
-      label: "Withdraw",
+      label: t("withdraw"),
       color: "#DC2626", // red
     },
     INVESTMENT_WITHDRAW: {
-      label: "Investment Withdraw",
+      label: t("investmentWithdraw"),
       color: "#F59E0B", // amber/orange (mixed meaning)
     },
     DEPOSIT: {
-      label: "Deposit",
+      label: t("deposit"),
       color: "#059669", // green (you can change)
     },
   };

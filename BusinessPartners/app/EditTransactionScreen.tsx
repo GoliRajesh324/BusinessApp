@@ -256,9 +256,12 @@ const EditTransactionScreen = () => {
     const initialState: Record<number, boolean> = {};
 
     investmentDataState.forEach((item, index) => {
+      const hasValue = Number(item.reduceLeftOver ?? 0) > 0;
+      const flag = item.reduceLeftOverFlag === "Y";
+
       if (
         item.transactionType?.toUpperCase() === "INVESTMENT" &&
-        item.reduceLeftOverFlag === "Y"
+        (hasValue || flag)
       ) {
         initialState[index] = true;
       } else {
@@ -1046,90 +1049,102 @@ const EditTransactionScreen = () => {
                       </View>
 
                       {/* ✅ Leftover section full width below */}
-                      {transactionType === "Investment" &&
-                        Number(r.reduceLeftOver ?? 0) +
-                          //Number(originalReduceMap[r.partnerId ?? 0]) >
-                          Number(r.availableMoney ?? 0) >
-                          0 && (
-                          <View
+                      {transactionType === "Investment" && (
+                        /*   Number(r.reduceLeftOver ?? 0) +
+                          Number(r.availableMoney ?? 0) -
+                          Math.max(
+                            Number(r.invested ?? 0) - Number(r.investable ?? 0),
+                            0,
+                          ) >
+                          0 && ( */
+                        <View
+                          style={{
+                            marginTop: 10,
+                            borderTopWidth: 0.6,
+                            borderTopColor: "#ccc",
+                            paddingTop: 8,
+                          }}
+                        >
+                          <TouchableOpacity
+                            onPress={() => toggleCheckbox(i)}
                             style={{
-                              marginTop: 10,
-                              borderTopWidth: 0.6,
-                              borderTopColor: "#ccc",
-                              paddingTop: 8,
+                              flexDirection: "row",
+                              alignItems: "center",
                             }}
                           >
-                            <TouchableOpacity
-                              onPress={() => toggleCheckbox(i)}
+                            <Ionicons
+                              name={
+                                checkedState[i] ? "checkbox" : "square-outline"
+                              }
+                              size={22}
+                              color="#007AFF"
+                            />
+
+                            <Text
                               style={{
-                                flexDirection: "row",
-                                alignItems: "center",
+                                marginLeft: 8,
+                                fontSize: 14,
+                                fontWeight: "500",
                               }}
                             >
-                              <Ionicons
-                                name={
-                                  checkedState[i]
-                                    ? "checkbox"
-                                    : "square-outline"
-                                }
-                                size={22}
-                                color="#007AFF"
-                              />
-
-                              <Text
-                                style={{
-                                  marginLeft: 8,
-                                  fontSize: 14,
-                                  fontWeight: "500",
-                                }}
-                              >
-                                {t("availableMoneytoUse")} ₹
-                                {(
-                                  Number(r.availableMoney ?? 0) +
-                                  Number(
-                                    originalReduceMap[r.partnerId ?? 0] ?? 0,
-                                  )
-                                ).toFixed(2)}
-                              </Text>
-                            </TouchableOpacity>
-
-                            <TextInput
-                              style={styles.leftOverInput}
-                              keyboardType="numeric"
-                              placeholderTextColor={"#ccc"}
-                              placeholder="Enter amount to use..."
-                              value={String(r.reduceLeftOver) ?? ""}
-                              onChangeText={(val) => {
-                                const entered = Number(val) || 0;
-
-                                const available =
+                              {t("availableMoneytoUse")} ₹
+                              {(() => {
+                                const base =
                                   Number(r.availableMoney ?? 0) +
                                   Number(
                                     originalReduceMap[r.partnerId ?? 0] ?? 0,
                                   );
 
-                                if (entered > available) {
-                                  Alert.alert(
-                                    "Invalid Amount",
-                                    `Entered amount cannot exceed available money (₹${available.toFixed(2)})`,
-                                  );
+                                const extra = Math.max(
+                                  Number(r.invested ?? 0) -
+                                    Number(r.investable ?? 0),
+                                  0,
+                                );
 
-                                  return; // ⛔ stop here
-                                }
-                                setInvestmentDataState((prev) => {
-                                  const next = [...prev];
-                                  next[i] = {
-                                    ...next[i],
-                                    reduceLeftOver: Number(val),
-                                  };
-                                  return next;
-                                });
-                              }}
-                            />
-                          </View>
-                        )}
+                                return (base - extra).toFixed(2);
+                              })()}
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TextInput
+                            style={styles.leftOverInput}
+                            keyboardType="numeric"
+                            placeholderTextColor={"#ccc"}
+                            placeholder="Enter amount to use..."
+                            value={String(r.reduceLeftOver) ?? ""}
+                            onChangeText={(val) => {
+                              const entered = Number(val) || 0;
+
+                              const available =
+                                Number(r.availableMoney ?? 0) +
+                                Number(
+                                  originalReduceMap[r.partnerId ?? 0] ?? 0,
+                                );
+
+                              if (entered > available) {
+                                Alert.alert(
+                                  "Invalid Amount",
+                                  `Entered amount cannot exceed available money (₹${available.toFixed(2)})`,
+                                );
+
+                                return; // ⛔ stop here
+                              }
+                              setInvestmentDataState((prev) => {
+                                const next = [...prev];
+                                next[i] = {
+                                  ...next[i],
+                                  reduceLeftOver: Number(val),
+                                };
+                                return next;
+                              });
+                            }}
+                          />
+                        </View>
+                      )}
                       {transactionType === "Withdraw" &&
-                        Number(r.availableMoney) > 0 && (
+                        Number(r.availableMoney ?? 0) +
+                          Number(investmentData[i]?.withdrawn ?? 0) >
+                          0 && (
                           <View
                             style={{
                               marginTop: 10,
@@ -1146,7 +1161,10 @@ const EditTransactionScreen = () => {
                               }}
                             >
                               Available Money to use: ₹
-                              {Number(r.availableMoney).toFixed(2)}
+                              {(
+                                Number(r.availableMoney ?? 0) +
+                                Number(investmentData[i]?.withdrawn ?? 0)
+                              ).toFixed(2)}
                             </Text>
                           </View>
                         )}

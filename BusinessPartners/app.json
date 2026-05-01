@@ -4,7 +4,7 @@
     "slug": "BusinessPartners",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/BusinessMoneyIcon.jpeg",
+    "icon": "./assets/images/BizMoneyIcon.jpeg",
     "scheme": "businesspartners",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -38,7 +38,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/BusinessMoneyIcon.jpeg",
+          "image": "./assets/images/BizMoneyIcon.jpeg",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",

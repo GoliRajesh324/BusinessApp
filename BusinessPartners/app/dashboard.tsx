@@ -1,3 +1,5 @@
+import useShareIntent from "@/hooks/useShareIntent";
+import ImagePreviewModalTest from "@/src/components/ImagePreviewModalTest";
 import ScreenHelpVideo from "@/src/components/ScreenHelpVideo";
 import { showToast } from "@/src/utils/ToastService";
 import { getVideoId } from "@/src/utils/VideoStorage";
@@ -19,7 +21,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import AddBusinessPopup from "../src/components/AddBusinessPopup";
 import BASE_URL from "../src/config/config";
@@ -48,6 +50,36 @@ export default function Dashboard() {
   const [deleteFlag, setDeleteFlag] = useState("N"); // default Active
 
   const [isTelugu, setIsTelugu] = useState(false);
+
+  const [sharedImages, setSharedImages] = useState<any[]>([]);
+  const [showSharePreview, setShowSharePreview] = useState(false);
+  const [showBusinessPicker, setShowBusinessPicker] = useState(false);
+  const [selectedBusinessForShare, setSelectedBusinessForShare] =
+    useState<any>(null);
+  const [caption, setCaption] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const [showTestModal, setShowTestModal] = useState(false);
+
+  const [testImages, setTestImages] = useState<any[]>([]);
+  const [testBusiness, setTestBusiness] = useState<any>(null);
+  const [showTestBusinessPicker, setShowTestBusinessPicker] = useState(false);
+  const [testCaption, setTestCaption] = useState("");
+  const [testIndex, setTestIndex] = useState(0);
+
+  useShareIntent((files) => {
+    if (!files || files.length === 0) return;
+
+    const formatted = files.map((f: any, i: number) => ({
+      uri: f.uri,
+      type: f.type || "image/jpeg",
+      name: f.name || `shared_${i}.jpg`,
+    }));
+
+    setTestImages(formatted); // ✅ CRITICAL FIX
+    setTestIndex(0);
+    setShowBusinessPicker(true);
+  });
 
   useEffect(() => {
     (async () => {
@@ -698,6 +730,161 @@ export default function Dashboard() {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={showTestBusinessPicker} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "#000000aa",
+            justifyContent: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              margin: 20,
+              borderRadius: 10,
+              padding: 16,
+            }}
+          >
+            <Text style={{ fontSize: 18, marginBottom: 10 }}>
+              Select Business (Test)
+            </Text>
+
+            {businesses.map((b) => (
+              <TouchableOpacity
+                key={b.id}
+                style={{ padding: 12 }}
+                onPress={() => {
+                  setTestBusiness(b);
+                  setShowTestBusinessPicker(false);
+
+                  // ✅ NOW open preview
+                  setTimeout(() => {
+                    setShowSharePreview(true);
+                  }, 50);
+                }}
+              >
+                <Text>{b.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </Modal>
+      {/* BUSINESS PICKER (FOR SHARE) */}
+      <Modal visible={showBusinessPicker} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "#000000aa",
+            justifyContent: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              margin: 20,
+              borderRadius: 10,
+              padding: 16,
+            }}
+          >
+            <Text style={{ fontSize: 18, marginBottom: 10 }}>
+              Select Business
+            </Text>
+
+            {businesses.length === 0 ? (
+              <Text>No business available</Text>
+            ) : (
+              businesses.map((b) => (
+                <TouchableOpacity
+                  key={b.id}
+                  style={{ padding: 12 }}
+                  onPress={() => {
+                    setSelectedBusinessForShare(b);
+                    setShowBusinessPicker(false);
+                    setShowSharePreview(true);
+                  }}
+                >
+                  <Text>{b.name}</Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        </View>
+      </Modal>
+      <ImagePreviewModalTest
+        visible={showSharePreview}
+        images={testImages}
+        selectedIndex={testIndex}
+        setSelectedIndex={setTestIndex}
+        onClose={() => {
+          setShowSharePreview(false);
+          setTestImages([]);
+          setTestBusiness(null);
+          setTestCaption("");
+        }}
+        onAddMore={() => {}}
+        setImages={setTestImages}
+        businessName={testBusiness?.name || ""}
+        caption={testCaption}
+        setCaption={setTestCaption}
+        onSend={async () => {
+          if (!testBusiness) {
+            showToast("Select business", "error");
+            return;
+          }
+
+          try {
+            const formData = new FormData();
+
+            testImages.forEach((img, i) => {
+              formData.append("files", {
+                uri: img.uri,
+                type: img.type || "image/jpeg",
+                name: img.name || `image_${i}.jpg`,
+              } as any);
+            });
+
+            formData.append("businessId", String(testBusiness.id));
+            formData.append("caption", testCaption || "");
+
+            showToast("Uploading...", "info");
+
+            const response = await fetch(
+              `${BASE_URL}/api/investment-images/upload`,
+              {
+                method: "POST",
+                body: formData,
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              },
+            );
+
+            const responseText = await response.text();
+
+            if (!response.ok) {
+              showToast(responseText || "Upload failed", "error");
+              return;
+            }
+
+            showToast("Images saved successfully", "success");
+
+            // reset
+            setShowSharePreview(false);
+            setTestImages([]);
+            setTestBusiness(null);
+            setTestCaption("");
+          } catch (e: any) {
+            const msg =
+              e?.message ||
+              e?.response?.data ||
+              "Something went wrong while uploading";
+
+            showToast(msg, "error");
+          }
+        }}
+      />
     </View>
   );
 }

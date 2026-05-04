@@ -66,6 +66,8 @@ const ImagePreviewModal: React.FC<Props> = ({
     };
   }, []);
 
+  const [loadingMap, setLoadingMap] = useState<Record<number, boolean>>({});
+
   const handleDelete = () => {
     if (images.length === 0) return;
 
@@ -73,7 +75,7 @@ const ImagePreviewModal: React.FC<Props> = ({
 
     if (updated.length === 0) {
       setImages([]);
-      onClose();
+      setSelectedIndex(0);
       return;
     }
 
@@ -121,8 +123,31 @@ const ImagePreviewModal: React.FC<Props> = ({
                 const index = Math.round(e.nativeEvent.contentOffset.x / width);
                 setSelectedIndex(index);
               }}
-              renderItem={({ item }) => (
-                <Image source={{ uri: item.uri }} style={styles.mainImage} />
+              renderItem={({ item, index }) => (
+                <View
+                  style={{
+                    width,
+                    height: "100%",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  {loadingMap[index] !== false && (
+                    <Text style={{ color: "#aaa" }}> Image Loading...</Text>
+                    // 👉 You can replace this with ActivityIndicator or GIF
+                  )}
+
+                  <Image
+                    source={{ uri: item.uri }}
+                    style={[styles.mainImage, { position: "absolute" }]}
+                    onLoadStart={() =>
+                      setLoadingMap((prev) => ({ ...prev, [index]: true }))
+                    }
+                    onLoadEnd={() =>
+                      setLoadingMap((prev) => ({ ...prev, [index]: false }))
+                    }
+                  />
+                </View>
               )}
               ref={flatListRef}
               onScrollToIndexFailed={() => {}}

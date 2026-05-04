@@ -70,6 +70,10 @@ export default function BusinessDetail() {
 
   const [summaryDropdownOpen, setSummaryDropdownOpen] = useState(false);
 
+  const [thumbLoadingMap, setThumbLoadingMap] = useState<
+    Record<string, boolean>
+  >({});
+
   const summaryOptions = [
     t("all"),
     t("today"),
@@ -798,7 +802,29 @@ export default function BusinessDetail() {
                   setViewerVisible(true);
                 }}
               >
-                <Image source={{ uri: img }} style={styles.imageThumbNew} />
+                <View style={styles.thumbWrapper}>
+                  {thumbLoadingMap[img] === true && (
+                    <ActivityIndicator
+                      size="small"
+                      color="#4CAF50"
+                      style={styles.thumbLoader}
+                    />
+                  )}
+
+                  <Image
+                    source={{ uri: img }}
+                    style={styles.imageThumbNew}
+                    onLoadStart={() =>
+                      setThumbLoadingMap((prev) => ({ ...prev, [img]: true }))
+                    }
+                    onLoad={() =>
+                      setThumbLoadingMap((prev) => ({ ...prev, [img]: false }))
+                    }
+                    onLoadEnd={() =>
+                      setThumbLoadingMap((prev) => ({ ...prev, [img]: false }))
+                    }
+                  />
+                </View>
               </TouchableOpacity>
             );
           }}
@@ -2476,5 +2502,19 @@ const styles = StyleSheet.create({
   addMoneyText: {
     color: "#fff",
     fontWeight: "600",
+  },
+  thumbWrapper: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+    marginRight: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f3f4f6", // light grey fallback
+  },
+
+  thumbLoader: {
+    position: "absolute",
+    zIndex: 1,
   },
 });

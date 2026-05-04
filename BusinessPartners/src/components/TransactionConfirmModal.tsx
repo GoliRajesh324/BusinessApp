@@ -203,7 +203,9 @@ const TransactionConfirmModal: React.FC<Props> = ({
                         ]}
                       >
                         <View style={styles.verifyRow}>
-                          <Text style={styles.name}>{r.name}</Text>
+                          <Text style={styles.name}>
+                            {r.name?.toUpperCase()}
+                          </Text>
 
                           <TouchableOpacity
                             disabled={isVerified}
@@ -327,7 +329,7 @@ const TransactionConfirmModal: React.FC<Props> = ({
                       ]}
                     >
                       <View style={styles.verifyRow}>
-                        <Text style={styles.name}>{r.name}</Text>
+                        <Text style={styles.name}>{r.name?.toUpperCase()}</Text>
 
                         <TouchableOpacity
                           disabled={isVerified}
@@ -408,8 +410,7 @@ const TransactionConfirmModal: React.FC<Props> = ({
                       ]}
                     >
                       <View style={styles.verifyRow}>
-                        <Text style={styles.name}>{r.name}</Text>
-
+                        <Text style={styles.name}>{r.name?.toUpperCase()}</Text>
                         <TouchableOpacity
                           disabled={isVerified}
                           style={[

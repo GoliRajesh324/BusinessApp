@@ -104,9 +104,10 @@ export const generateBusinessStatementPDF = async ({
   col.type { width: 14%; }
   col.split { width: 7%; }
 
+  col.total { width: 8%; }
   col.invested { width: 8%; }
   col.investable { width: 8%; }
-  col.total { width: 8%; }
+
   col.sold { width: 8%; }
   col.withdraw { width: 8%; }
 
@@ -183,9 +184,9 @@ export const generateBusinessStatementPDF = async ({
     <col class="desc">
     <col class="type">
     <col class="split">
+    <col class="total">
     <col class="invested">
     <col class="investable">
-    <col class="total">
     <col class="sold">
     <col class="withdraw">
     <col class="created">
@@ -198,9 +199,9 @@ export const generateBusinessStatementPDF = async ({
       <th>Description</th>
       <th>Type</th>
       <th>Split</th>
+      <th>Total</th>
       <th>Invested</th>
       <th>Investable</th>
-      <th>Total</th>
       <th>Sold</th>
       <th>Withdraw</th>
       <th>Created By</th>

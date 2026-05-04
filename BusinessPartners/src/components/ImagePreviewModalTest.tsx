@@ -71,6 +71,9 @@ const ImagePreviewModalTest: React.FC<Props> = ({
 
   // ✅ CAMERA
   const handleCamera = async () => {
+    setPickerVisible(false);
+    setTimeout(async () => {}, 150);
+
     const permission = await ImagePicker.requestCameraPermissionsAsync();
 
     if (!permission.granted) {
@@ -95,6 +98,8 @@ const ImagePreviewModalTest: React.FC<Props> = ({
 
   // ✅ GALLERY
   const handleGallery = async () => {
+    setPickerVisible(false);
+    setTimeout(async () => {}, 150);
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,

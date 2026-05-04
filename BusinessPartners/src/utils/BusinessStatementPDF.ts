@@ -1,22 +1,7 @@
-import { Asset } from "expo-asset";
-import { File } from "expo-file-system";
+import { File, Paths } from "expo-file-system";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-
-const getLogoBase64 = async () => {
-  const asset = Asset.fromModule(
-    require("../../assets/images/BizMoneyIcon.jpeg"),
-  );
-
-  await asset.downloadAsync();
-
-  if (!asset.localUri) {
-    throw new Error("Logo failed to load");
-  }
-
-  const file = new File(asset.localUri);
-  return await file.base64();
-};
+import { showToast } from "./ToastService";
 
 export const generateBusinessStatementPDF = async ({
   businessName,
@@ -27,8 +12,6 @@ export const generateBusinessStatementPDF = async ({
   downloadedBy: string;
   transactions: any[];
 }) => {
-  const logoBase64 = await getLogoBase64();
-
   const now = new Date();
   const formattedNow = now.toLocaleString();
   const fileDate = now.toISOString().split("T")[0];
@@ -58,9 +41,9 @@ export const generateBusinessStatementPDF = async ({
   <td>${t.description || "-"}</td>
   <td>${t.transactionType || "-"}</td>
   <td style="text-align:center;">${t.splitType || "-"}</td>
+  <td style="text-align:right;">${formatAmount(t.totalAmount)}</td>
   <td style="text-align:right;">${formatAmount(t.invested)}</td>
   <td style="text-align:right;">${formatAmount(t.investable)}</td>
-  <td style="text-align:right;">${formatAmount(t.totalAmount)}</td>
   <td style="text-align:right;">${formatAmount(t.soldAmount)}</td>
   <td style="text-align:right;">${formatAmount(t.withdrawn)}</td>
   <td>${t.createdBy || "-"}</td>
@@ -180,10 +163,6 @@ export const generateBusinessStatementPDF = async ({
 <body>
 
 <div class="header">
-  <div class="header-top">
-    <img src="data:image/png;base64,${logoBase64}" class="logo"/>
-  </div>
-
   <div class="title">BizMoney Statement</div>
 
   <div class="meta">
@@ -249,18 +228,22 @@ export const generateBusinessStatementPDF = async ({
       throw new Error("PDF generation failed");
     }
 
-    const canShare = await Sharing.isAvailableAsync();
+    // ✅ COPY FILE (same as working SimpleInterest)
+    const originalFile = new File(result.uri);
+    const destinationFile = new File(Paths.cache, newFileName);
+    originalFile.copy(destinationFile);
 
-    if (!canShare) {
-      throw new Error("Sharing not available on this device");
-    }
-
-    // ✅ USE DIRECT URI (THIS FIXES APK ISSUE)
-    await Sharing.shareAsync(result.uri, {
+    await Sharing.shareAsync(destinationFile.uri, {
       mimeType: "application/pdf",
     });
   } catch (error) {
-    console.error("PDF Share Error:", error);
+    let message = "Unknown error";
+
+    if (error instanceof Error) {
+      message = error.message;
+    }
+
+    showToast("Failed to generate PDF. Please try again: " + message, "error");
   }
 };
 

@@ -176,6 +176,69 @@ export default function BusinessDetail() {
     loadData();
   }, []);
 
+  const fetchAllTransactionsForPDF = async () => {
+    if (!token || !safeBusinessId) return [];
+
+    try {
+      const response = await fetch(
+        `${BASE_URL}/api/investment/transactions/${safeBusinessId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch transactions");
+      }
+
+      const data = await response.json();
+
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.log("PDF fetch error:", error);
+      return [];
+    }
+  };
+
+  const applyFilters = (data: any[]) => {
+    if (!data) return [];
+
+    switch (selectedFilter) {
+      case "byLoggedInUser":
+        return data.filter(
+          (inv) => inv.partnerName?.toLowerCase() === userName?.toLowerCase(),
+        );
+
+      case "byInvestment":
+        return data.filter(
+          (inv) =>
+            inv.partnerName?.toLowerCase() === userName?.toLowerCase() &&
+            inv.transactionType === "INVESTMENT",
+        );
+
+      case "byWithdraw":
+        return data.filter(
+          (inv) =>
+            inv.partnerName?.toLowerCase() === userName?.toLowerCase() &&
+            inv.transactionType === "WITHDRAW",
+        );
+
+      case "bySold":
+        return data.filter(
+          (inv) =>
+            inv.partnerName?.toLowerCase() === userName?.toLowerCase() &&
+            inv.transactionType === "SOLD",
+        );
+
+      case "allInvestments":
+      default:
+        return data;
+    }
+  };
+
   const handleCamera = async () => {
     if (imageModalVisible) return;
 
@@ -862,45 +925,9 @@ export default function BusinessDetail() {
       fetchInvestments(page + 1);
     }
   };
+
   const filteredInvestments = useMemo(() => {
-    if (!allInvestments) return [];
-
-    switch (selectedFilter) {
-      case "byLoggedInUser":
-        return allInvestments.filter(
-          (inv) =>
-            inv.partnerName?.toString().toLowerCase() ===
-            userName?.toString().toLowerCase(),
-        );
-
-      case "byInvestment":
-        return allInvestments.filter(
-          (inv) =>
-            inv.partnerName?.toString().toLowerCase() ===
-              userName?.toString().toLowerCase() &&
-            inv?.transactionType === "INVESTMENT",
-        );
-
-      case "byWithdraw":
-        return allInvestments.filter(
-          (inv) =>
-            inv.partnerName?.toString().toLowerCase() ===
-              userName?.toString().toLowerCase() &&
-            inv?.transactionType === "WITHDRAW",
-        );
-
-      case "bySold":
-        return allInvestments.filter(
-          (inv) =>
-            inv.partnerName?.toString().toLowerCase() ===
-              userName?.toString().toLowerCase() &&
-            inv?.transactionType === "SOLD",
-        );
-
-      case "allInvestments":
-      default:
-        return allInvestments;
-    }
+    return applyFilters(allInvestments);
   }, [allInvestments, selectedFilter, userName]);
 
   // Handle "Restart" (End Crop) click
@@ -1469,19 +1496,43 @@ export default function BusinessDetail() {
                     >
                       <TouchableOpacity
                         onPress={async () => {
-                          await generateBusinessStatementPDF({
-                            businessName: safeBusinessName,
-                            downloadedBy: userName || "Unknown",
-                            transactions: filteredInvestments,
-                          });
+                          try {
+                            showToast("Preparing PDF...", "info");
+
+                            // ✅ STEP 1: get full data
+                            const allData = await fetchAllTransactionsForPDF();
+
+                            if (!allData.length) {
+                              showToast("No transactions found", "error");
+                              return;
+                            }
+
+                            // ✅ STEP 2: apply SAME filters
+                            const filteredData = applyFilters(allData);
+
+                            if (!filteredData.length) {
+                              showToast("No filtered data found", "error");
+                              return;
+                            }
+
+                            // ✅ STEP 3: generate PDF
+                            await generateBusinessStatementPDF({
+                              businessName: safeBusinessName,
+                              downloadedBy: userName || "Unknown",
+                              transactions: filteredData,
+                            });
+                          } catch (error) {
+                            const message =
+                              error instanceof Error
+                                ? error.message
+                                : "Unknown error";
+
+                            showToast("PDF failed: " + message, "error");
+                          }
                         }}
-                        style={{ marginRight: 12 }}
+                        style={styles.pdfBtn}
                       >
-                        <Ionicons
-                          name="document-text-outline"
-                          size={24}
-                          color="#DC2626"
-                        />
+                        <Text style={styles.pdfText}>PDF</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -2517,4 +2568,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     zIndex: 1,
   },
+  pdfBtn: {
+    backgroundColor: "#f11515",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  pdfText: { color: "#fff", fontWeight: "700" },
 });

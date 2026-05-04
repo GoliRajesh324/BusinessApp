@@ -585,14 +585,8 @@ export default function Dashboard() {
                   style={[styles.businessCard, { transform: [{ scale }] }]}
                 >
                   {/* NAME */}
-                  <View style={{ flex: 1, marginRight: 10 }}>
-                    <Text
-                      style={styles.bizName}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {item.name}
-                    </Text>
+                  <View style={{ flex: 1, marginRight: 10, paddingRight: 5 }}>
+                    <Text style={styles.bizName}>{item.name}</Text>
                   </View>
 
                   {/* STATUS BUTTON (ONLY VISUAL NOW) */}
@@ -897,6 +891,7 @@ const styles = StyleSheet.create({
   businessCard: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center", // ✅ important
     padding: 12,
     marginHorizontal: 16,
     marginVertical: 6,
@@ -904,7 +899,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     elevation: 2,
   },
-  bizName: { fontSize: 16, fontWeight: "600" },
+
+  bizName: {
+    fontSize: 16,
+    fontWeight: "600",
+    flexShrink: 1, // ✅ allows wrapping
+    flexWrap: "wrap", // ✅ allows multiple lines
+  },
   bizActions: { flexDirection: "row" },
   startBtn: {
     backgroundColor: "#22c55e",

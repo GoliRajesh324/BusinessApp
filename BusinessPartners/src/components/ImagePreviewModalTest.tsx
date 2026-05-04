@@ -16,9 +16,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import ImagePickerModal from "./ImagePickerModal"; // ✅ NEW
 import LoadingOverlay from "./LoadingOverlay";
 
 const { width } = Dimensions.get("window");
+
 interface Props {
   visible: boolean;
   images: any[];
@@ -39,7 +41,6 @@ const ImagePreviewModalTest: React.FC<Props> = ({
   selectedIndex,
   setSelectedIndex,
   onClose,
-  onAddMore,
   onSend,
   setImages,
   businessName,
@@ -48,6 +49,7 @@ const ImagePreviewModalTest: React.FC<Props> = ({
 }) => {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isSending, setIsSending] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false); // ✅ NEW
 
   const flatListRef = useRef<FlatList>(null);
 
@@ -67,8 +69,32 @@ const ImagePreviewModalTest: React.FC<Props> = ({
     };
   }, []);
 
-  // ✅ ADD IMAGE (FIXED)
-  const handleAddMore = async () => {
+  // ✅ CAMERA
+  const handleCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert("Permission required", "Camera permission is needed");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const newImgs = result.assets.map((a) => ({
+        uri: a.uri,
+        type: "image/jpeg",
+        name: a.fileName || "camera.jpg",
+      }));
+
+      setImages([...images, ...newImgs]);
+    }
+  };
+
+  // ✅ GALLERY
+  const handleGallery = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,
@@ -78,10 +104,10 @@ const ImagePreviewModalTest: React.FC<Props> = ({
       const newImgs = result.assets.map((a) => ({
         uri: a.uri,
         type: "image/jpeg",
-        name: a.fileName || "image.jpg",
+        name: a.fileName || "gallery.jpg",
       }));
 
-      setImages([...images, ...newImgs]); // ✅ IMPORTANT
+      setImages([...images, ...newImgs]);
     }
   };
 
@@ -99,14 +125,12 @@ const ImagePreviewModalTest: React.FC<Props> = ({
     setSelectedIndex(0);
   };
 
-  // ✅ SAVE (WORKING)
+  // ✅ SAVE
   const handleSend = async () => {
     if (isSending) return;
 
     try {
       setIsSending(true);
-
-      // ✅ CALL PARENT (Dashboard API)
       await onSend();
     } catch (e) {
       console.log("ERROR:", e);
@@ -135,7 +159,7 @@ const ImagePreviewModalTest: React.FC<Props> = ({
         {/* IMAGE */}
         <View style={styles.imageContainer}>
           <FlatList
-            ref={flatListRef} // ✅ ADD HERE
+            ref={flatListRef}
             data={images}
             horizontal
             pagingEnabled
@@ -181,7 +205,11 @@ const ImagePreviewModalTest: React.FC<Props> = ({
             )}
           />
 
-          <TouchableOpacity style={styles.addBtn} onPress={handleAddMore}>
+          {/* ✅ FIXED ADD BUTTON */}
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => setPickerVisible(true)}
+          >
             <Ionicons name="add" size={28} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -211,6 +239,14 @@ const ImagePreviewModalTest: React.FC<Props> = ({
         </SafeAreaView>
 
         <LoadingOverlay visible={isSending} message="Saving..." />
+
+        {/* ✅ IMAGE PICKER MODAL (WORKING FIX) */}
+        <ImagePickerModal
+          visible={pickerVisible}
+          onClose={() => setPickerVisible(false)}
+          onCamera={handleCamera}
+          onGallery={handleGallery}
+        />
       </View>
     </Modal>
   );
@@ -224,30 +260,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
   },
 
-  topSafe: {
-    backgroundColor: "#000",
-  },
-
   topBar: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
-    paddingTop: Platform.OS === "ios" ? 6 : 2, // ✅ FIX
+    paddingTop: Platform.OS === "ios" ? 6 : 2,
   },
 
   cancelText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-  },
-
-  deleteBtn: {
-    backgroundColor: "rgba(0,0,0,0.6)",
-    padding: 8,
-    paddingTop: 20,
-    borderRadius: 20,
   },
 
   imageContainer: {
@@ -300,11 +325,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
-  bottomSafe: {
-    backgroundColor: "#000",
-    paddingBottom: 10,
-  },
-
   bottomRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -318,29 +338,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     maxWidth: "70%",
-  },
-  loadingOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-  },
-
-  loadingBox: {
-    backgroundColor: "#111",
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-  },
-
-  loadingText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
   },
 });

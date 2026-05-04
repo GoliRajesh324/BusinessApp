@@ -3,129 +3,174 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { showToast } from "./ToastService";
 
+/* =========================
+   TYPES
+========================= */
+type Language = "en" | "te";
+
+/* =========================
+   TRANSLATIONS (SAFE STATIC)
+========================= */
+const TRANSLATIONS: Record<Language, any> = {
+  en: {
+    title: "BizMoney Statement",
+    business: "Business",
+    downloadedBy: "Downloaded By",
+    downloadedOn: "Downloaded On",
+    transactions: "Transactions",
+    filter: "Filter",
+
+    date: "Date",
+    user: "User",
+    description: "Description",
+    type: "Type",
+    split: "Split",
+    total: "Total",
+    invested: "Invested",
+    investable: "Investable",
+    sold: "Sold",
+    withdraw: "Withdraw",
+    createdBy: "Created By",
+  },
+  te: {
+    title: "బిజ్‌మనీ స్టేట్‌మెంట్",
+    business: "వ్యాపారం",
+    downloadedBy: "డౌన్‌లోడ్ చేసినవారు",
+    downloadedOn: "డౌన్‌లోడ్ చేసిన తేదీ",
+    transactions: "లావాదేవీలు",
+    filter: "ఫిల్టర్",
+
+    date: "తేదీ",
+    user: "వినియోగదారు",
+    description: "వివరణ",
+    type: "రకం",
+    split: "విభజన",
+    total: "మొత్తం",
+    invested: "పేటాల్సింది",
+    investable: "పేటింది",
+    sold: "అమ్మకం",
+    withdraw: "విత్డ్రా",
+    createdBy: "సృష్టించినవారు",
+  },
+};
+
+/* =========================
+   FILTER LABELS
+========================= */
+const FILTER_LABELS: Record<Language, Record<string, string>> = {
+  en: {
+    byLoggedInUser: "Your Transactions",
+    byInvestment: "Your Investments",
+    byWithdraw: "Your Withdrawals",
+    bySold: "Your Sold Transactions",
+    allInvestments: "Everyone's Transactions",
+  },
+  te: {
+    byLoggedInUser: "మీ లావాదేవీలు",
+    byInvestment: "మీ పెట్టుబడులు",
+    byWithdraw: "మీ విత్డ్రాల్స్",
+    bySold: "మీ అమ్మకాలు",
+    allInvestments: "అందరి లావాదేవీలు",
+  },
+};
+
+/* =========================
+   MAIN FUNCTION
+========================= */
 export const generateBusinessStatementPDF = async ({
   businessName,
   downloadedBy,
   transactions,
+  language = "en",
+  filterType = "allInvestments",
 }: {
   businessName: string;
   downloadedBy: string;
   transactions: any[];
+  language?: Language;
+  filterType?: string;
 }) => {
+  const t = TRANSLATIONS[language] || TRANSLATIONS.en;
+
+  const filterLabel =
+    FILTER_LABELS[language]?.[filterType] ||
+    FILTER_LABELS[language].allInvestments;
+
   const now = new Date();
   const formattedNow = now.toLocaleString();
   const fileDate = now.toISOString().split("T")[0];
   const fileTime = now.toTimeString().split(" ")[0].replace(/:/g, "-");
 
+  /* =========================
+     GROUP COLOR LOGIC
+  ========================= */
   const groupColorMap = new Map<string | number, string>();
   const colors = ["#ffffff", "#f3f4f6"];
   let colorIndex = 0;
 
-  transactions.forEach((t) => {
-    const groupId = t.investmentGroupId ?? "NO_GROUP";
+  transactions.forEach((tx) => {
+    const groupId = tx.investmentGroupId ?? "NO_GROUP";
     if (!groupColorMap.has(groupId)) {
       groupColorMap.set(groupId, colors[colorIndex % 2]);
       colorIndex++;
     }
   });
 
+  /* =========================
+     ROWS
+  ========================= */
   const rowsHtml = transactions
-    .map((t) => {
-      const groupId = t.investmentGroupId ?? "NO_GROUP";
+    .map((tx) => {
+      const groupId = tx.investmentGroupId ?? "NO_GROUP";
       const bgColor = groupColorMap.get(groupId) || "#ffffff";
 
       return `
 <tr style="background:${bgColor};">
-  <td>${formatDate(t.createdAt)}</td>
-  <td>${t.partnerName || "-"}</td>
-  <td>${t.description || "-"}</td>
-  <td>${t.transactionType || "-"}</td>
-  <td style="text-align:center;">${t.splitType || "-"}</td>
-  <td style="text-align:right;">${formatAmount(t.totalAmount)}</td>
-  <td style="text-align:right;">${formatAmount(t.invested)}</td>
-  <td style="text-align:right;">${formatAmount(t.investable)}</td>
-  <td style="text-align:right;">${formatAmount(t.soldAmount)}</td>
-  <td style="text-align:right;">${formatAmount(t.withdrawn)}</td>
-  <td>${t.createdBy || "-"}</td>
-</tr>
-`;
+  <td>${formatDate(tx.createdAt)}</td>
+  <td>${tx.partnerName || "-"}</td>
+  <td>${tx.description || "-"}</td>
+  <td>${tx.transactionType || "-"}</td>
+  <td style="text-align:center;">${tx.splitType || "-"}</td>
+  <td style="text-align:right;">${formatAmount(tx.totalAmount)}</td>
+  <td style="text-align:right;">${formatAmount(tx.invested)}</td>
+  <td style="text-align:right;">${formatAmount(tx.investable)}</td>
+  <td style="text-align:right;">${formatAmount(tx.soldAmount)}</td>
+  <td style="text-align:right;">${formatAmount(tx.withdrawn)}</td>
+  <td>${tx.createdBy || "-"}</td>
+</tr>`;
     })
     .join("");
 
+  /* =========================
+     HTML
+  ========================= */
   const html = `
 <html>
 <head>
 <style>
-  @page {
-    size: A4 landscape;
-    margin: 40px;
-  }
+  @page { size: A4 landscape; margin: 40px; }
 
-  body {
-    font-family: Arial, sans-serif;
-    font-size: 11px;
-    margin: 0;
-    padding: 0;
-  }
+  body { font-family: Arial; font-size: 11px; }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-  }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
-  thead {
-    display: table-header-group;
-  }
+  th, td { padding: 6px; font-size: 10.5px; word-break: break-word; }
 
-  th, td {
-    padding: 6px;
-    font-size: 10.5px;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-  }
+  th { background: #2563eb; color: white; }
 
-  th {
-    background: #2563eb;
-    color: white;
-    text-align: left;
-  }
-
-  td {
-    border-bottom: 1px solid #e5e7eb;
-    vertical-align: top;
-  }
-
-  /* EXACT 100% COLUMN DISTRIBUTION */
+  td { border-bottom: 1px solid #e5e7eb; }
 
   col.date { width: 8%; }
   col.user { width: 8%; }
   col.desc { width: 18%; }
   col.type { width: 14%; }
   col.split { width: 7%; }
-
   col.total { width: 8%; }
   col.invested { width: 8%; }
   col.investable { width: 8%; }
-
   col.sold { width: 8%; }
   col.withdraw { width: 8%; }
-
   col.created { width: 5%; }
-
-  .header {
-    width: 100%;
-    margin-bottom: 20px;
-  }
-
-  .header-top {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .logo {
-    height: 24px;
-  }
 
   .title {
     text-align: center;
@@ -135,119 +180,94 @@ export const generateBusinessStatementPDF = async ({
     margin: 10px 0;
   }
 
-  .meta {
-    font-size: 11px;
-    line-height: 1.6;
-  }
-
-  .divider {
-    margin-top: 10px;
-    height: 1px;
-    background: #e5e7eb;
-  }
+  .meta { font-size: 11px; line-height: 1.6; }
 
   .footer {
     position: fixed;
     bottom: 10px;
     right: 40px;
     font-size: 10px;
-    color: #555;
   }
 
   .footer:after {
     content: "Page " counter(page) " of " counter(pages);
   }
-
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <div class="title">BizMoney Statement</div>
+<div class="title">${t.title}</div>
 
-  <div class="meta">
-    <strong>Business:</strong> ${businessName}<br/>
-    <strong>Downloaded By:</strong> ${downloadedBy}<br/>
-    <strong>Downloaded On:</strong> ${formattedNow}
-  </div>
-
-  <div class="divider"></div>
+<div class="meta">
+  <strong>${t.business}:</strong> ${businessName}<br/>
+  <strong>${t.downloadedBy}:</strong> ${downloadedBy}<br/>
+  <strong>${t.downloadedOn}:</strong> ${formattedNow}<br/>
+  <strong>${t.filter}:</strong> ${filterLabel}
 </div>
 
-<h3>Transactions</h3>
+<h3>${t.transactions}</h3>
 
 <table>
   <colgroup>
-    <col class="date">
-    <col class="user">
-    <col class="desc">
-    <col class="type">
-    <col class="split">
-    <col class="total">
-    <col class="invested">
-    <col class="investable">
-    <col class="sold">
-    <col class="withdraw">
-    <col class="created">
+    <col class="date"><col class="user"><col class="desc">
+    <col class="type"><col class="split"><col class="total">
+    <col class="invested"><col class="investable">
+    <col class="sold"><col class="withdraw"><col class="created">
   </colgroup>
 
   <thead>
     <tr>
-      <th>Date</th>
-      <th>User</th>
-      <th>Description</th>
-      <th>Type</th>
-      <th>Split</th>
-      <th>Total</th>
-      <th>Invested</th>
-      <th>Investable</th>
-      <th>Sold</th>
-      <th>Withdraw</th>
-      <th>Created By</th>
+      <th>${t.date}</th>
+      <th>${t.user}</th>
+      <th>${t.description}</th>
+      <th>${t.type}</th>
+      <th>${t.split}</th>
+      <th>${t.total}</th>
+      <th>${t.invested}</th>
+      <th>${t.investable}</th>
+      <th>${t.sold}</th>
+      <th>${t.withdraw}</th>
+      <th>${t.createdBy}</th>
     </tr>
   </thead>
 
-  <tbody>
-    ${rowsHtml}
-  </tbody>
+  <tbody>${rowsHtml}</tbody>
 </table>
 
 <div class="footer"></div>
 
 </body>
-</html>
-`;
+</html>`;
 
-  const safeBusinessName = businessName.replace(/[^a-zA-Z0-9]/g, "_");
-  const newFileName = `BizMoney_${safeBusinessName}_${fileDate}_${fileTime}.pdf`;
-
+  /* =========================
+     FILE GENERATION
+  ========================= */
   try {
     const result = await Print.printToFileAsync({ html });
 
-    if (!result?.uri) {
-      throw new Error("PDF generation failed");
-    }
+    if (!result?.uri) throw new Error("PDF generation failed");
 
-    // ✅ COPY FILE (same as working SimpleInterest)
+    const safeBusinessName = businessName.replace(/[^a-zA-Z0-9]/g, "_");
+    const fileName = `BizMoney_${safeBusinessName}_${fileDate}_${fileTime}.pdf`;
+
     const originalFile = new File(result.uri);
-    const destinationFile = new File(Paths.cache, newFileName);
+    const destinationFile = new File(Paths.cache, fileName);
+
     originalFile.copy(destinationFile);
 
     await Sharing.shareAsync(destinationFile.uri, {
       mimeType: "application/pdf",
     });
   } catch (error) {
-    let message = "Unknown error";
-
-    if (error instanceof Error) {
-      message = error.message;
-    }
-
+    const message = error instanceof Error ? error.message : "Unknown error";
     showToast("Failed to generate PDF. Please try again: " + message, "error");
   }
 };
 
+/* =========================
+   HELPERS
+========================= */
 const formatAmount = (value: any) => {
   if (!value) return "-";
   return "₹" + Number(value).toLocaleString("en-IN");

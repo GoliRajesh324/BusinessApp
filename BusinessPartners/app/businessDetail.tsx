@@ -20,6 +20,7 @@ import AppHeader from "@/src/components/AppHeader";
 import ImagePickerModal from "@/src/components/ImagePickerModal";
 import ImagePreviewModal from "@/src/components/ImagePreviewModal";
 import ViewImage from "@/src/components/ViewImage";
+import i18n from "@/src/i18n/i18n";
 import { InvestmentDTO } from "@/src/types/types";
 import { generateBusinessStatementPDF } from "@/src/utils/BusinessStatementPDF";
 import {
@@ -1519,7 +1520,9 @@ export default function BusinessDetail() {
                             await generateBusinessStatementPDF({
                               businessName: safeBusinessName,
                               downloadedBy: userName || "Unknown",
-                              transactions: filteredData,
+                              transactions: filteredInvestments,
+                              language: i18n.language === "te" ? "te" : "en", // ✅ NEW
+                              filterType: selectedFilter, // ✅ NEW
                             });
                           } catch (error) {
                             const message =

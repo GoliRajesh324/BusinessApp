@@ -97,6 +97,7 @@ const resources = {
       addNews: "Add News",
       send: "Send",
       delete: "Delete",
+      undo: "Undo",
       //Place Holders
 
       enterBusinessName: "Enter Business Name",
@@ -169,7 +170,7 @@ const resources = {
       yourInvestments: "మీ పెట్టుబడులు",
       yourWithdraws: "మీ విత్‌డ్రాస్",
       yourSold: "మీ అమ్మకం",
-      everyonesTransactions: "ఎవ్రీవన్స్ ట్రాన్సాక్షన్స్",
+      everyonesTransactions: "అందరి ట్రాన్సాక్షన్స్",
       partnerShare: "పార్ట్నర్ షేర్",
       withdrawn: "విత్‌డ్రాన్",
       actualInvestment: "పేటుబడి పేటాల్సింది",
@@ -233,6 +234,7 @@ const resources = {
       addNews: "యాడ్ న్యూస్ ",
       send: "సెండ్ ",
       delete: "డిలీట్",
+      undo: "అన్‌డూ",
       //Place Holders
 
       enterBusinessName: "ఎంటర్ బిజినెస్ నేమ్ ",
@@ -254,8 +256,8 @@ const resources = {
       supplierDetails: "సప్లయర్ డీటెయిల్స్",
       supplierName: "సప్లయర్ పేరు",
 
-      investableAmount: "ఇన్వెస్టబుల్ అమౌంట్",
-      investedAmount: "ఇన్వెస్టెడ్ అమౌంట్",
+      investableAmount: "పేటుబడి పేటాల్సింది",
+      investedAmount: "మీరు పెటింది",
       pendingAmount: "పెండింగ్ అమౌంట్",
       extraAmount: "ఎక్స్‌ట్రా అమౌంట్",
 

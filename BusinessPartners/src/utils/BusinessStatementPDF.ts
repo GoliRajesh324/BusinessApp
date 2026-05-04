@@ -99,7 +99,14 @@ export const generateBusinessStatementPDF = async ({
   const now = new Date();
   const formattedNow = now.toLocaleString();
   const fileDate = now.toISOString().split("T")[0];
-  const fileTime = now.toTimeString().split(" ")[0].replace(/:/g, "-");
+  const hours = now.getHours();
+  const minutes = now.getMinutes().toString().padStart(2, "0");
+  const seconds = now.getSeconds().toString().padStart(2, "0");
+
+  const ampm = hours >= 12 ? "PM" : "AM";
+  const formattedHour = hours % 12 || 12;
+
+  const fileTime = `${formattedHour}-${minutes}-${seconds}-${ampm}`;
 
   /* =========================
      GROUP COLOR LOGIC
@@ -148,18 +155,81 @@ export const generateBusinessStatementPDF = async ({
 <html>
 <head>
 <style>
-  @page { size: A4 landscape; margin: 40px; }
+  /* =========================
+     PAGE SETUP
+  ========================= */
+  @page {
+    size: A4 landscape;
+    margin: 40px;
+  }
 
-  body { font-family: Arial; font-size: 11px; }
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    margin: 0;
+    padding: 0;
+  }
 
-  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  /* =========================
+     TABLE BASE
+  ========================= */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
 
-  th, td { padding: 6px; font-size: 10.5px; word-break: break-word; }
+  /* =========================
+     HEADER REPEAT FIX (CRITICAL)
+  ========================= */
+  thead {
+    display: table-header-group;
+  }
 
-  th { background: #2563eb; color: white; }
+  /* Required for expo-print stability */
+  tbody {
+    display: table-row-group;
+  }
 
-  td { border-bottom: 1px solid #e5e7eb; }
+  thead tr {
+    page-break-inside: avoid;
+  }
 
+  /* =========================
+     ROW BREAK FIX (CRITICAL)
+  ========================= */
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  td, th {
+    page-break-inside: avoid;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* =========================
+     TABLE STYLING
+  ========================= */
+  th {
+    background: #2563eb;
+    color: white;
+    text-align: left;
+    padding: 6px;
+    font-size: 10.5px;
+  }
+
+  td {
+    border-bottom: 1px solid #e5e7eb;
+    padding: 6px;
+    font-size: 10.5px;
+    vertical-align: top;
+  }
+
+  /* =========================
+     COLUMN WIDTHS
+  ========================= */
   col.date { width: 8%; }
   col.user { width: 8%; }
   col.desc { width: 18%; }
@@ -172,6 +242,9 @@ export const generateBusinessStatementPDF = async ({
   col.withdraw { width: 8%; }
   col.created { width: 5%; }
 
+  /* =========================
+     HEADER TEXT
+  ========================= */
   .title {
     text-align: center;
     font-size: 18px;
@@ -180,13 +253,21 @@ export const generateBusinessStatementPDF = async ({
     margin: 10px 0;
   }
 
-  .meta { font-size: 11px; line-height: 1.6; }
+  .meta {
+    font-size: 11px;
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
 
+  /* =========================
+     FOOTER
+  ========================= */
   .footer {
     position: fixed;
     bottom: 10px;
     right: 40px;
     font-size: 10px;
+    color: #555;
   }
 
   .footer:after {

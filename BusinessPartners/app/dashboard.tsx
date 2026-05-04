@@ -567,7 +567,7 @@ export default function Dashboard() {
                   }
                 >
                   <Text style={styles.swipeActionText}>
-                    {isInactive ? "Undo" : t("delete")}
+                    {isInactive ? t("undo") : t("delete")}
                   </Text>
                 </TouchableOpacity>
               </View>

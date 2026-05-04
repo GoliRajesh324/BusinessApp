@@ -1083,7 +1083,9 @@ const AddTransactionScreen = () => {
                       fontWeight: "600",
                     }}
                   >
-                    {transactionType ?? t("selectType")}
+                    {transactionType
+                      ? t(transactionType.toLowerCase())
+                      : t("selectType")}
                   </Text>
                   <Ionicons
                     name="chevron-down"
@@ -1539,15 +1541,15 @@ const AddTransactionScreen = () => {
           {typeDropdownVisible && (
             <View style={styles.typeDropdownMenu}>
               {[
-                { label: "Investment", color: "#007bff" },
-                { label: "Sold", color: "#28a745" },
-                { label: "Withdraw", color: "#dc3545" },
+                { value: "Investment", color: "#007bff" },
+                { value: "Sold", color: "#28a745" },
+                { value: "Withdraw", color: "#dc3545" },
               ].map((item) => (
                 <TouchableOpacity
-                  key={item.label}
+                  key={item.value}
                   style={styles.typeDropdownItem}
                   onPress={() => {
-                    setTransactionType(item.label as any);
+                    setTransactionType(item.value as any); // ✅ same backend value
                     setTypeDropdownVisible(false);
                   }}
                 >
@@ -1555,10 +1557,10 @@ const AddTransactionScreen = () => {
                     style={{
                       color: item.color,
                       fontWeight:
-                        transactionType === item.label ? "700" : "500",
+                        transactionType === item.value ? "700" : "500",
                     }}
                   >
-                    {item.label}
+                    {t(item.value.toLowerCase())}
                   </Text>
                 </TouchableOpacity>
               ))}

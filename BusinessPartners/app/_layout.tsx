@@ -25,6 +25,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../src/i18n/i18n";
 import i18n from "../src/i18n/i18n";
 import NoInternet from "./NoInternet";
@@ -369,163 +370,167 @@ export default function RootLayout() {
 
   // 6️⃣ Normal app content
   return (
-    <View style={{ flex: 1 }} onTouchStart={handleTouch}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen
-            name="login"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="dashboard"
-            options={{
-              headerShown: false,
-              title: "Business Dashboard",
-            }}
-          />
-          <Stack.Screen
-            name="businessDetail"
-            options={{
-              headerShown: false,
-              title: "Business Details",
-            }}
-          />
-          <Stack.Screen
-            name="profileScreen"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="settingsScreen"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="helpandSupportScreen"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="resetPasswordScreen"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="forgotPasswordScreen"
-            options={{
-              headerShown: false,
-            }}
-          />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={{ flex: 1 }} onTouchStart={handleTouch}>
+        <ThemeProvider
+          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+        >
+          <Stack>
+            <Stack.Screen
+              name="login"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="dashboard"
+              options={{
+                headerShown: false,
+                title: "Business Dashboard",
+              }}
+            />
+            <Stack.Screen
+              name="businessDetail"
+              options={{
+                headerShown: false,
+                title: "Business Details",
+              }}
+            />
+            <Stack.Screen
+              name="profileScreen"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="settingsScreen"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="helpandSupportScreen"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="resetPasswordScreen"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="forgotPasswordScreen"
+              options={{
+                headerShown: false,
+              }}
+            />
 
-          <Stack.Screen
-            name="EmiCalculatorScreen"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="AddTransactionScreen"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="EditTransactionScreen"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="ChangeHistoryScreen"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="partnerWiseDetails"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="investmentDetail"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="addEditInterest"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="inventoryScreen"
-            options={{
-              headerShown: false,
-            }}
-          />
+            <Stack.Screen
+              name="EmiCalculatorScreen"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="AddTransactionScreen"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="EditTransactionScreen"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="ChangeHistoryScreen"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="partnerWiseDetails"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="investmentDetail"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="addEditInterest"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="inventoryScreen"
+              options={{
+                headerShown: false,
+              }}
+            />
 
-          <Stack.Screen
-            name="addCategory"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="categoryDetails"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="addStock"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="consumeStock"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="simpleInterest"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="AddAvailableMoney"
-            options={{
-              headerShown: false,
-            }}
-          />
+            <Stack.Screen
+              name="addCategory"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="categoryDetails"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="addStock"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="consumeStock"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="simpleInterest"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="AddAvailableMoney"
+              options={{
+                headerShown: false,
+              }}
+            />
 
-          <Stack.Screen
-            name="businessNews"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
-          />
-        </Stack>
+            <Stack.Screen
+              name="businessNews"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="modal"
+              options={{ presentation: "modal", title: "Modal" }}
+            />
+          </Stack>
 
-        <StatusBar style="auto" />
-        <GlobalToast />
-      </ThemeProvider>
-    </View>
+          <StatusBar style="auto" />
+          <GlobalToast />
+        </ThemeProvider>
+      </View>
+    </GestureHandlerRootView>
   );
 }
 

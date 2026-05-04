@@ -7,7 +7,6 @@ import { getVideoId } from "@/src/utils/VideoStorage";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import * as Haptics from "expo-haptics";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -24,6 +23,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
 import AddBusinessPopup from "../src/components/AddBusinessPopup";
 import BASE_URL from "../src/config/config";
 
@@ -418,26 +418,6 @@ export default function Dashboard() {
       >
         <Text>{t("YourBusinesses")}</Text>
 
-        <TouchableOpacity
-          style={{
-            backgroundColor: "#000",
-            padding: 12,
-            margin: 16,
-            borderRadius: 8,
-          }}
-          onPress={() => {
-            setTestImages([]);
-            setTestIndex(0);
-
-            // ✅ open existing business picker (no change)
-            setShowBusinessPicker(true);
-          }}
-        >
-          <Text style={{ color: "#fff", textAlign: "center" }}>
-            Test Upload
-          </Text>
-        </TouchableOpacity>
-
         {/* Toggle */}
         <View style={styles.toggleContainer}>
           <TouchableOpacity
@@ -546,8 +526,6 @@ export default function Dashboard() {
             Animated.spring(scale, {
               toValue: 0.97,
               useNativeDriver: true,
-              speed: 50,
-              bounciness: 0,
             }).start();
           };
 
@@ -555,102 +533,91 @@ export default function Dashboard() {
             Animated.spring(scale, {
               toValue: 1,
               useNativeDriver: true,
-              speed: 50,
-              bounciness: 0,
             }).start();
           };
 
-          return (
-            <Pressable
-              onLongPress={async () => {
-                // Haptic feedback
-                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          // ✅ CARD CLICK LOGIC (NEW)
+          const handleCardPress = () => {
+            if (item.cropInProgress) {
+              router.push({
+                pathname: "/businessDetail",
+                params: {
+                  businessId: item.id.toString(),
+                  businessName: item.name,
+                },
+              });
+            } else {
+              setConfirmStart(item);
+            }
+          };
 
-                setLongPressedId(item.id);
+          // ✅ SWIPE RIGHT ACTION (DELETE / UNDO)
+          const renderRightActions = () => {
+            const isInactive = deleteFlag === "Y";
 
-                // Clear existing timer
-                if (deleteTimeoutRef.current) {
-                  clearTimeout(deleteTimeoutRef.current);
-                }
-
-                // Auto hide after 4 seconds
-                deleteTimeoutRef.current = setTimeout(() => {
-                  setLongPressedId(null);
-                }, 2000);
-              }}
-            >
-              <Animated.View
-                style={[styles.businessCard, { transform: [{ scale }] }]}
-              >
-                <View style={{ flex: 1, marginRight: 10 }}>
-                  <Text
-                    style={styles.bizName}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {item.name}
+            return (
+              <View style={styles.swipeContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.swipeActionBtn,
+                    { backgroundColor: isInactive ? "#22c55e" : "#ef4444" },
+                  ]}
+                  onPress={() =>
+                    isInactive ? handleUndoDelete(item) : setConfirmDelete(item)
+                  }
+                >
+                  <Text style={styles.swipeActionText}>
+                    {isInactive ? "Undo" : t("delete")}
                   </Text>
-                </View>
+                </TouchableOpacity>
+              </View>
+            );
+          };
 
-                <View style={styles.bizActions}>
-                  {longPressedId === item.id ? (
-                    deleteFlag === "Y" ? (
-                      // 🔥 UNDO DELETE
-                      <TouchableOpacity
-                        style={styles.undoBtn}
-                        onPress={() => {
-                          if (deleteTimeoutRef.current) {
-                            clearTimeout(deleteTimeoutRef.current);
-                          }
-                          handleUndoDelete(item);
-                          setLongPressedId(null);
-                        }}
+          return (
+            <Swipeable renderRightActions={renderRightActions}>
+              <Pressable
+                onPress={handleCardPress} // ✅ CLICK ANYWHERE
+                onPressIn={onPressIn}
+                onPressOut={onPressOut}
+              >
+                <Animated.View
+                  style={[styles.businessCard, { transform: [{ scale }] }]}
+                >
+                  {/* NAME */}
+                  <View style={{ flex: 1, marginRight: 10 }}>
+                    <Text
+                      style={styles.bizName}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {item.name}
+                    </Text>
+                  </View>
+
+                  {/* STATUS BUTTON (ONLY VISUAL NOW) */}
+                  <View style={styles.bizActions}>
+                    {item.cropInProgress ? (
+                      <View
+                        style={
+                          deleteFlag === "Y"
+                            ? styles.deleteBtn // 🔥 NEW
+                            : styles.inprogressBtn
+                        }
                       >
-                        <Text style={styles.btnText}>Undo Delete</Text>
-                      </TouchableOpacity>
+                        <Text style={styles.btnText}>
+                          {deleteFlag === "Y" ? t("deleted") : t("inProgress")}
+                        </Text>
+                      </View>
                     ) : (
-                      // 🔥 NORMAL DELETE
-                      <TouchableOpacity
-                        style={styles.deleteBtn}
-                        onPress={() => {
-                          if (deleteTimeoutRef.current) {
-                            clearTimeout(deleteTimeoutRef.current);
-                          }
-                          setConfirmDelete(item);
-                          setLongPressedId(null);
-                        }}
-                      >
-                        <Text style={styles.btnText}>{t("delete")}</Text>
-                      </TouchableOpacity>
-                    )
-                  ) : item.cropInProgress ? (
-                    <TouchableOpacity
-                      style={styles.inprogressBtn}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/businessDetail",
-                          params: {
-                            businessId: item.id.toString(),
-                            businessName: item.name,
-                          },
-                        })
-                      }
-                    >
-                      <Text style={styles.btnText}>
-                        {deleteFlag === "Y" ? t("deleted") : t("inProgress")}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.startBtn}
-                      onPress={() => setConfirmStart(item)}
-                    >
-                      <Text style={styles.btnText}>Start</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </Animated.View>
-            </Pressable>
+                      <View style={styles.startBtn}>
+                        <Text style={styles.btnText}>Start</Text>
+                      </View>
+                    )}
+                  </View>
+                </Animated.View>
+              </Pressable>
+            </Swipeable>
           );
         }}
       />
@@ -1139,7 +1106,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   deleteBtn: {
-    backgroundColor: "#ef4444",
+    backgroundColor: "#ff4040",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
@@ -1191,5 +1158,30 @@ const styles = StyleSheet.create({
   },
   inProgressText: {
     color: "#ff8c00",
+  },
+  swipeContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    marginVertical: 6, // match card spacing
+    marginRight: 10,
+  },
+
+  swipeActionBtn: {
+    width: 100,
+
+    // ✅ MATCH SAME AS start/inProgress
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
+
+    marginVertical: 6, // aligns with card spacing
+  },
+
+  swipeActionText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });

@@ -21,7 +21,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import AddBusinessPopup from "../src/components/AddBusinessPopup";
 import BASE_URL from "../src/config/config";
@@ -417,6 +417,34 @@ export default function Dashboard() {
         }}
       >
         <Text>{t("YourBusinesses")}</Text>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#000",
+            padding: 12,
+            margin: 16,
+            borderRadius: 8,
+          }}
+          onPress={() => {
+            // ✅ ONLY CHANGE: set dummy image
+            setTestImages([
+              {
+                uri: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+                type: "image/jpeg",
+                name: "test.jpg",
+              },
+            ]);
+
+            setTestIndex(0);
+
+            // ✅ open existing business picker (no change)
+            setShowBusinessPicker(true);
+          }}
+        >
+          <Text style={{ color: "#fff", textAlign: "center" }}>
+            Test Upload
+          </Text>
+        </TouchableOpacity>
 
         {/* Toggle */}
         <View style={styles.toggleContainer}>

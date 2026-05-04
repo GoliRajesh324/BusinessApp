@@ -1,4 +1,5 @@
 import useShareIntent from "@/hooks/useShareIntent";
+import BusinessPickerModal from "@/src/components/BusinessPickerModal";
 import ImagePreviewModalTest from "@/src/components/ImagePreviewModalTest";
 import ScreenHelpVideo from "@/src/components/ScreenHelpVideo";
 import { showToast } from "@/src/utils/ToastService";
@@ -54,8 +55,7 @@ export default function Dashboard() {
   const [sharedImages, setSharedImages] = useState<any[]>([]);
   const [showSharePreview, setShowSharePreview] = useState(false);
   const [showBusinessPicker, setShowBusinessPicker] = useState(false);
-  const [selectedBusinessForShare, setSelectedBusinessForShare] =
-    useState<any>(null);
+
   const [caption, setCaption] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -426,15 +426,7 @@ export default function Dashboard() {
             borderRadius: 8,
           }}
           onPress={() => {
-            // ✅ ONLY CHANGE: set dummy image
-            setTestImages([
-              {
-                uri: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-                type: "image/jpeg",
-                name: "test.jpg",
-              },
-            ]);
-
+            setTestImages([]);
             setTestIndex(0);
 
             // ✅ open existing business picker (no change)
@@ -800,46 +792,20 @@ export default function Dashboard() {
         </View>
       </Modal>
       {/* BUSINESS PICKER (FOR SHARE) */}
-      <Modal visible={showBusinessPicker} transparent animationType="fade">
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "#000000aa",
-            justifyContent: "center",
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: "#fff",
-              margin: 20,
-              borderRadius: 10,
-              padding: 16,
-            }}
-          >
-            <Text style={{ fontSize: 18, marginBottom: 10 }}>
-              Select Business
-            </Text>
+      <BusinessPickerModal
+        visible={showBusinessPicker}
+        businesses={businesses}
+        onClose={() => setShowBusinessPicker(false)}
+        onSelect={(b) => {
+          setTestBusiness(b);
+          setShowBusinessPicker(false);
 
-            {businesses.length === 0 ? (
-              <Text>No business available</Text>
-            ) : (
-              businesses.map((b) => (
-                <TouchableOpacity
-                  key={b.id}
-                  style={{ padding: 12 }}
-                  onPress={() => {
-                    setSelectedBusinessForShare(b);
-                    setShowBusinessPicker(false);
-                    setShowSharePreview(true);
-                  }}
-                >
-                  <Text>{b.name}</Text>
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
-        </View>
-      </Modal>
+          // keep your existing flow
+          setTimeout(() => {
+            setShowSharePreview(true);
+          }, 50);
+        }}
+      />
       <ImagePreviewModalTest
         visible={showSharePreview}
         images={testImages}
@@ -866,8 +832,20 @@ export default function Dashboard() {
             const formData = new FormData();
 
             testImages.forEach((img, i) => {
+              if (!img?.uri) {
+                showToast("Invalid image detected", "error");
+                return;
+              }
+
+              let uri = img.uri;
+
+              // ✅ Android fix (CRITICAL)
+              if (!uri.startsWith("file://") && !uri.startsWith("content://")) {
+                uri = "file://" + uri;
+              }
+
               formData.append("files", {
-                uri: img.uri,
+                uri,
                 type: img.type || "image/jpeg",
                 name: img.name || `image_${i}.jpg`,
               } as any);
@@ -877,7 +855,7 @@ export default function Dashboard() {
             formData.append("caption", testCaption || "");
 
             showToast("Uploading...", "info");
-
+            console.log("IMAGES:", testImages);
             const response = await fetch(
               `${BASE_URL}/api/investment-images/upload`,
               {
@@ -889,10 +867,14 @@ export default function Dashboard() {
               },
             );
 
-            const responseText = await response.text();
-
+            let responseText = "";
+            try {
+              responseText = await response.text();
+            } catch (e) {
+              responseText = "No response body";
+            }
             if (!response.ok) {
-              showToast(responseText || "Upload failed", "error");
+              showToast(`Upload failed: ${response.status}`, "error");
               return;
             }
 

@@ -208,12 +208,13 @@ const AddAvailableMoney = () => {
         createdBy: await AsyncStorage.getItem("userName"),
         investmentGroupId: isEdit ? Number(investmentGroupId) : null,
 
-        partners: rows
-          .filter((r) => r.amount && Number(r.amount) > 0)
-          .map((r) => ({
-            partnerId: r.id,
-            availableMoney: Number(r.amount),
-          })),
+        partners: rows.map((r) => ({
+          partnerId: r.id,
+          availableMoney:
+            r.amount === "" || r.amount === null || r.amount === undefined
+              ? 0
+              : Number(r.amount),
+        })),
       };
 
       console.log("🚀 Payload:", payload);

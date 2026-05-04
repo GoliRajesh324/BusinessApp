@@ -5,7 +5,7 @@ import * as Sharing from "expo-sharing";
 
 const getLogoBase64 = async () => {
   const asset = Asset.fromModule(
-    require("../../assets/images/BusinessMoneyIcon.jpeg"),
+    require("../../assets/images/BizMoneyIcon.jpeg"),
   );
 
   await asset.downloadAsync();

@@ -298,14 +298,18 @@ const EditTransactionScreen = () => {
     }, 0);
 
     const enteredTotal = Number(totalAmount);
-    const diff = Math.round((totalEntered - enteredTotal) * 100) / 100;
+    const diff = Math.round((enteredTotal - totalEntered) * 100) / 100;
 
-    console.log("PreSave:", totalEntered, enteredTotal, diff);
-
-    if (diff !== 0 && !supplierName) {
-      setRemaining(enteredTotal - totalEntered);
+    // ✅ Only when borrowing (entered < expected)
+    if (diff > 0 && !supplierName) {
+      setRemaining(diff);
       setShowSupplierPopup(true);
       return;
+    }
+
+    // ✅ If exact OR extra → no supplier needed
+    if (diff <= 0) {
+      setRemaining(0);
     }
 
     // ✅ Only open confirm here

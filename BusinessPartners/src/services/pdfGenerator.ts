@@ -12,6 +12,7 @@ export async function generateInterestPDF(
   formatAmountIndian: (n: number) => string,
   formatDateForDisplay: (d: string) => string,
   personName?: string, // 👈 NEW (optional for individual PDF)
+  hideComments: boolean = false,
 ) {
   try {
     const loggedUser = await AsyncStorage.getItem("userName");
@@ -100,15 +101,15 @@ export async function generateInterestPDF(
       html += `
         <h3>${name.toUpperCase()}</h3>
         <table>
-          <thead>
-            <tr>
-              <th style="width:20%">Type</th>
-              <th style="width:15%">Amount</th>
-              <th style="width:10%">Interest %</th>
-              <th style="width:15%">Start Date</th>
-              <th style="width:40%">Comment</th>
-            </tr>
-          </thead>
+        <thead>
+  <tr>
+    <th style="width:${hideComments ? "25%" : "20%"}">Type</th>
+    <th style="width:${hideComments ? "25%" : "15%"}">Amount</th>
+    <th style="width:${hideComments ? "20%" : "10%"}">Interest %</th>
+    <th style="width:${hideComments ? "30%" : "15%"}">Start Date</th>
+    ${!hideComments ? `<th style="width:40%">Comment</th>` : ""}
+  </tr>
+       </thead>
           <tbody>
       `;
 
@@ -119,7 +120,7 @@ export async function generateInterestPDF(
             <td style="text-align:right;">₹ ${formatAmountIndian(r.amount)}</td>
             <td style="text-align:center;">${r.rate ?? 0} %</td>
             <td style="text-align:center;">${formatDateForDisplay(r.startDate)}</td>
-            <td>${r.comment ?? ""}</td>
+            ${!hideComments ? `<td>${r.comment ?? ""}</td>` : ""}
           </tr>
         `;
       });

@@ -304,12 +304,19 @@ const AddTransactionScreen = () => {
     console.log("entered:", totalEntered, "expected:", expected);
 
     // 🔴 mismatch → supplier popup
-    if (Math.round((totalEntered - expected) * 100) / 100 !== 0) {
-      console.log("👉 Supplier popup triggered");
+    const diff = Math.round((expected - totalEntered) * 100) / 100;
 
-      setRemaining(expected - totalEntered);
+    // ✅ Show supplier popup ONLY if money is LESS (borrowing case)
+    if (diff > 0) {
+      setRemaining(diff);
       setShowSupplierPopup(true);
       return;
+    }
+
+    // ✅ If extra investment → no popup, treat as valid
+    if (diff <= 0) {
+      setSupplierName(null);
+      setRemaining(0);
     }
     // 🔥 Reset for non-investment
     if (transactionType !== "Investment") {

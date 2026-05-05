@@ -191,6 +191,7 @@ export default function SimpleInterestPage() {
       formatAmountIndian,
       formatDateForDisplay,
       undefined,
+      false,
     );
   };
 
@@ -221,6 +222,7 @@ export default function SimpleInterestPage() {
       formatAmountIndian,
       formatDateForDisplay,
       name,
+      true, // ✅ hide comments
     );
   };
   const openStartDatePicker = () => {

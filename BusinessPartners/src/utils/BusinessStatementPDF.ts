@@ -9,7 +9,7 @@ import { showToast } from "./ToastService";
 type Language = "en" | "te";
 
 /* =========================
-   TRANSLATIONS (SAFE STATIC)
+   TRANSLATIONS
 ========================= */
 const TRANSLATIONS: Record<Language, any> = {
   en: {
@@ -31,6 +31,15 @@ const TRANSLATIONS: Record<Language, any> = {
     sold: "Sold",
     withdraw: "Withdraw",
     createdBy: "Created By",
+
+    // ✅ NEW
+    usersSummary: "Users Summary",
+    yourSummary: "Your Summary",
+    businessSummary: "Business Summary",
+    totalInvestment: "Total Investment",
+    totalSold: "Total Sold",
+    totalWithdraw: "Total Withdraw",
+    availableMoney: "Available Money",
   },
   te: {
     title: "బిజ్‌మనీ స్టేట్‌మెంట్",
@@ -46,11 +55,21 @@ const TRANSLATIONS: Record<Language, any> = {
     type: "రకం",
     split: "విభజన",
     total: "మొత్తం",
-    invested: "పేటాల్సింది",
-    investable: "పేటింది",
+    invested: "పెట్టిన మొత్తం",
+    investable: "పెట్టాల్సిన మొత్తం",
     sold: "అమ్మకం",
     withdraw: "విత్డ్రా",
     createdBy: "సృష్టించినవారు",
+
+    // ✅ NEW
+    usersSummary: "వినియోగదారుల సారాంశం",
+    yourSummary: "మీ సారాంశం",
+
+    businessSummary: "వ్యాపార సారాంశం",
+    totalInvestment: "మొత్తం పెట్టుబడి",
+    totalSold: "మొత్తం అమ్మకం",
+    totalWithdraw: "మొత్తం విత్డ్రాల్",
+    availableMoney: "మిగిలిన మొత్తం",
   },
 };
 
@@ -81,12 +100,14 @@ export const generateBusinessStatementPDF = async ({
   businessName,
   downloadedBy,
   transactions,
+  investmentDetails,
   language = "en",
   filterType = "allInvestments",
 }: {
   businessName: string;
   downloadedBy: string;
   transactions: any[];
+  investmentDetails?: any[];
   language?: Language;
   filterType?: string;
 }) => {
@@ -123,8 +144,85 @@ export const generateBusinessStatementPDF = async ({
     }
   });
 
+  const safeInvestmentDetails = Array.isArray(investmentDetails)
+    ? investmentDetails
+    : [];
+  const hasSummary = safeInvestmentDetails.length > 0;
   /* =========================
      ROWS
+  ========================= */
+  const parse = (v: any) => {
+    const n = Number(v);
+    return isNaN(n) ? 0 : n;
+  };
+
+  /* =========================
+     SUMMARY CALCULATION
+  ========================= */
+  const calculateSummaryFromInvestment = (data: any[] = []) => {
+    let totalInvestment = 0;
+    let totalSold = 0;
+    let totalWithdraw = 0;
+    let totalAvailable = 0;
+
+    const users = data.map((inv) => {
+      const invested = parse(inv?.yourInvestment);
+      const investable = parse(inv?.actualInvestment);
+      const sold = parse(inv?.actualSold);
+      const withdraw = parse(inv?.withdrawn);
+      const available = parse(inv?.leftOver);
+
+      totalInvestment += invested;
+      totalSold += sold;
+      totalWithdraw += withdraw;
+      totalAvailable += available;
+
+      return {
+        name: inv?.partner?.username || "Unknown",
+        invested,
+        investable,
+        sold,
+        withdraw,
+        available,
+      };
+    });
+
+    return {
+      totalInvestment,
+      totalSold,
+      totalWithdraw,
+      totalAvailable,
+      users,
+    };
+  };
+
+  const summary = calculateSummaryFromInvestment(safeInvestmentDetails);
+
+  /* =========================
+     USERS SUMMARY ROWS
+  ========================= */
+  const userSummaryRows = summary.users
+    .map(
+      (u) => `
+<tr>
+  <td>${u.name}</td>
+  <td>${formatAmount(u.invested)}</td>
+  <td>${formatAmount(u.investable)}</td>
+  <td>${formatAmount(u.sold)}</td>
+  <td>${formatAmount(u.withdraw)}</td>
+  <td>${formatAmount(u.available)}</td>
+</tr>`,
+    )
+    .join("");
+
+  const yourData = summary.users.find(
+    (u) =>
+      (u.name || "").toLowerCase().trim() ===
+      (downloadedBy || "").toLowerCase().trim(),
+  );
+
+  /* =========================
+     TRANSACTION ROWS
   ========================= */
   const rowsHtml = transactions
     .map((tx) => {
@@ -287,6 +385,73 @@ export const generateBusinessStatementPDF = async ({
   <strong>${t.filter}:</strong> ${filterLabel}
 </div>
 
+<!-- BUSINESS SUMMARY -->
+${
+  filterType === "allInvestments" && hasSummary
+    ? `
+<h3>${t.businessSummary}</h3>
+<table>
+  <tr>
+    <th>${t.totalInvestment}</th>
+    <th>${t.totalSold}</th>
+    <th>${t.totalWithdraw}</th>
+    <th>${t.availableMoney}</th>
+  </tr>
+  <tr>
+    <td>${formatAmount(summary.totalInvestment)}</td>
+    <td>${formatAmount(summary.totalSold)}</td>
+    <td>${formatAmount(summary.totalWithdraw)}</td>
+    <td>${formatAmount(summary.totalAvailable)}</td>
+  </tr>
+</table>
+<br/>
+<h3>${t.usersSummary}</h3>
+<table>
+  <tr>
+    <th>${t.user}</th>
+    <th>${t.invested}</th>
+    <th>${t.investable}</th>
+    <th>${t.sold}</th>
+    <th>${t.withdraw}</th>
+    <th>${t.availableMoney}</th>
+  </tr>
+  ${userSummaryRows}
+</table>
+
+<br/>
+`
+    : ""
+}
+
+<!-- YOUR SUMMARY -->
+${
+  filterType === "byLoggedInUser" && yourData
+    ? `
+<h3>${t.yourSummary}</h3>
+<table>
+  <tr>
+    <th>${t.user}</th>
+    <th>${t.invested}</th>
+    <th>${t.investable}</th>
+    <th>${t.sold}</th>
+    <th>${t.withdraw}</th>
+    <th>${t.availableMoney}</th>
+  </tr>
+  <tr>
+    <td>${yourData.name}</td>
+    <td>${formatAmount(yourData.invested)}</td>
+    <td>${formatAmount(yourData.investable)}</td>
+    <td>${formatAmount(yourData.sold)}</td>
+    <td>${formatAmount(yourData.withdraw)}</td>
+    <td>${formatAmount(yourData.available)}</td>
+  </tr>
+</table>
+
+<br/>
+`
+    : ""
+}
+
 <h3>${t.transactions}</h3>
 
 <table>
@@ -350,10 +515,10 @@ export const generateBusinessStatementPDF = async ({
    HELPERS
 ========================= */
 const formatAmount = (value: any) => {
-  if (!value) return "-";
-  return "₹" + Number(value).toLocaleString("en-IN");
+  const num = Number(value);
+  if (value === null || value === undefined || isNaN(num)) return "-";
+  return "₹" + num.toLocaleString("en-IN");
 };
-
 const formatDate = (value: any) => {
   if (!value) return "-";
   return new Date(value).toLocaleDateString();

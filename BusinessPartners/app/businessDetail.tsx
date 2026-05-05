@@ -926,6 +926,30 @@ export default function BusinessDetail() {
       fetchInvestments(page + 1);
     }
   };
+  const fetchLatestInvestmentDetails = async () => {
+    if (!token || !safeBusinessId) return [];
+
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/business/${safeBusinessId}/business-details-by-id`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!res.ok) return [];
+
+      const data = await res.json();
+
+      return data?.investmentDetails || [];
+    } catch (err) {
+      console.log("❌ PDF summary fetch error:", err);
+      return [];
+    }
+  };
 
   const filteredInvestments = useMemo(() => {
     return applyFilters(allInvestments);
@@ -1521,6 +1545,13 @@ export default function BusinessDetail() {
                               businessName: safeBusinessName,
                               downloadedBy: userName || "Unknown",
                               transactions: filteredInvestments,
+                              // ✅ ALWAYS PASS LATEST DATA (fallback safe)
+                              investmentDetails:
+                                investmentDetails &&
+                                investmentDetails.length > 0
+                                  ? investmentDetails
+                                  : await fetchLatestInvestmentDetails(),
+
                               language: i18n.language === "te" ? "te" : "en", // ✅ NEW
                               filterType: selectedFilter, // ✅ NEW
                             });

@@ -235,30 +235,32 @@ export default function PartnerWiseDetails() {
                       ₹{formatAmount(inv.leftOver)}
                     </Text>
                   </View>
-
-                  {/* Withdrawn */}
-                  <View style={styles.partnerGridItem}>
-                    <Text style={styles.gridLabel}>{t("withdrawn")}</Text>
-                    <Text style={styles.gridValue}>
-                      ₹{formatAmount(inv.withdrawn)}
-                    </Text>
-                  </View>
-
                   {/* Actual Investment */}
                   <View style={styles.partnerGridItem}>
-                    <Text style={styles.gridLabel}>
-                      {t("actualInvestment")}
-                    </Text>
+                    <Text style={styles.gridLabel}>{t("investment")}</Text>
                     <Text style={styles.gridValue}>
                       ₹{formatAmount(inv.actualInvestment)}
                     </Text>
                   </View>
+                  {/* Withdrawn */}
+                  {/*  <View style={styles.partnerGridItem}>
+                    <Text style={styles.gridLabel}>{t("withdrawn")}</Text>
+                    <Text style={styles.gridValue}>
+                      ₹{formatAmount(inv.withdrawn)}
+                    </Text>
+                  </View> */}
 
                   {/* You Invested */}
-                  <View style={styles.partnerGridItem}>
+                  {/*   <View style={styles.partnerGridItem}>
                     <Text style={styles.gridLabel}>{t("youInvested")}</Text>
                     <Text style={styles.gridValue}>
                       ₹{formatAmount(inv.yourInvestment)}
+                    </Text>
+                  </View> */}
+                  <View style={styles.partnerGridItem}>
+                    <Text style={styles.gridLabel}>{t("sold")}</Text>
+                    <Text style={styles.gridValue}>
+                      ₹{formatAmount(inv.actualSold)}
                     </Text>
                   </View>
                 </View>

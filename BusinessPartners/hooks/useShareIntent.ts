@@ -1,18 +1,18 @@
 import { showToast } from "@/src/utils/ToastService";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import ReceiveSharingIntent from "react-native-receive-sharing-intent";
 
 export default function useShareIntent(onReceive: (files: any[]) => void) {
-  let hasProcessed = false;
+  const hasProcessedRef = useRef(false);
 
   useEffect(() => {
     const handleShare = () => {
-      if (hasProcessed) return;
+      if (hasProcessedRef.current) return;
       ReceiveSharingIntent.getReceivedFiles(
         (files: any[]) => {
           if (!files || files.length === 0) return;
-          hasProcessed = true;
+          hasProcessedRef.current = true;
 
           const formatted = files
             .map((f: any, i: number) => {
@@ -58,18 +58,14 @@ export default function useShareIntent(onReceive: (files: any[]) => void) {
           }
 
           // ✅ THEN call your main handler
-          onReceive(formatted);
-
-          // ✅ delay clearing (DO NOT REMOVE)
-          setTimeout(() => {
-            ReceiveSharingIntent.clearReceivedFiles();
-          }, 1500);
 
           onReceive(formatted);
 
           // ✅ delay clearing (IMPORTANT)
           setTimeout(() => {
             ReceiveSharingIntent.clearReceivedFiles();
+            // ✅ allow next share
+            hasProcessedRef.current = false;
           }, 1500);
         },
         (error: any) => console.log("Share error:", error),
@@ -82,7 +78,9 @@ export default function useShareIntent(onReceive: (files: any[]) => void) {
     // ✅ ALSO CALL WHEN APP COMES TO FOREGROUND
     const sub = AppState.addEventListener("change", (state) => {
       if (state === "active") {
-        handleShare();
+        setTimeout(() => {
+          handleShare();
+        }, 500);
       }
     });
 

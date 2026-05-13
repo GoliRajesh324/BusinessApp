@@ -148,6 +148,7 @@ export default function RootLayout() {
 
     setDefaultAppLock();
   }, []);
+
   useEffect(() => {
     const loadLanguage = async () => {
       try {
@@ -166,6 +167,7 @@ export default function RootLayout() {
 
     loadLanguage();
   }, []);
+
   const checkLock = async () => {
     try {
       const lockEnabled = await AsyncStorage.getItem("appLockEnabled");

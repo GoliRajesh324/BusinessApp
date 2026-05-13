@@ -636,7 +636,7 @@ export default function BusinessDetail() {
       );
     });
 
-    setYourInvestment(myRecord?.yourInvestment || 0);
+    setYourInvestment(myRecord?.actualInvestment || 0);
     setLeftOver(myRecord?.leftOver || 0);
   }, [investmentDetails, userName]);
 

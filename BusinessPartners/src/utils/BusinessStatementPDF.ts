@@ -40,6 +40,7 @@ const TRANSLATIONS: Record<Language, any> = {
     totalSold: "Total Sold",
     totalWithdraw: "Total Withdraw",
     availableMoney: "Available Money",
+    investment: "Investment",
   },
   te: {
     title: "బిజ్‌మనీ స్టేట్‌మెంట్",
@@ -70,6 +71,7 @@ const TRANSLATIONS: Record<Language, any> = {
     totalSold: "మొత్తం అమ్మకం",
     totalWithdraw: "మొత్తం విత్డ్రాల్",
     availableMoney: "మిగిలిన మొత్తం",
+    investment: "పెట్టుబడి",
   },
 };
 
@@ -172,7 +174,7 @@ export const generateBusinessStatementPDF = async ({
       const withdraw = parse(inv?.withdrawn);
       const available = parse(inv?.leftOver);
 
-      totalInvestment += invested;
+      totalInvestment += investable;
       totalSold += sold;
       totalWithdraw += withdraw;
       totalAvailable += available;
@@ -206,10 +208,8 @@ export const generateBusinessStatementPDF = async ({
       (u) => `
 <tr>
   <td>${u.name}</td>
-  <td>${formatAmount(u.invested)}</td>
   <td>${formatAmount(u.investable)}</td>
   <td>${formatAmount(u.sold)}</td>
-  <td>${formatAmount(u.withdraw)}</td>
   <td>${formatAmount(u.available)}</td>
 </tr>`,
     )
@@ -394,13 +394,11 @@ ${
   <tr>
     <th>${t.totalInvestment}</th>
     <th>${t.totalSold}</th>
-    <th>${t.totalWithdraw}</th>
     <th>${t.availableMoney}</th>
   </tr>
   <tr>
     <td>${formatAmount(summary.totalInvestment)}</td>
     <td>${formatAmount(summary.totalSold)}</td>
-    <td>${formatAmount(summary.totalWithdraw)}</td>
     <td>${formatAmount(summary.totalAvailable)}</td>
   </tr>
 </table>
@@ -409,10 +407,8 @@ ${
 <table>
   <tr>
     <th>${t.user}</th>
-    <th>${t.invested}</th>
-    <th>${t.investable}</th>
+    <th>${t.investment}</th>
     <th>${t.sold}</th>
-    <th>${t.withdraw}</th>
     <th>${t.availableMoney}</th>
   </tr>
   ${userSummaryRows}
@@ -431,18 +427,14 @@ ${
 <table>
   <tr>
     <th>${t.user}</th>
-    <th>${t.invested}</th>
-    <th>${t.investable}</th>
+    <th>${t.investment}</th>
     <th>${t.sold}</th>
-    <th>${t.withdraw}</th>
     <th>${t.availableMoney}</th>
   </tr>
   <tr>
     <td>${yourData.name}</td>
-    <td>${formatAmount(yourData.invested)}</td>
     <td>${formatAmount(yourData.investable)}</td>
     <td>${formatAmount(yourData.sold)}</td>
-    <td>${formatAmount(yourData.withdraw)}</td>
     <td>${formatAmount(yourData.available)}</td>
   </tr>
 </table>

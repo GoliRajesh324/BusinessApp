@@ -312,9 +312,12 @@ export default function Dashboard() {
         {/* RIGHT SIDE ICONS */}
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <TouchableOpacity onPress={toggleLanguage} style={styles.langIcon}>
-            <Ionicons name="language-outline" size={24} color="#fff" />
-          </TouchableOpacity>
+            <View style={styles.languageContainer}>
+              <Text style={styles.mainText}>{!isTelugu ? "A" : "తె"}</Text>
 
+              <Text style={styles.smallText}>{!isTelugu ? "తె" : "A"}</Text>
+            </View>
+          </TouchableOpacity>
           <View style={{ marginRight: 25 }}>
             <ScreenHelpVideo videoId={videoId} />
           </View>
@@ -884,7 +887,7 @@ const styles = StyleSheet.create({
     borderColor: "#eef1f6ff",
   },
   usernameContainer: { marginLeft: 10 },
-  username: { fontSize: 16, fontWeight: "700", color: "#333" },
+  username: { fontSize: 16, fontWeight: "700", color: "#ffffff" },
 
   // BUSINESS CARD
   emptyMessage: { textAlign: "center", marginTop: 20, color: "#777" },
@@ -1184,5 +1187,29 @@ const styles = StyleSheet.create({
   swipeActionText: {
     color: "#fff",
     fontWeight: "600",
+  },
+  languageContainer: {
+    width: 41,
+    height: 41,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+  },
+
+  mainText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 20,
+  },
+
+  smallText: {
+    position: "absolute",
+    top: 4,
+    right: 3,
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "700",
+    opacity: 0.9,
   },
 });

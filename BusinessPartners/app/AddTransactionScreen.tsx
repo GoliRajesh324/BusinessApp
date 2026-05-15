@@ -72,6 +72,10 @@ const AddTransactionScreen = () => {
     "share",
   );
 
+  const [fullyPaidPartnerId, setFullyPaidPartnerId] = useState<string | null>(
+    null,
+  );
+
   const [showSupplierPopup, setShowSupplierPopup] = useState(false);
   const [totalAmount, setTotalAmount] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -113,12 +117,18 @@ const AddTransactionScreen = () => {
     const id = await getVideoId("addTransaction");
     setVideoId(id);
   };
+
+  // Load user data
   useEffect(() => {
-    const load = async () => {
+    const loadData = async () => {
+      const n = await AsyncStorage.getItem("userName");
+      const u = await AsyncStorage.getItem("userId");
       const t = await AsyncStorage.getItem("token");
       setToken(t);
+      setUserName(n);
+      setUserId(u);
     };
-    load();
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -467,6 +477,25 @@ const AddTransactionScreen = () => {
   const expected = useMemo(() => parseFloat(totalAmount) || 0, [totalAmount]);
 
   useEffect(() => {
+    if (fullyPaidPartnerId) {
+      setRows((prev) =>
+        prev.map((prevRow) => ({
+          ...prevRow,
+
+          actual:
+            prevRow.id === fullyPaidPartnerId
+              ? Number(totalAmount || 0).toFixed(2)
+              : "0.00",
+
+          // keep leftover OFF
+          checked: false,
+          reduceLeftOver: "",
+          autoFilled: false,
+        })),
+      );
+
+      return;
+    }
     if (!partners.length) return;
     setRows((prev) =>
       prev.map((prevRow, idx) => {
@@ -516,23 +545,27 @@ const AddTransactionScreen = () => {
     );
   }, [splitMode, totalAmount, partners]);
   // Inside AddInvestmentPopup.tsx, only update split options logic
-
   useEffect(() => {
+    // ❌ If fully paid selected → do nothing
+    if (fullyPaidPartnerId) return;
+
     if (transactionType !== "Investment") return;
     if (!totalAmount || Number(totalAmount) <= 0) return;
 
     setRows((prev) =>
       prev.map((r) => {
-        // ✅ Skip if no leftover
-        if (!r.leftOver || Number(r.leftOver) <= 0) return r;
+        // skip if no leftover
+        if (!r.leftOver || Number(r.leftOver) <= 0) {
+          return r;
+        }
 
-        // ✅ If user already touched → DO NOT override
+        // don't overwrite user edits
         if (r.autoFilled) return r;
 
         const investable = Number(r.investing || 0);
+
         const available = Number(r.leftOver || 0);
 
-        // 👉 how much can be used
         const usable = Math.min(investable, available);
 
         if (usable <= 0) return r;
@@ -544,8 +577,7 @@ const AddTransactionScreen = () => {
         };
       }),
     );
-  }, [totalAmount, transactionType]);
-
+  }, [totalAmount, transactionType, fullyPaidPartnerId]);
   const openSheet = () => {
     console.log("Opening split options sheet with mode:");
     if (!totalAmount || Number(totalAmount) <= 0) {
@@ -571,6 +603,7 @@ const AddTransactionScreen = () => {
   };
 
   const applySheet = () => {
+    setFullyPaidPartnerId(null);
     // Apply split values based on sheetTempMode
     setSplitMode(sheetTempMode);
     console.log("Applying split options sheet with mode:", shareValues);
@@ -974,6 +1007,71 @@ const AddTransactionScreen = () => {
     };
   };
 
+  const handleFullyPaid = (partnerId: string) => {
+    // Only for investment
+    if (transactionType !== "Investment") return;
+
+    const amount = Number(totalAmount || 0);
+
+    // ==========================
+    // TOGGLE OFF
+    // ==========================
+    if (fullyPaidPartnerId === partnerId) {
+      setFullyPaidPartnerId(null);
+
+      setRows((prev) =>
+        prev.map((r) => {
+          let splitAmount = 0;
+
+          // Restore split mode
+          if (splitMode === "share") {
+            splitAmount = ((r.share || 0) / 100) * amount;
+          } else if (splitMode === "equal") {
+            splitAmount = amount / prev.length;
+          } else {
+            splitAmount = Number(r.investing || 0);
+          }
+
+          return {
+            ...r,
+
+            // Restore normal split
+            actual: splitAmount.toFixed(2),
+
+            // Allow auto leftover again
+            checked: false,
+            reduceLeftOver: "",
+            autoFilled: false,
+          };
+        }),
+      );
+
+      return;
+    }
+
+    // ==========================
+    // SELECT NEW PARTNER
+    // ==========================
+    setFullyPaidPartnerId(partnerId);
+
+    setRows((prev) =>
+      prev.map((r) => ({
+        ...r,
+
+        // selected partner pays everything
+        actual: r.id === partnerId ? amount.toFixed(2) : "0.00",
+
+        // keep investable split
+        investing: r.investing,
+
+        // remove leftover for ALL
+        checked: false,
+        reduceLeftOver: "",
+        autoFilled: false,
+      })),
+    );
+  };
+
   const pickFromGallery = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -1182,17 +1280,56 @@ const AddTransactionScreen = () => {
                           <Text style={styles.partnerName}>
                             {(r.name || "Unknown").toUpperCase()}
                           </Text>
+
                           <Text style={styles.partnerShareText}>
                             {r.share ?? 0}%
                           </Text>
                         </View>
 
+                        {/* FULLY PAID BUTTON */}
+                        {transactionType === "Investment" && (
+                          <TouchableOpacity
+                            onPress={() => handleFullyPaid(r.id)}
+                            style={styles.fullyPaidContainer}
+                          >
+                            <View
+                              style={[
+                                styles.radioCircle,
+                                fullyPaidPartnerId === r.id &&
+                                  styles.radioCircleSelected,
+                              ]}
+                            >
+                              {fullyPaidPartnerId === r.id && (
+                                <Ionicons
+                                  name="checkmark"
+                                  size={14}
+                                  color="#28a745"
+                                />
+                              )}
+                            </View>
+
+                            <Text
+                              style={[
+                                styles.fullyPaidText,
+                                fullyPaidPartnerId === r.id && {
+                                  color: "#28a745",
+                                  fontWeight: "700",
+                                },
+                              ]}
+                            >
+                              Fully Paid
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+
                         <View style={styles.partnerRightBox}>
                           <Text style={styles.partnerInvestedText}>
                             {r.actual || "0.00"}
                           </Text>
+
                           {(() => {
                             const status = getStatusInfo(r);
+
                             return (
                               <Text
                                 style={[
@@ -2141,5 +2278,32 @@ smallNote: { fontSize: 10, color: "#666", marginTop: 4 },
     paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
+  },
+  fullyPaidContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 12,
+  },
+
+  radioCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#bbb",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+
+  radioCircleSelected: {
+    backgroundColor: "#dff5e4",
+    borderColor: "#28a745",
+  },
+
+  fullyPaidText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: "#333",
   },
 });

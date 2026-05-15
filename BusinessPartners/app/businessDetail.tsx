@@ -909,6 +909,9 @@ export default function BusinessDetail() {
     React.useCallback(() => {
       if (!token) return;
 
+      // ✅ show loading instead of stale UI
+      setIsFirstLoadDone(false);
+
       setPage(0);
       setHasMore(true);
       setAllInvestments([]);
@@ -953,6 +956,10 @@ export default function BusinessDetail() {
 
   const filteredInvestments = useMemo(() => {
     return applyFilters(allInvestments);
+    // Hide "Investment Withdraw" from ALL view
+    /* return applyFilters(allInvestments).filter(
+      (item) => item.transactionType !== "INVESTMENT_WITHDRAW",
+    ); */
   }, [allInvestments, selectedFilter, userName]);
 
   // Handle "Restart" (End Crop) click
@@ -1599,9 +1606,25 @@ export default function BusinessDetail() {
               ) : null
             }
             ListEmptyComponent={
-              !isFirstLoadDone ? (
-                <View style={{ marginTop: 80 }}>
+              loadingInvestments || !isFirstLoadDone ? (
+                <View
+                  style={{
+                    marginTop: 120,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
                   <ActivityIndicator size="large" color="#4f93ff" />
+                  <Text
+                    style={{
+                      marginTop: 12,
+                      color: "#666",
+                      fontSize: 14,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Loading transactions...
+                  </Text>
                 </View>
               ) : (
                 <View style={styles.emptyContainer}>

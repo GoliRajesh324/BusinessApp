@@ -407,8 +407,24 @@ const EditTransactionScreen = () => {
       if (transactionType === "Withdraw") {
         const invalidPartners = investmentDataState.filter((r) => {
           const withdrawn = Number(r.withdrawn ?? 0);
-          const available = Number(r.availableMoney ?? 0);
-          return withdrawn > available;
+
+          // current available money
+          const currentAvailable = Number(r.availableMoney ?? 0);
+
+          // existing withdrawal amount while editing (matched by partnerId)
+          const existingPartnerTransaction = investmentData.find(
+            (item) =>
+              item.partnerId === r.partnerId &&
+              item.transactionType?.toUpperCase() === "WITHDRAW",
+          );
+
+          const existingWithdrawn = Number(
+            existingPartnerTransaction?.withdrawn ?? 0,
+          );
+
+          // actual editable available money
+          const effectiveAvailable = currentAvailable + existingWithdrawn;
+          return withdrawn > effectiveAvailable;
         });
 
         if (invalidPartners.length > 0) {
